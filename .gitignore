@@ -1,0 +1,6 @@
+.idea
+venv
+*.log
+node_modules
+__pycache__
+app/templates
