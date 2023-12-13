@@ -23,12 +23,7 @@ class Factory:
         self._environment = env
 
     def set_flask(self, **kwargs):
-        self.flask = Flask(
-            __name__,
-            **kwargs,
-            static_folder=None,
-            template_folder=None
-        )
+        self.flask = Flask(__name__, **kwargs, static_folder=None, template_folder=None)
         self.flask.config.from_object(config[self._environment])
         # setup logging
         file_handler = RotatingFileHandler("api.log", maxBytes=10000, backupCount=1)
@@ -44,6 +39,8 @@ class Factory:
         from .models.database import db
 
         db.init_app(self.flask)
+        with self.flask.app_context():
+            db.create_all()
 
     def set_migration(self):
         from .models.database import db, migrate

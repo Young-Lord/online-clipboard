@@ -27,7 +27,7 @@ export default {
     async getBackendVersion() {
       try {
         let response = await axios.get(`${api_endpoint}/version`);
-        this.backend_version = response.data.version;
+        this.backend_version = response.data.data.version;
       } catch (e) {
         this.backend_version = "failed."
         console.log(e);

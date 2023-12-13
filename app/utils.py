@@ -1,6 +1,7 @@
 from functools import wraps
+from typing import Any, Optional
 
-from flask import url_for, current_app, request, Response, Blueprint
+from flask import jsonify, url_for, current_app, request, Response, Blueprint
 
 
 def add_basic_auth(blueprint: Blueprint, username: str, password: str, realm: str='Api'):
@@ -40,3 +41,10 @@ def requires_auth(f):
         return f(*args, **kwargs)
 
     return decorated
+
+def return_json(data: Optional[Any]=None, message: Optional[str]=None, status_code: int=200) -> Response:
+    return jsonify({
+        "status": "success",
+        "message": message,
+        "data": data
+    })

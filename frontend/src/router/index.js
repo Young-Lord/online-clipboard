@@ -11,7 +11,8 @@ const routes = [
     component: () => import("@/views/About.vue"),
   },
   {
-    path: "/(.+)",
+    path: "/:name",
+    name: "ClipPage",
     component: () => import("@/views/Data.vue"),
   },
 ];

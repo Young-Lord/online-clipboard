@@ -1,7 +1,5 @@
-## Api
+# online-clipboard
 
-### Project Setup
+<netcut.cn> style, minimal editable online clipboard.
 
-1. `pip install -r requirements.txt`
-2. `chmod +x unit-tests.sh`
-3. `./unit-tests.sh`
+Developed using Flask, Vue 3, Vuetify 3.

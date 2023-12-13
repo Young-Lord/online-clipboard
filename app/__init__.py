@@ -6,7 +6,9 @@ from .factory import Factory
 
 
 def create_app(environment="development") -> Flask:
-    f = Factory(environment,)
+    f = Factory(
+        environment,
+    )
     f.set_flask()
     f.set_db()
     f.set_migration()
@@ -15,8 +17,8 @@ def create_app(environment="development") -> Flask:
 
     from .views import frontend, api
 
-    app.register_blueprint(frontend, url_prefix="/")
     app.register_blueprint(api, url_prefix="/api")
+    app.register_blueprint(frontend, url_prefix="/")
 
     # if app.config['TESTING']:  # pragma: no cover
     #     # Setup app for testing

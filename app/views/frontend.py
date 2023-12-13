@@ -22,3 +22,8 @@ def favicon():
         "favicon.ico",
         mimetype="image/vnd.microsoft.icon",
     )
+
+
+@frontend.route("/<clip_name_input>")
+def clip_name(clip_name_input):
+    return render_template("index.html")
