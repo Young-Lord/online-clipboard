@@ -44,7 +44,7 @@ def requires_auth(f):
 
 def return_json(data: Optional[Any]=None, message: Optional[str]=None, status_code: int=200) -> Response:
     return jsonify({
-        "status": "success",
+        "status": status_code,
         "message": message,
         "data": data
     })

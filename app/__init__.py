@@ -3,6 +3,7 @@ from flask import Flask, Response
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from .factory import Factory
+from app import models
 
 
 def create_app(environment="development") -> Flask:
