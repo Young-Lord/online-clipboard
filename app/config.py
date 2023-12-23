@@ -11,6 +11,9 @@ class Config:
     DOC_USERNAME = "api"
     DOC_PASSWORD = "password"
 
+    FRONTEND_URL = "http://localhost:3000"
+    UPLOAD_FOLDER = "uploads"
+    MAX_CONTENT_LENGTH = 512 * 1024 * 1024  # 512 MiB
 
 class DevConfig(Config):
     DEBUG = True

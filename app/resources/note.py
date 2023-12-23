@@ -2,7 +2,7 @@ import datetime
 from flask_restx import Resource, marshal
 import functools
 from typing import Any, Final
-from flask import Blueprint, jsonify, render_template, abort, request
+from flask import Blueprint, jsonify, render_template, abort, request, send_file
 from flask_restx import Resource, fields, marshal_with
 from app.models.datastore import (
     Note,
@@ -195,3 +195,39 @@ class NoteRest(Resource):
 
     def options(self, name: str):
         return return_json(status_code=200)
+
+
+@api.route("/note/<string:name>/file/<int:id>")
+class FileRest(Resource):
+    decorators = [
+        password_protected_note,
+        verify_name_decorator,
+        verify_dict_decorator,
+        timeout_note_decorator,
+        cors_decorator,
+    ]
+
+    def get(self, name: str, id: int):
+        note = datastore.get_note(
+            name,
+        )
+        if note is None:
+            return return_json(status_code=404, message="No note found")
+        file = datastore.get_file(id)
+        if file is None:
+            return return_json(status_code=404, message="No file found")
+        return send_file(file)
+
+    def post(self, name: str, id: int):
+        note = datastore.get_note(
+            name,
+        )
+        if note is None:
+            return return_json(status_code=404, message="No note found")
+        file = request.files.get("file")
+        if file is None:
+            return return_json(status_code=400, message="No file provided")
+        if file.filename is None:
+            return return_json(status_code=400, message="Filename is empty")
+        datastore.add_file(note, file.filename)
+        return return_json(status_code=201)
