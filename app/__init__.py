@@ -1,9 +1,8 @@
-import click
 from flask import Flask, Response
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from .factory import Factory
-from app import models
+from app import models  # this must be imported to make migration work
 
 
 def create_app(environment="development") -> Flask:
@@ -13,35 +12,16 @@ def create_app(environment="development") -> Flask:
     f.set_flask()
     f.set_db()
     f.set_migration()
+    f.set_api()
 
     app = f.flask
 
-    from .views import frontend, api
+    from .views import frontend
+    from .views import api
 
     app.register_blueprint(api, url_prefix="/api")
     app.register_blueprint(frontend, url_prefix="/")
 
-    # if app.config['TESTING']:  # pragma: no cover
-    #     # Setup app for testing
-    #     @app.before_first_request
-    #     def initialize_app():
-    #         pass
-
-    @app.after_request
-    def after_request(response: Response):
-        response.headers.add("Access-Control-Allow-Origin", "*")
-        response.headers.add(
-            "Access-Control-Allow-Headers", "Content-Type,Authorization"
-        )
-        response.headers.add("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE")
-
-        return response
-
     app.wsgi_app = ProxyFix(app.wsgi_app)
-
-    @app.cli.command()
-    @click.argument("command")
-    def setup(command):
-        pass
 
     return app

@@ -1,7 +1,10 @@
 .idea
+
+node_modules
+
 venv
 *.log
-node_modules
+*.log.1
 __pycache__
 app/templates
 instance/*

@@ -1,6 +1,5 @@
 import os
 
-
 class Config:
     ERROR_404_HELP = False
 
@@ -11,8 +10,6 @@ class Config:
 
     DOC_USERNAME = "api"
     DOC_PASSWORD = "password"
-
-    
 
 
 class DevConfig(Config):

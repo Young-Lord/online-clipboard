@@ -3,17 +3,19 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
   {
+    name: "Home",
     path: "/",
     component: () => import("@/views/Home.vue"),
   },
   {
+    name: "About",
     path: "/about",
     component: () => import("@/views/About.vue"),
   },
   {
     path: "/:name",
-    name: "ClipPage",
-    component: () => import("@/views/Data.vue"),
+    name: "Clip",
+    component: () => import("@/views/Clip.vue"),
   },
 ];
 

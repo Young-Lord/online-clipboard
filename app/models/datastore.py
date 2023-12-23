@@ -2,21 +2,28 @@ from abc import ABC
 import string
 from typing import Optional, Final
 import uuid
+from sqlalchemy import Column, DateTime, func, Integer, String
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, Session
 
+from app.note_const import (
+    ALLOW_CHAR_IN_NAMES,
+    DISABLE_WORDS_IN_NAMES,
+    READONLY_PREFIX,
+    Metadata,
+)
+from .base import DatabaseColumnBase, db
 from flask_sqlalchemy import SQLAlchemy
 
-from .base import Note
 
-ALLOW_CHAR_IN_NAMES: Final[str] = string.ascii_letters + string.digits + "-_"
-DISABLE_WORDS_IN_NAMES: Final[set[str]] = {
-    "api",
-    "static",
-    "admin",
-    "login",
-    "logout",
-    "register",
-    "about",
-}
+class Note(db.Model, DatabaseColumnBase):
+    __tablename__ = "note"
+
+    name: Mapped[str] = mapped_column(String, unique=True)
+    content: Mapped[str] = mapped_column(String)
+    clip_version: Mapped[int] = mapped_column(Integer)
+    password: Mapped[str] = mapped_column(String, nullable=True)
+    readonly_name: Mapped[str] = mapped_column(String, unique=True)
+    timeout_seconds: Mapped[int] = mapped_column(Integer)
 
 
 def verify_name(name: str) -> bool:
@@ -39,6 +46,10 @@ def verify_password_hash(password_hash: str, password: str, name: str = "") -> b
     return password_hash == get_password_hash(password, name=name)
 
 
+def verify_timeout_seconds(timeout_seconds: int) -> bool:
+    return 1 <= timeout_seconds <= Metadata.max_timeout
+
+
 class Datastore(ABC):
     def __init__(self, _db: SQLAlchemy):
         self.session = _db.session
@@ -53,25 +64,34 @@ class NoteDatastore(Datastore):
             return None
         return self.session.query(Note).filter_by(name=name).first()
 
+    def get_note_by_readonly_name(self, readonly_name: str) -> Optional[Note]:
+        return self.session.query(Note).filter_by(readonly_name=readonly_name).first()
+
     def update_note(
         self,
         name: str,
-        clip_version: int,
+        clip_version: int = 1,
         content: Optional[str] = None,
         password: Optional[str] = None,
+        timeout_seconds: Optional[int] = None,
     ) -> None:
         note: Optional[Note] = self.session.query(Note).filter_by(name=name).first()
         if note is None:
             note = Note(
                 name=name,
             )
+            note.content = ""
+            note.clip_version = clip_version
+            note.readonly_name = READONLY_PREFIX + uuid.uuid4().hex
+            note.timeout_seconds = Metadata.default_timeout
         if content is not None:
             note.content = content
         if password is not None:
             note.password = get_password_hash(password, name)
-        note.clip_version = clip_version
-        note.viewonly_url = uuid.uuid4().hex
-        note.timeout_days = 30
+        if timeout_seconds is not None:
+            if not verify_timeout_seconds(timeout_seconds):
+                raise ValueError("Invalid timeout_seconds")
+            note.timeout_seconds = timeout_seconds
         self.session.add(note)
         self.session.commit()
 

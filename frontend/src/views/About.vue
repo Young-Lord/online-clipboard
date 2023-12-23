@@ -2,16 +2,13 @@
   <v-container>
     <div> TEST about by {{ author }} !!! </div>
     <div> Current API = {{ api_endpoint }} </div>
-      <div> Backend version = {{ backend_version }} </div>
+    <div> Backend version = {{ backend_version }} </div>
+    <div> Metadata = {{ metadata }}</div>
   </v-container>
 </template>
 
 <script>
-import { useAppStore } from '../store/app.js';
-import axios from 'axios';
-
-const appStore = useAppStore();
-const api_endpoint = appStore.api_endpoint;
+import { axios, api_endpoint } from "@/api";
 
 export default {
   components: {
@@ -20,13 +17,15 @@ export default {
     return {
       author: "Author",
       api_endpoint: api_endpoint,
-      backend_version: "loading..."
+      backend_version: "loading...",
+      metadata: {},
     }
   },
   methods: {
-    async getBackendVersion() {
+    async getMetadata() {
       try {
-        let response = await axios.get(`${api_endpoint}/version`);
+        let response = await axios.get("/metadata");
+        this.metadata = response.data.data;
         this.backend_version = response.data.data.version;
       } catch (e) {
         this.backend_version = "failed."
@@ -35,11 +34,10 @@ export default {
     },
   },
   beforeMount() {
-    this.getBackendVersion();
+    this.getMetadata();
   },
 }
 </script>
 
-<style>
-</style>
+<style></style>
 
