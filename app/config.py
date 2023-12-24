@@ -20,6 +20,8 @@ class Config:
     FRONTEND_URL = "http://192.168.1.8:5000"
     FRONTEND_URL: str
     API_FULL_URL: str
+    BIND_HOST = "127.0.0.1"
+    BIND_PORT = 5000
 
 
 class DevConfig(Config):
@@ -29,7 +31,7 @@ class DevConfig(Config):
 
 
 class ProdConfig(Config):
-    pass
+    BIND_HOST = "0.0.0.0"
 
 
 config = {"development": DevConfig, "production": ProdConfig}

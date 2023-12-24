@@ -7,5 +7,6 @@ app = create_app()
 
 if __name__ == "__main__":
     # app.run()
-    http_server = WSGIServer(("0.0.0.0", 5000), app)
+    print(app.config["BIND_HOST"], app.config["BIND_PORT"])
+    http_server = WSGIServer((app.config["BIND_HOST"], app.config["BIND_PORT"]), app)
     http_server.serve_forever()
