@@ -26,7 +26,8 @@ export default {
       try {
         let response = await axios.get("/metadata");
         this.metadata = response.data.data;
-        this.backend_version = response.data.data.version;
+        this.backend_version = this.metadata.version;
+        this.author = this.metadata.owner;
       } catch (e) {
         this.backend_version = "failed."
         console.log(e);

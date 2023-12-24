@@ -158,7 +158,7 @@ class NoteRest(Resource):
 
     def put(self, name: str):
         params = request.get_json()
-        if params.get("new_password"):
+        if "new_password" in params:
             params["password"] = params["new_password"]
         allow_props = ["content", "password", "clip_version", "timeout_seconds"]
         params = {k: v for k, v in params.items() if k in allow_props}

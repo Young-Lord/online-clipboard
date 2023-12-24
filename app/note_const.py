@@ -29,7 +29,7 @@ class BaseMetadata:
     max_password_length: int = 256
     max_file_size: int = 50 * 1024 * 1024  # 50 MiB
     max_file_count: int = 10
-    max_timeout: int = 60 * 60 * 24 * 365  # 1 year
+    max_timeout: int = 60 * 60 * 24 * 365 * 3  # 3 years
     default_timeout: int = 60 * 60 * 24 * 30  # 30 day
     default_file_timeout: int = 60 * 60 * 24 * 30  # 30 day
     allow_chars: str = ALLOW_CHAR_IN_NAMES

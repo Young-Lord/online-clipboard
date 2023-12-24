@@ -126,6 +126,7 @@ export default {
                     }
                     else
                         throw e;
+                    return;
                 }
                 if (response.status == 204) {
                     this.is_new = true;
@@ -218,7 +219,8 @@ export default {
                 });
                 this.$swal({
                     title: 'Password changed!',
-                    icon: 'success'
+                    icon: 'success',
+                    timer: 1200,
                 })
                 this.password = password;
             } catch (e) {
@@ -243,7 +245,6 @@ export default {
                     // this.$swal({
                     //     title: 'Timeout changed!',
                     //     icon: 'success',
-                    //     timer: 1200,
                     //     showConfirmButton: false,
                     // })
                     this.timeout_seconds = new_timeout;
