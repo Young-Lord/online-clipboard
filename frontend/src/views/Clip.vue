@@ -56,6 +56,33 @@
                             </v-text-field>
                         </v-card>
                     </v-col>
+                    <v-col cols="12">
+                        <v-card id="file-card">
+                            <!-- Drag or click to upload file -->
+                            <v-file-input label="Drag or Click to upload file" prepend-icon="mdi-file-upload"
+                                @change="uploadFile" v-if="!this.is_readonly && !this.is_new" :disabled="this.uploading"
+                                v-model="file_to_upload">
+                            </v-file-input>
+                            <!--all files, with download and delete button-->
+                            <v-list v-if="!this.is_new">
+                                <v-list-item v-for="file in remote_files" :key="file.id">
+                                    <v-list-item-title>{{ file.filename }}
+                                    </v-list-item-title>
+                                    <v-list-item-subtitle>{{ humanFileSize(file.size) }}</v-list-item-subtitle>
+                                    <template v-slot:append>
+                                        <v-list-item-action end>
+                                            <v-btn icon variant="text" @click="downloadFile(file)">
+                                                <v-icon>mdi-download</v-icon>
+                                            </v-btn>
+                                            <v-btn icon variant="text" @click="deleteFile(file)">
+                                                <v-icon>mdi-delete</v-icon>
+                                            </v-btn>
+                                        </v-list-item-action>
+                                    </template>
+                                </v-list-item>
+                            </v-list>
+                        </v-card>
+                    </v-col>
                 </v-row>
             </v-container>
         </v-main>
@@ -66,29 +93,89 @@
 import { axios } from "@/api";
 import { useAppStore } from "@/store/app";
 const appStore = useAppStore();
-import { getKeyByValue, replaceLastPartOfUrl } from "@/utils";
+import { getKeyByValue, replaceLastPartOfUrl, humanFileSize } from "@/utils";
 
 export default {
     data() {
         return {
-            "clip_version": 1,
-            "local_content": "",
-            "remote_content": "",
-            "last_updated": Date.now(),
-            "save_status": "",
-            "save_interval": 3000,
-            "is_new": false,
-            "meta_data": {},
-            "password": "",
-            "timeout_keys": Object.keys(appStore.timeout_selections),
-            "current_timeout": -1,
-            "selected_timeout": "",
-            "current_url": window.location.href,
-            "readonly_url": "",
-            "is_readonly": false,
-        }
+            clip_version: 1,
+            local_content: "",
+            remote_content: "",
+            last_updated: Date.now(),
+            save_status: "",
+            save_interval: 3000,
+            is_new: false,
+            meta_data: {},
+            password: "",
+            timeout_keys: Object.keys(appStore.timeout_selections),
+            current_timeout: -1,
+            selected_timeout: "",
+            current_url: window.location.href,
+            readonly_url: "",
+            is_readonly: false,
+            uploading: false,
+            file_to_upload: null,
+            remote_files: [],
+            humanFileSize: humanFileSize
+        };
     },
     methods: {
+        async uploadFile() {
+            this.uploading = true;
+            var formData = new window.FormData();
+            formData.append("file", this.file_to_upload[0]);
+            try {
+                let response = await axios.post(`/note/${this.name}/file/0`, formData, {
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                    },
+                });
+                this.fetchContent();
+                this.$swal
+                    .fire({
+                        title: "Uploaded!",
+                        text: "Your file has been uploaded.",
+                        icon: "success",
+                        timer: 1200,
+                    });
+            } catch (e) {
+                console.log(e);
+                this.$swal.fire({
+                    title: "Error",
+                    text: "Failed to upload file.",
+                    icon: "error",
+                });
+            } finally {
+                this.file_to_upload = null;
+                this.uploading = false;
+            }
+        },
+        async downloadFile(file) {
+            window.open(file.url, "_blank");
+        },
+        async deleteFile(file) {
+            this.uploading = true;
+            try {
+                let response = await axios.delete(`/note/${this.name}/file/${file.id}`);
+                this.fetchContent();
+                this.$swal
+                    .fire({
+                        title: "Deleted!",
+                        text: "Your file has been deleted.",
+                        icon: "success",
+                        timer: 1200,
+                    });
+            } catch (e) {
+                console.log(e);
+                this.$swal.fire({
+                    title: "Error",
+                    text: "Failed to delete file.",
+                    icon: "error",
+                });
+            } finally {
+                this.uploading = false;
+            }
+        },
         async setEditingStatus() {
             if (this.is_readonly) return;
             this.save_status = "editing";
@@ -98,34 +185,33 @@ export default {
                 let response;
                 try {
                     response = await axios.get(`/note/${this.name}`);
-                }
-                catch (e) {
+                } catch (e) {
                     if (e.response?.status == 400) {
-                        this.$swal.fire({
-                            title: "Error",
-                            text: "Invalid note name.",
-                            icon: "error"
-                        }).then(() => {
-                            this.$router.push({ name: "Home" });
-                        });
-                    }
-                    else if (e.response?.status == 401) {
-                        this.$swal.fire({
-                            title: "Password?",
-                            input: "password",
-                            showCancelButton: true,
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                this.password = result.value;
-                                this.fetchContent();
-                            }
-                            else {
+                        this.$swal
+                            .fire({
+                                title: "Error",
+                                text: "Invalid note name.",
+                                icon: "error",
+                            })
+                            .then(() => {
                                 this.$router.push({ name: "Home" });
-                            }
-                        });
-                    }
-                    else
-                        throw e;
+                            });
+                    } else if (e.response?.status == 401) {
+                        this.$swal
+                            .fire({
+                                title: "Password?",
+                                input: "password",
+                                showCancelButton: true,
+                            })
+                            .then((result) => {
+                                if (result.isConfirmed) {
+                                    this.password = result.value;
+                                    this.fetchContent();
+                                } else {
+                                    this.$router.push({ name: "Home" });
+                                }
+                            });
+                    } else throw e;
                     return;
                 }
                 if (response.status == 204) {
@@ -135,15 +221,18 @@ export default {
                     this.remote_content = "";
                     this.clip_version = 1;
                     return;
-                }
-                else {
+                } else {
                     this.local_content = response.data.data.content;
                     this.remote_content = response.data.data.content;
                     this.clip_version = (response.data.data.clip_version ?? 1) + 1;
                     this.current_timeout = response.data.data.timeout_seconds;
-                    this.selected_timeout = this.getNoteTimeoutString()
-                    this.readonly_url = replaceLastPartOfUrl(window.location.href, response.data.data.readonly_name)
+                    this.selected_timeout = this.getNoteTimeoutString();
+                    this.readonly_url = replaceLastPartOfUrl(
+                        window.location.href,
+                        response.data.data.readonly_name
+                    );
                     this.is_readonly = response.data.data.is_readonly;
+                    this.remote_files = response.data.data.files;
                 }
             } catch (e) {
                 console.log(e);
@@ -169,8 +258,8 @@ export default {
             }
             try {
                 let response = await axios.put(`/note/${this.name}`, {
-                    "content": this.local_content,
-                    "clip_version": this.clip_version,
+                    content: this.local_content,
+                    clip_version: this.clip_version,
                 });
                 this.clip_version = response.data.data.clip_version;
                 this.fetchContent();
@@ -181,47 +270,53 @@ export default {
             }
         },
         async deleteContent() {
-            this.$swal.fire({
-                title: "Are you sure?",
-                text: "You won't be able to revert this!",
-                icon: "warning",
-                showCancelButton: true,
-                confirmButtonColor: "#3085d6",
-                cancelButtonColor: "#d33",
-                confirmButtonText: "Yes, delete it!"
-            }).then(async (result) => {
-                if (result.isConfirmed) {
-                    try {
-                        let response = await axios.delete(`/note/${this.name}`);
-                        this.$swal.fire({
-                            title: "Deleted!",
-                            text: "Your clip has been deleted.",
-                            icon: "success"
-                        }).then(() => {
-                            this.$router.push({ name: "Home" });
-                        });
-                    } catch (e) {
-                        console.log(e);
+            this.$swal
+                .fire({
+                    title: "Are you sure?",
+                    text: "You won't be able to revert this!",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#3085d6",
+                    cancelButtonColor: "#d33",
+                    confirmButtonText: "Yes, delete it!",
+                })
+                .then(async (result) => {
+                    if (result.isConfirmed) {
+                        try {
+                            let response = await axios.delete(`/note/${this.name}`);
+                            this.$swal
+                                .fire({
+                                    title: "Deleted!",
+                                    text: "Your clip has been deleted.",
+                                    icon: "success",
+                                })
+                                .then(() => {
+                                    this.$router.push({ name: "Home" });
+                                });
+                        } catch (e) {
+                            console.log(e);
+                        }
                     }
-                }
-            });
+                });
         },
         async changePassword() {
-            let password = (await this.$swal({
-                title: 'Password?',
-                input: 'password',
-                showCancelButton: true,
-            })).value;
+            let password = (
+                await this.$swal({
+                    title: "Password?",
+                    input: "password",
+                    showCancelButton: true,
+                })
+            ).value;
             if (password === undefined) return;
             try {
                 let response = await axios.put(`/note/${this.name}`, {
-                    "new_password": password,
+                    new_password: password,
                 });
                 this.$swal({
-                    title: 'Password changed!',
-                    icon: 'success',
+                    title: "Password changed!",
+                    icon: "success",
                     timer: 1200,
-                })
+                });
                 this.password = password;
             } catch (e) {
                 console.log(e);
@@ -230,17 +325,17 @@ export default {
         async setNoteTimeout(selected_timeout) {
             try {
                 let new_timeout = appStore.timeout_selections[selected_timeout];
-                console.log(new_timeout)
+                console.log(new_timeout);
                 if (new_timeout === undefined) {
                     this.$swal({
-                        title: 'Invalid timeout!',
-                        icon: 'error'
-                    })
+                        title: "Invalid timeout!",
+                        icon: "error",
+                    });
                     return;
                 }
                 try {
                     let response = await axios.put(`/note/${this.name}`, {
-                        "timeout_seconds": new_timeout,
+                        timeout_seconds: new_timeout,
                     });
                     // this.$swal({
                     //     title: 'Timeout changed!',
@@ -252,10 +347,10 @@ export default {
                     console.log(e);
                     if (e.response?.status == 400) {
                         this.$swal({
-                            title: 'Invalid timeout!',
-                            icon: 'error'
-                        })
-                        return
+                            title: "Invalid timeout!",
+                            icon: "error",
+                        });
+                        return;
                     }
                 }
             } catch (e) {
@@ -263,10 +358,14 @@ export default {
             }
         },
         getNoteTimeoutString() {
-            let matched_key = getKeyByValue(appStore.timeout_selections, this.current_timeout);
+            let matched_key = getKeyByValue(
+                appStore.timeout_selections,
+                this.current_timeout
+            );
             if (this.current_timeout == -1) return "Never";
             if (matched_key !== undefined) return matched_key;
-            if (this.current_timeout <= 3600) return `${this.current_timeout / 60} minutes`;
+            if (this.current_timeout <= 3600)
+                return `${this.current_timeout / 60} minutes`;
             return `${this.current_timeout / 3600} hours`;
         },
         async copyString(content) {
@@ -287,11 +386,11 @@ export default {
             tmpLink.click();
             document.body.removeChild(tmpLink);
             URL.revokeObjectURL(url);
-        }
+        },
     },
     computed: {
         name() {
-            return this.$route.params.name
+            return this.$route.params.name;
         },
     },
     mounted() {
@@ -299,17 +398,17 @@ export default {
             if (Date.now() - this.last_updated > this.save_interval) {
                 this.pushContentIfChanged();
             }
-        }, this.save_interval)
+        }, this.save_interval);
 
         axios.interceptors.request.use((config) => {
             config.headers["X-Clip-Password"] = this.password;
             return config;
-        })
+        });
     },
     beforeMount() {
         this.fetchContent();
     },
-}
+};
 </script>
 
 <style>
@@ -321,4 +420,3 @@ export default {
     display: none;
 }
 </style>
-

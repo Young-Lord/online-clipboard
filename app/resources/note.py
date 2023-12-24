@@ -1,6 +1,7 @@
 import datetime
 import os
 import time
+from unittest.mock import Base
 from flask_restx import Resource, marshal
 import functools
 from typing import Any, Final
@@ -23,15 +24,15 @@ from app.models.datastore import (
 )
 from .base import api_restx
 from app.note_const import READONLY_PREFIX, Metadata, ALLOW_CHAR_IN_NAMES
-from app.utils import cors_decorator, return_json, default_value_for_types
+from app.utils import cors_decorator, ensure_dir, return_json, default_value_for_types
 from app.models.base import db
 from app.resources.base import api_restx as api
 from werkzeug.utils import secure_filename
+from werkzeug.exceptions import NotFound
 
 datastore = NoteDatastore(db)
 
 NO_DATA_METHODS = {"get", "options", "delete"}
-PASSWORD_FROM_PARAM_METHODS = {"get", "options", "delete"}
 
 
 def verify_dict_decorator(f):
@@ -39,9 +40,12 @@ def verify_dict_decorator(f):
     def decorated_function(*args, **kwargs):
         if request.method.lower() in NO_DATA_METHODS:
             return f(*args, **kwargs)
-        data: dict = request.get_json()
-        if not isinstance(data, dict):
-            return return_json(status_code=400, message="Invalid data")
+        if not (not request.is_json and request.form is not None):
+            data: dict = (
+                request.get_json()
+            )  # this can raise HTTP 415 UNSUPPORTED MEDIA TYPE
+            if not isinstance(data, dict):
+                return return_json(status_code=400, message="Invalid data")
         return f(*args, **kwargs)
 
     return decorated_function
@@ -114,12 +118,15 @@ def timeout_note_decorator(f):
 file_model = api.model(
     "File",
     {
-        "name": fields.String,
+        "filename": fields.String(attribute="filename"),
         "id": fields.Integer,
         "created_at": fields.DateTime,
-        "timeout_seconds": fields.Integer,
-        "url": fields.String,
-        "size": fields.Integer,
+        "timeout_seconds": fields.Integer(default=Metadata.default_file_timeout),
+        "url": fields.String(
+            attribute=lambda file: Config.API_FULL_URL
+            + "/note/%s/file/%s/content" % (file.note.name, file.id)
+        ),
+        "size": fields.Integer(attribute="file_size"),
     },
 )
 
@@ -153,8 +160,7 @@ def mashal_readonly_note(note: Note, status_code: int = 200):
     return return_json(ret, status_code=status_code)
 
 
-@api.route("/note/<string:name>")
-class NoteRest(Resource):
+class BaseRest(Resource):
     decorators = [  # this is fking from bottom to top!
         password_protected_note,
         verify_name_decorator,
@@ -163,6 +169,12 @@ class NoteRest(Resource):
         cors_decorator,
     ]
 
+    def options(self):
+        return return_json(status_code=200)
+
+
+@api.route("/note/<string:name>")
+class NoteRest(BaseRest):
     def get(self, name: str):
         if name.startswith(READONLY_PREFIX):
             note = datastore.get_note_by_readonly_name(
@@ -229,20 +241,9 @@ class NoteRest(Resource):
         datastore.delete_note(name)
         return return_json(status_code=204, message="Note deleted")
 
-    def options(self, name: str):
-        return return_json(status_code=200)
-
 
 @api.route("/note/<string:name>/file/<int:id>")
-class FileRest(Resource):
-    decorators = [
-        password_protected_note,
-        verify_name_decorator,
-        verify_dict_decorator,
-        timeout_note_decorator,
-        cors_decorator,
-    ]
-
+class FileRest(BaseRest):
     def get(self, name: str, id: int):
         note = datastore.get_note(
             name,
@@ -252,19 +253,8 @@ class FileRest(Resource):
         file = datastore.get_file(id)
         if file is None:
             return return_json(status_code=404, message="No file found")
-        data = (
-            {
-                "name": file.filename,
-                "id": file.id,
-                "created_at": file.created_at,
-                "timeout_seconds": Metadata.default_file_timeout,
-                "url": Config.API_URL_SUFFIX
-                + "/note/%s/file/%s/content" % (name, file.id),
-                "size": file.file_size,
-            },
-        )
         return return_json(
-            marshal(data, file_model),
+            marshal(file, file_model),
             status_code=200,
         )
 
@@ -281,6 +271,7 @@ class FileRest(Resource):
             return return_json(status_code=400, message="Filename is empty")
         filename = secure_filename("%s_%s_%s" % (time.time(), name, file.filename))
         file_path = os.path.join(Config.UPLOAD_FOLDER, filename)
+        ensure_dir(Config.UPLOAD_FOLDER)
         file.save(file_path)
         file_size = os.path.getsize(file_path)
         datastore.add_file(note, file.filename, file_path, file_size)
@@ -290,20 +281,17 @@ class FileRest(Resource):
         file = datastore.get_file(id)
         if file is None:
             return return_json(status_code=404, message="No file found")
+        file_path = file.file_path
+        try:
+            os.remove(file_path)
+        except:
+            pass
         datastore.delete_file(file)
         return return_json(status_code=204)
 
 
 @api.route("/note/<string:name>/file/<int:id>/content")
-class FileContentRest(Resource):
-    decorators = [
-        password_protected_note,
-        verify_name_decorator,
-        verify_dict_decorator,
-        timeout_note_decorator,
-        cors_decorator,
-    ]
-
+class FileContentRest(BaseRest):
     def get(self, name: str, id: int):
         note = datastore.get_note(
             name,
@@ -313,9 +301,15 @@ class FileContentRest(Resource):
         file = datastore.get_file(id)
         if file is None:
             return return_json(status_code=404, message="No file found")
-        return send_from_directory(
-            file.file_path,
-            Config.UPLOAD_FOLDER,
-            as_attachment=True,
-            download_name=file.filename,
-        )
+        basepath, file_path = file.file_path.replace("\\", "/").split("/", 1)
+        basepath = os.path.abspath(basepath)  # weird.
+        assert basepath == os.path.abspath(Config.UPLOAD_FOLDER)
+        try:
+            return send_from_directory(
+                directory=basepath,
+                path=file_path,
+                as_attachment=True,
+                download_name=file.filename,
+            )
+        except NotFound as e:
+            return return_json(status_code=500, message="File not exist at server!")

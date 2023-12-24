@@ -1,3 +1,4 @@
+import os
 from typing import Any, Optional
 from flask import (
     jsonify,
@@ -40,3 +41,8 @@ default_value_for_types = {
     tuple: (),
     set: set(),
 }
+
+
+def ensure_dir(path: str) -> str:
+    os.makedirs(path, exist_ok=True)
+    return path

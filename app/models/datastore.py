@@ -123,13 +123,14 @@ class NoteDatastore(Datastore):
             self.session.delete(note)
             self.session.commit()
 
-    def add_file(self, note: Note, filename: str, file_path: str, file_size: int) -> str:
+    def add_file(
+        self, note: Note, filename: str, file_path: str, file_size: int
+    ) -> None:
         file = File(
             filename=filename, file_path=file_path, note=note, file_size=file_size
         )
         self.session.add(file)
         self.session.commit()
-        return file_path
 
     def delete_file(self, file: File) -> None:
         self.session.delete(file)
@@ -137,6 +138,4 @@ class NoteDatastore(Datastore):
 
     def get_file(self, file_id) -> Optional[File]:
         file: Optional[File] = self.session.query(File).filter_by(id=file_id).first()
-        if file is None:
-            return None
         return file

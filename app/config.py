@@ -8,8 +8,9 @@ class Config:
 
     SQLALCHEMY_DATABASE_URI = "sqlite:///main.db"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    ERROR_404_HELP = False
 
-    FRONTEND_URL = "http://localhost:3000"
+    FRONTEND_URL = "http://localhost:5000"
 
     # upload stuff
     UPLOAD_FOLDER = "uploads"

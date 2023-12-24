@@ -7,4 +7,5 @@ venv
 *.log.1
 __pycache__
 app/templates
-instance/*
+/instance
+/uploads
