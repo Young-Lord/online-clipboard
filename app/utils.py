@@ -1,12 +1,10 @@
-from enum import auto
-import functools
 from typing import Any, Optional
-
 from flask import (
     jsonify,
     make_response,
     Response,
 )
+from app.config import Config
 
 
 def return_json(
@@ -18,14 +16,15 @@ def return_json(
     if http_status_code is None:
         http_status_code = status_code
     return make_response(
-        jsonify({"status": status_code, "message": message, "data": data}), http_status_code
+        jsonify({"status": status_code, "message": message, "data": data}),
+        http_status_code,
     )
 
 
 from flask_cors import cross_origin
 
 cors_decorator = cross_origin(
-    origins=["http://localhost:53000"],
+    origins=Config.CORS_ORIGINS,
     allow_headers=["Content-Type", "X-Clip-Password"],
     supports_credentials=True,
     automatic_options=True,

@@ -4,6 +4,14 @@
 
 Developed using Flask, Vue 3, Vuetify 3.
 
+## Run
+
+```bash
+# Debug
+flask run --debug
+# Production
+python wsgi.py
+
 ## Note
 
 ### Frontend

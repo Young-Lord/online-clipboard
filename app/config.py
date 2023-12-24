@@ -16,6 +16,7 @@ class Config:
     API_URL_SUFFIX = "/api"
     API_FULL_URL = FRONTEND_URL + API_URL_SUFFIX
     MAX_CONTENT_LENGTH = Metadata.max_file_size
+    CORS_ORIGINS = ["http://localhost:53000"]
 
 
 class DevConfig(Config):
