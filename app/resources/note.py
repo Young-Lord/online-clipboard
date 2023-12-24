@@ -1,9 +1,20 @@
 import datetime
+import os
+import time
 from flask_restx import Resource, marshal
 import functools
 from typing import Any, Final
-from flask import Blueprint, jsonify, render_template, abort, request, send_file
+from flask import (
+    Blueprint,
+    jsonify,
+    render_template,
+    abort,
+    request,
+    send_file,
+    send_from_directory,
+)
 from flask_restx import Resource, fields, marshal_with
+from app.config import Config
 from app.models.datastore import (
     Note,
     NoteDatastore,
@@ -15,6 +26,7 @@ from app.note_const import READONLY_PREFIX, Metadata, ALLOW_CHAR_IN_NAMES
 from app.utils import cors_decorator, return_json, default_value_for_types
 from app.models.base import db
 from app.resources.base import api_restx as api
+from werkzeug.utils import secure_filename
 
 datastore = NoteDatastore(db)
 
@@ -75,18 +87,41 @@ def timeout_note_decorator(f):
         note = datastore.get_note(
             name,
         )
+        now = datetime.datetime.utcnow()
+        is_note_timeout = False
         if note is not None:
-            if note.timeout_seconds > 0:  # TODO: verify timeout!
-                now = datetime.datetime.utcnow()
+            if note.timeout_seconds > 0:
                 delta = now - note.updated_at
                 if delta.total_seconds() > note.timeout_seconds:
-                    datastore.delete_note(
-                        name,
-                    )
+                    is_note_timeout = True
+            for file in note.files:
+                if Metadata.default_file_timeout > 0:
+                    delta = now - file.created_at
+                    if (
+                        is_note_timeout
+                        or delta.total_seconds() > Metadata.default_file_timeout
+                    ):
+                        datastore.delete_file(file)
+            if is_note_timeout:
+                datastore.delete_note(
+                    name,
+                )
         return f(*args, **kwargs)
 
     return decorated_function
 
+
+file_model = api.model(
+    "File",
+    {
+        "name": fields.String,
+        "id": fields.Integer,
+        "created_at": fields.DateTime,
+        "timeout_seconds": fields.Integer,
+        "url": fields.String,
+        "size": fields.Integer,
+    },
+)
 
 note_model = api.model(
     "Note",
@@ -97,6 +132,7 @@ note_model = api.model(
         "readonly_name": fields.String,
         "timeout_seconds": fields.Integer,
         "is_readonly": fields.Boolean(default=False),
+        "files": fields.List(fields.Nested(file_model)),
     },
 )
 
@@ -216,7 +252,21 @@ class FileRest(Resource):
         file = datastore.get_file(id)
         if file is None:
             return return_json(status_code=404, message="No file found")
-        return send_file(file)
+        data = (
+            {
+                "name": file.filename,
+                "id": file.id,
+                "created_at": file.created_at,
+                "timeout_seconds": Metadata.default_file_timeout,
+                "url": Config.API_URL_SUFFIX
+                + "/note/%s/file/%s/content" % (name, file.id),
+                "size": file.file_size,
+            },
+        )
+        return return_json(
+            marshal(data, file_model),
+            status_code=200,
+        )
 
     def post(self, name: str, id: int):
         note = datastore.get_note(
@@ -229,5 +279,43 @@ class FileRest(Resource):
             return return_json(status_code=400, message="No file provided")
         if file.filename is None:
             return return_json(status_code=400, message="Filename is empty")
-        datastore.add_file(note, file.filename)
+        filename = secure_filename("%s_%s_%s" % (time.time(), name, file.filename))
+        file_path = os.path.join(Config.UPLOAD_FOLDER, filename)
+        file.save(file_path)
+        file_size = os.path.getsize(file_path)
+        datastore.add_file(note, file.filename, file_path, file_size)
         return return_json(status_code=201)
+
+    def delete(self, name: str, id: int):
+        file = datastore.get_file(id)
+        if file is None:
+            return return_json(status_code=404, message="No file found")
+        datastore.delete_file(file)
+        return return_json(status_code=204)
+
+
+@api.route("/note/<string:name>/file/<int:id>/content")
+class FileContentRest(Resource):
+    decorators = [
+        password_protected_note,
+        verify_name_decorator,
+        verify_dict_decorator,
+        timeout_note_decorator,
+        cors_decorator,
+    ]
+
+    def get(self, name: str, id: int):
+        note = datastore.get_note(
+            name,
+        )
+        if note is None:
+            return return_json(status_code=404, message="No note found")
+        file = datastore.get_file(id)
+        if file is None:
+            return return_json(status_code=404, message="No file found")
+        return send_from_directory(
+            file.file_path,
+            Config.UPLOAD_FOLDER,
+            as_attachment=True,
+            download_name=file.filename,
+        )

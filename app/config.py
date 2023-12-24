@@ -1,19 +1,22 @@
 import os
 
-class Config:
-    ERROR_404_HELP = False
+from app.note_const import Metadata
 
+
+class Config:
     SECRET_KEY = os.getenv("APP_SECRET", "secret-key")
 
     SQLALCHEMY_DATABASE_URI = "sqlite:///main.db"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    DOC_USERNAME = "api"
-    DOC_PASSWORD = "password"
-
     FRONTEND_URL = "http://localhost:3000"
+
+    # upload stuff
     UPLOAD_FOLDER = "uploads"
-    MAX_CONTENT_LENGTH = 512 * 1024 * 1024  # 512 MiB
+    API_URL_SUFFIX = "/api"
+    API_FULL_URL = FRONTEND_URL + API_URL_SUFFIX
+    MAX_CONTENT_LENGTH = Metadata.max_file_size
+
 
 class DevConfig(Config):
     DEBUG = True

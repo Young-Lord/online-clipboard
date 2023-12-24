@@ -39,6 +39,7 @@ class File(db.Model, DatabaseColumnBase):
     file_path: Mapped[str] = mapped_column(String)
     note_id: Mapped[int] = mapped_column(Integer, ForeignKey("notes.id"))
     note: Mapped["Note"] = relationship("Note", back_populates="files")
+    file_size: Mapped[int] = mapped_column(Integer)
 
     def __repr__(self):
         return f"<File {self.filename}> in {self.note.name} ({self.note.id})>"
@@ -66,6 +67,7 @@ def verify_password_hash(password_hash: str, password: str, name: str = "") -> b
 
 def verify_timeout_seconds(timeout_seconds: int) -> bool:
     return 1 <= timeout_seconds <= Metadata.max_timeout
+
 
 class Datastore(ABC):
     def __init__(self, _db: SQLAlchemy):
@@ -121,9 +123,10 @@ class NoteDatastore(Datastore):
             self.session.delete(note)
             self.session.commit()
 
-    def add_file(self, note: Note, filename: str) -> str:
-        file_path = os.path.join(Config.UPLOAD_FOLDER, uuid.uuid4().hex)
-        file = File(filename=filename, file_path=file_path, note=note)
+    def add_file(self, note: Note, filename: str, file_path: str, file_size: int) -> str:
+        file = File(
+            filename=filename, file_path=file_path, note=note, file_size=file_size
+        )
         self.session.add(file)
         self.session.commit()
         return file_path
@@ -132,8 +135,8 @@ class NoteDatastore(Datastore):
         self.session.delete(file)
         self.session.commit()
 
-    def get_file(self, file_id) -> Optional[str]:
+    def get_file(self, file_id) -> Optional[File]:
         file: Optional[File] = self.session.query(File).filter_by(id=file_id).first()
         if file is None:
             return None
-        return file.file_path
+        return file
