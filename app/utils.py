@@ -1,6 +1,7 @@
 import os
 from typing import Any, Optional
 from flask import (
+    current_app,
     jsonify,
     make_response,
     Response,
@@ -25,7 +26,7 @@ def return_json(
 from flask_cors import cross_origin
 
 cors_decorator = cross_origin(
-    origins=Config.CORS_ORIGINS,
+    origins=current_app.config["CORS_ORIGINS"],
     allow_headers=["Content-Type", "X-Clip-Password"],
     supports_credentials=True,
     automatic_options=True,

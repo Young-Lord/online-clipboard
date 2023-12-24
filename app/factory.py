@@ -11,7 +11,9 @@ class Factory:
     flask: Flask
 
     def __init__(self, environment: str = "development"):
-        self._environment: str = os.environ.get("APP_ENVIRONMENT", environment)
+        self._environment: str = os.environ.get(
+            "APP_ENVIRONMENT", os.environ.get("FLASK_ENV", environment)
+        )
 
     @property
     def environment(self) -> str:

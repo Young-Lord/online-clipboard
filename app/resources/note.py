@@ -7,6 +7,7 @@ import functools
 from typing import Any, Final
 from flask import (
     Blueprint,
+    current_app,
     jsonify,
     render_template,
     abort,
@@ -123,7 +124,7 @@ file_model = api.model(
         "created_at": fields.DateTime,
         "timeout_seconds": fields.Integer(default=Metadata.default_file_timeout),
         "url": fields.String(
-            attribute=lambda file: Config.API_FULL_URL
+            attribute=lambda file: current_app.config["API_FULL_URL"]
             + "/note/%s/file/%s/content" % (file.note.name, file.id)
         ),
         "size": fields.Integer(attribute="file_size"),
@@ -150,7 +151,7 @@ def marshal_note(note: Note, status_code: int = 200):
 
 def mashal_readonly_note(note: Note, status_code: int = 200):
     ret = marshal(note, note_model)
-    allow_props = ["content", "readonly_name"]
+    allow_props = ["content", "readonly_name", "files"]
     assert isinstance(ret, dict)
     ret = {
         k: v if k in allow_props else default_value_for_types[type(v)]

@@ -10,7 +10,7 @@ Developed using Flask, Vue 3, Vuetify 3.
 # Debug
 flask run --debug
 # Production
-python wsgi.py
+FLASK_ENV=production python wsgi.py
 
 ## Note
 

@@ -15,9 +15,9 @@ def create_app(environment="development") -> Flask:
     f.set_api()
 
     app = f.flask
-
-    from .views import frontend
-    from .views import api
+    with app.app_context():
+        from .views import frontend
+        from .views import api
 
     app.register_blueprint(api, url_prefix="/api")
     app.register_blueprint(frontend, url_prefix="/")
