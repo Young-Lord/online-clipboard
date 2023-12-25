@@ -17,8 +17,7 @@ class Config:
     MAX_CONTENT_LENGTH = Metadata.max_file_size
 
     DEBUG = False
-    FRONTEND_URL = "http://192.168.1.8:5000"
-    FRONTEND_URL: str
+    FRONTEND_URL: str = "http://192.168.1.8:5000"
     API_FULL_URL: str
     BIND_HOST = "127.0.0.1"
     BIND_PORT = 5000

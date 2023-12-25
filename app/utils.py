@@ -6,7 +6,6 @@ from flask import (
     make_response,
     Response,
 )
-from app.config import Config
 
 
 def return_json(

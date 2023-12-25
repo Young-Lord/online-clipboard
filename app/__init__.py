@@ -22,6 +22,6 @@ def create_app(environment="development") -> Flask:
     app.register_blueprint(api, url_prefix="/api")
     app.register_blueprint(frontend, url_prefix="/")
 
-    app.wsgi_app = ProxyFix(app.wsgi_app)
+    app.wsgi_app = ProxyFix(app.wsgi_app)  # type: ignore
 
     return app
