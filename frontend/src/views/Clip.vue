@@ -94,6 +94,7 @@ import { axios } from "@/api";
 import { useAppStore } from "@/store/app";
 const appStore = useAppStore();
 import { getKeyByValue, replaceLastPartOfUrl, humanFileSize } from "@/utils";
+import { Buffer } from 'buffer';
 
 export default {
     data() {
@@ -401,7 +402,7 @@ export default {
         }, this.save_interval);
 
         axios.interceptors.request.use((config) => {
-            config.headers["X-Clip-Password"] = this.password;
+            config.headers["Authorization"] = `Bearer ${Buffer.from(this.password, 'utf8').toString('base64')}`;
             return config;
         });
     },

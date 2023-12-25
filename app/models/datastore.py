@@ -133,6 +133,11 @@ class NoteDatastore(Datastore):
         self.session.commit()
 
     def delete_file(self, file: File) -> None:
+        file_path = file.file_path
+        try:
+            os.remove(file_path)
+        except:
+            pass
         self.session.delete(file)
         self.session.commit()
 

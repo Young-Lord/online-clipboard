@@ -1,3 +1,5 @@
+import base64
+import binascii
 import datetime
 import os
 import time
@@ -68,7 +70,16 @@ def password_protected_note(f):
     def decorated_function(*args, **kwargs):
         if request.method.lower() == "options":
             return f(*args, **kwargs)
-        password = request.headers.get("X-Clip-Password", "")
+        password = (
+            request.headers.get("Authorization", "")
+            .removeprefix("Bearer")
+            .removeprefix(" ")
+        )
+        if password != "":
+            try:
+                password = base64.b64decode(password).decode("utf-8")
+            except (binascii.Error, UnicodeDecodeError):
+                return return_json(status_code=400, message="Invalid password provided")
         name = kwargs.get("name", "")
         note = datastore.get_note(
             name,
@@ -239,6 +250,8 @@ class NoteRest(BaseRest):
         )
         if note is None:
             return return_json(status_code=404, message="No note found")
+        for file in note.files:
+            datastore.delete_file(file)
         datastore.delete_note(name)
         return return_json(status_code=204, message="Note deleted")
 
@@ -282,11 +295,6 @@ class FileRest(BaseRest):
         file = datastore.get_file(id)
         if file is None:
             return return_json(status_code=404, message="No file found")
-        file_path = file.file_path
-        try:
-            os.remove(file_path)
-        except:
-            pass
         datastore.delete_file(file)
         return return_json(status_code=204)
 

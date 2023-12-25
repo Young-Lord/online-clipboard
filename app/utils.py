@@ -27,7 +27,7 @@ from flask_cors import cross_origin
 
 cors_decorator = cross_origin(
     origins=current_app.config["CORS_ORIGINS"],
-    allow_headers=["Content-Type", "X-Clip-Password"],
+    allow_headers=["Content-Type", "Authorization"],
     supports_credentials=True,
     automatic_options=True,
 )
