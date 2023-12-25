@@ -5,4 +5,4 @@ from flask_restx import Api
 
 api_bp = Blueprint("api", "api")
 api_restx = Api(api_bp)
-jwt = JWTManager()
+file_jwt = JWTManager()

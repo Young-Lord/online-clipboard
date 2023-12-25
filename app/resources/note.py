@@ -19,7 +19,7 @@ from app.models.datastore import (
     verify_name,
     verify_password_hash,
 )
-from .base import jwt, api_restx as api
+from .base import api_restx as api
 from app.note_const import READONLY_PREFIX, Metadata, ALLOW_CHAR_IN_NAMES
 from app.utils import cors_decorator, ensure_dir, return_json, default_value_for_types
 from app.models.base import db

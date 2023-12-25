@@ -1,12 +1,14 @@
 import datetime
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from app.note_const import Metadata
 
 
 class Config:
-    SECRET_KEY = os.getenv("APP_SECRET", "secret-key")
-    JWT_SECRET_KEY = SECRET_KEY
+    SECRET_KEY: bytes = b"secret-key"  # used as JWT_SECRET_KEY
 
     SQLALCHEMY_DATABASE_URI = "sqlite:///main.db"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -36,8 +38,12 @@ class DevConfig(Config):
 
 class ProdConfig(Config):
     BIND_HOST = "0.0.0.0"
+    SECRET_KEY = os.environ.get("APP_SECRET", "").encode("ascii")
+    assert (
+        SECRET_KEY
+    ), "APP_SECRET must be set.\nUse `python -c 'import secrets; print(secrets.token_urlsafe(128))'` to generate one."
 
 
-config = {"development": DevConfig, "production": ProdConfig}
+config: dict[str, type[Config]] = {"development": DevConfig, "production": ProdConfig}
 for v in config.values():
     v.API_FULL_URL = v.FRONTEND_URL + v.API_URL_SUFFIX

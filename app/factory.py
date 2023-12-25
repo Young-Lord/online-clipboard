@@ -59,6 +59,6 @@ class Factory:
         )
 
     def set_jwt(self):
-        from .resources.base import jwt
+        from .resources.base import file_jwt
 
-        jwt.init_app(self.flask)
+        file_jwt.init_app(self.flask)
