@@ -57,3 +57,8 @@ class Factory:
             title=Metadata.name,
             description=Metadata.description,
         )
+
+    def set_jwt(self):
+        from .resources.base import jwt
+
+        jwt.init_app(self.flask)

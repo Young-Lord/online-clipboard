@@ -3,21 +3,15 @@ import binascii
 import datetime
 import os
 import time
-from unittest.mock import Base
 from flask_restx import Resource, marshal
 import functools
-from typing import Any, Final
+from typing import Any
 from flask import (
-    Blueprint,
     current_app,
-    jsonify,
-    render_template,
-    abort,
     request,
-    send_file,
     send_from_directory,
 )
-from flask_restx import Resource, fields, marshal_with
+from flask_restx import Resource, fields
 from app.config import Config
 from app.models.datastore import (
     Note,
@@ -25,13 +19,13 @@ from app.models.datastore import (
     verify_name,
     verify_password_hash,
 )
-from .base import api_restx
+from .base import jwt, api_restx as api
 from app.note_const import READONLY_PREFIX, Metadata, ALLOW_CHAR_IN_NAMES
 from app.utils import cors_decorator, ensure_dir, return_json, default_value_for_types
 from app.models.base import db
-from app.resources.base import api_restx as api
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import NotFound
+from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
 
 datastore = NoteDatastore(db)
 
@@ -136,7 +130,8 @@ file_model = api.model(
         "timeout_seconds": fields.Integer(default=Metadata.default_file_timeout),
         "url": fields.String(
             attribute=lambda file: current_app.config["API_FULL_URL"]
-            + "/note/%s/file/%s/content" % (file.note.name, file.id)
+            + "/note/%s/file/%s/content?jwt=%s"
+            % (file.note.name, file.id, create_access_token(identity=file.note.name))
         ),
         "size": fields.Integer(attribute="file_size"),
     },
@@ -172,14 +167,17 @@ def mashal_readonly_note(note: Note, status_code: int = 200):
     return return_json(ret, status_code=status_code)
 
 
+base_decorators = [  # this is fking from bottom to top!
+    password_protected_note,
+    verify_name_decorator,
+    verify_dict_decorator,
+    timeout_note_decorator,
+    cors_decorator,
+]
+
+
 class BaseRest(Resource):
-    decorators = [  # this is fking from bottom to top!
-        password_protected_note,
-        verify_name_decorator,
-        verify_dict_decorator,
-        timeout_note_decorator,
-        cors_decorator,
-    ]
+    decorators = base_decorators
 
     def options(self):
         return return_json(status_code=200)
@@ -301,7 +299,14 @@ class FileRest(BaseRest):
 
 @api.route("/note/<string:name>/file/<int:id>/content")
 class FileContentRest(BaseRest):
+    decorators = [jwt_required(locations=["query_string"])] + [
+        i for i in base_decorators if i is not password_protected_note
+    ]
+
     def get(self, name: str, id: int):
+        current_user = get_jwt_identity()
+        if name != current_user:
+            return return_json(status_code=403, message="Permission denied")
         note = datastore.get_note(
             name,
         )
