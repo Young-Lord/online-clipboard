@@ -32,6 +32,7 @@ class BaseMetadata:
     max_timeout: int = 60 * 60 * 24 * 365 * 3  # 3 years
     default_timeout: int = 60 * 60 * 24 * 30  # 30 day
     default_file_timeout: int = 60 * 60 * 24 * 30  # 30 day
+    file_link_timeout: int = 60 * 60 * 1 # 1 hour
     allow_chars: str = ALLOW_CHAR_IN_NAMES
 
     def __repr__(self):
