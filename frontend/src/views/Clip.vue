@@ -5,7 +5,7 @@
                 <v-icon>mdi-home</v-icon>
             </v-btn>
             <!-- saved status in plaintext -->
-            <v-toolbar-title>{{ save_status }}</v-toolbar-title>
+            <v-toolbar-title>{{ save_status ? $t(`save_status.${save_status}`) : '' }}</v-toolbar-title>
             <v-spacer></v-spacer>
             <!--delete button-->
             <v-btn icon @click="deleteContent" v-if="!this.is_new && !this.is_readonly">
@@ -35,22 +35,25 @@
                     <v-col cols="12" md="8">
                         <!-- Larger Text Input Box -->
                         <v-textarea rows="15" variant="outlined" auto-grow v-model="local_content" @input="setEditingStatus"
+                            @keydown.ctrl.s.exact="pushContentIfChanged" @keydown.ctrl.s.exact.prevent
                             @focusout="pushContentIfChanged">
                         </v-textarea>
                     </v-col>
                     <v-col cols="12" md="4">
                         <v-card id="sidebar">
                             <!-- 下拉框，选择过期时间 -->
-                            <v-select v-bind:items="timeout_keys" label="Expiration" @update:model-value="setNoteTimeout"
-                                v-model="selected_timeout" prepend-inner-icon="mdi-clock" v-if="!this.is_readonly">
+                            <v-select
+                                v-bind:items="timeout_keys.map((key) => { return $t('clip.timeout_selections.' + key) })"
+                                :label="$t('clip.expiration')" @update:model-value="setNoteTimeout"
+                                v-model="selected_timeout" prepend-inner-icon="mdi-clock" v-if="!this.is_new && !this.is_readonly">
                             </v-select>
                             <!-- current url, click to copy-->
-                            <v-text-field label="Current URL (click to copy)" v-model="current_url" readonly
+                            <v-text-field :label="$t('clip.current_url_click_to_copy')" v-model="current_url" readonly
                                 prepend-inner-icon="mdi-link" @click="copyString(current_url)" class="cursor-pointer"
                                 v-if="!this.is_readonly">
                             </v-text-field>
                             <!-- readonly url, click to copy-->
-                            <v-text-field label="Viewonly URL (click to copy)" v-model="readonly_url" readonly
+                            <v-text-field :label="$t('clip.readonly_url_click_to_copy')" v-model="readonly_url" readonly
                                 prepend-inner-icon="mdi-link" v-if="this.readonly_url" @click="copyString(readonly_url)"
                                 class="cursor-pointer">
                             </v-text-field>
@@ -59,7 +62,7 @@
                     <v-col cols="12">
                         <v-card id="file-card">
                             <!-- Drag or click to upload file -->
-                            <v-file-input label="Drag or Click to upload file" prepend-icon="mdi-file-upload"
+                            <v-file-input :label="$t('clip.drag_or_click_to_upload_file')" prepend-icon="mdi-file-upload"
                                 @change="uploadFile" v-if="!this.is_readonly && !this.is_new" :disabled="this.uploading"
                                 v-model="file_to_upload">
                             </v-file-input>
@@ -68,7 +71,7 @@
                                 <v-list-item v-for="file in remote_files" :key="file.id">
                                     <v-list-item-title>{{ file.filename }}
                                     </v-list-item-title>
-                                    <v-list-item-subtitle>{{ humanFileSize(file.size) }}</v-list-item-subtitle>
+                                    <v-list-item-subtitle>{{ humanFileSize(file.size) }} {{ $t('clip.file.expiration_date_is') }}{{ $d(new Date(file.expire_at), 'long') }}</v-list-item-subtitle>
                                     <template v-slot:append>
                                         <v-list-item-action end>
                                             <v-btn icon variant="text" @click="downloadFile(file)">
@@ -117,15 +120,15 @@ export default {
             uploading: false,
             file_to_upload: null,
             remote_files: [],
-            humanFileSize: humanFileSize
         };
     },
     methods: {
+        humanFileSize: humanFileSize,
         async createIfNotExist() {
             if (!this.is_new) return;
             try {
                 let response = await axios.post(`/note/${this.name}`, {});
-                await this.fetchContent();
+                await this.fetchContent(true);
                 this.is_new = false;
             } catch (e) {
                 console.log(e);
@@ -145,17 +148,19 @@ export default {
                 this.fetchContent();
                 this.$swal
                     .fire({
-                        title: "Uploaded!",
-                        text: "Your file has been uploaded.",
+                        title: this.$t('clip.file.uploaded'),
+                        text: this.$t('clip.file.your_file_has_been_uploaded'),
                         icon: "success",
                         timer: 1200,
+                        confirmButtonText: this.$t('clip.ok'),
                     });
             } catch (e) {
                 console.log(e);
                 this.$swal.fire({
-                    title: "Error",
-                    text: "Failed to upload file.",
+                    title: this.$t('clip.Error'),
+                    text: this.$t('clip.file.failed_to_upload_file'),
                     icon: "error",
+                    confirmButtonText: this.$t('clip.ok'),
                 });
             } finally {
                 this.file_to_upload = null;
@@ -172,17 +177,19 @@ export default {
                 this.fetchContent();
                 this.$swal
                     .fire({
-                        title: "Deleted!",
-                        text: "Your file has been deleted.",
+                        title: this.$t('clip.file.deleted'),
+                        text: this.$t('clip.file.your_file_has_been_deleted'),
                         icon: "success",
                         timer: 1200,
+                        confirmButtonText: this.$t('clip.ok'),
                     });
             } catch (e) {
                 console.log(e);
                 this.$swal.fire({
-                    title: "Error",
-                    text: "Failed to delete file.",
+                    title: this.$t('clip.Error'),
+                    text: this.$t('clip.file.failed_to_delete_file'),
                     icon: "error",
+                    confirmButtonText: this.$t('clip.ok'),
                 });
             } finally {
                 this.uploading = false;
@@ -192,7 +199,7 @@ export default {
             if (this.is_readonly) return;
             this.save_status = "editing";
         },
-        async fetchContent() {
+        async fetchContent(metadata_only = false) {
             try {
                 let response;
                 try {
@@ -201,9 +208,10 @@ export default {
                     if (e.response?.status == 400) {
                         this.$swal
                             .fire({
-                                title: "Error",
-                                text: "Invalid note name.",
+                                title: this.$t('clip.Error'),
+                                text: this.$t('clip.invalid_note_name'),
                                 icon: "error",
+                                confirmButtonText: this.$t('clip.ok'),
                             })
                             .then(() => {
                                 this.$router.push({ name: "Home" });
@@ -211,9 +219,11 @@ export default {
                     } else if (e.response?.status == 401) {
                         this.$swal
                             .fire({
-                                title: "Password?",
+                                title: this.$t('clip.password_question'),
                                 input: "password",
                                 showCancelButton: true,
+                                cancelButtonText: this.$t('clip.cancel'),
+                                confirmButtonText: this.$t('clip.ok'),
                             })
                             .then((result) => {
                                 if (result.isConfirmed) {
@@ -234,11 +244,13 @@ export default {
                     this.clip_version = 1;
                     return;
                 } else {
-                    this.local_content = response.data.data.content;
+                    if (!metadata_only) {
+                        this.local_content = response.data.data.content;
+                        this.current_timeout = response.data.data.timeout_seconds;
+                        this.selected_timeout = this.getNoteTimeoutString();
+                    }
                     this.remote_content = response.data.data.content;
                     this.clip_version = (response.data.data.clip_version ?? 1);
-                    this.current_timeout = response.data.data.timeout_seconds;
-                    this.selected_timeout = this.getNoteTimeoutString();
                     this.readonly_url = replaceLastPartOfUrl(
                         window.location.href,
                         response.data.data.readonly_name
@@ -257,10 +269,12 @@ export default {
         },
         async pushContent() {
             if (this.is_readonly) return;
-            if (this.save_status == "saving...") return;
+            if (this.save_status == "saving") return;
             this.last_updated = Date.now();
-            this.save_status = "saving...";
+            this.save_status = "saving";
+            let current_content = this.local_content;
             await this.createIfNotExist();
+            this.local_content = current_content
             try {
                 let response = await axios.put(`/note/${this.name}`, {
                     content: this.local_content,
@@ -277,13 +291,14 @@ export default {
         async deleteContent() {
             this.$swal
                 .fire({
-                    title: "Are you sure?",
-                    text: "You won't be able to revert this!",
+                    title: this.$t('clip.delete.are_you_sure'),
+                    text: this.$t('clip.delete.you_wont_be_able_to_revert_this'),
                     icon: "warning",
                     showCancelButton: true,
-                    confirmButtonColor: "#3085d6",
-                    cancelButtonColor: "#d33",
-                    confirmButtonText: "Yes, delete it!",
+                    confirmButtonColor: "#d33",
+                    cancelButtonColor: "#3085d6",
+                    confirmButtonText: this.$t('clip.delete.yes_delete_it'),
+                    cancelButtonText: this.$t('clip.cancel'),
                 })
                 .then(async (result) => {
                     if (result.isConfirmed) {
@@ -291,9 +306,10 @@ export default {
                             let response = await axios.delete(`/note/${this.name}`);
                             this.$swal
                                 .fire({
-                                    title: "Deleted!",
-                                    text: "Your clip has been deleted.",
+                                    title: this.$t('clip.delete.deleted'),
+                                    text: this.$t('clip.delete.your_clip_has_been_deleted'),
                                     icon: "success",
+                                    confirmButtonText: this.$t('clip.ok'),
                                 })
                                 .then(() => {
                                     this.$router.push({ name: "Home" });
@@ -307,9 +323,10 @@ export default {
         async changePassword() {
             let password = (
                 await this.$swal({
-                    title: "Password?",
+                    title: this.$t('clip.password_question'),
                     input: "password",
                     showCancelButton: true,
+                    cancelButtonText: this.$t('clip.cancel'),
                 })
             ).value;
             if (password === undefined) return;
@@ -318,7 +335,7 @@ export default {
                     new_password: password,
                 });
                 this.$swal({
-                    title: "Password changed!",
+                    title: this.$t('clip.password_changed'),
                     icon: "success",
                     timer: 1200,
                 });
@@ -330,31 +347,35 @@ export default {
         async setNoteTimeout(selected_timeout) {
             await this.createIfNotExist();
             try {
-                let new_timeout = appStore.timeout_selections[selected_timeout];
-                if (new_timeout === undefined) {
+                let new_timeout_key = undefined;
+                this.timeout_keys.forEach((key) => {
+                    if (this.$t('clip.timeout_selections.' + key) === selected_timeout) {
+                        new_timeout_key = key;
+                    }
+                });
+
+                let new_timeout = appStore.timeout_selections[new_timeout_key];
+
+                let invalid_timeout_toast = () => {
                     this.$swal({
-                        title: "Invalid timeout!",
+                        title: this.$t('clip.invalid_timeout'),
                         icon: "error",
                     });
+                }
+
+                if (new_timeout_key === undefined || new_timeout === undefined) {
+                    invalid_timeout_toast()
                     return;
                 }
                 try {
                     let response = await axios.put(`/note/${this.name}`, {
                         timeout_seconds: new_timeout,
                     });
-                    // this.$swal({
-                    //     title: 'Timeout changed!',
-                    //     icon: 'success',
-                    //     showConfirmButton: false,
-                    // })
                     this.timeout_seconds = new_timeout;
                 } catch (e) {
                     console.log(e);
                     if (e.response?.status == 400) {
-                        this.$swal({
-                            title: "Invalid timeout!",
-                            icon: "error",
-                        });
+                        invalid_timeout_toast()
                         return;
                     }
                 }
@@ -367,8 +388,9 @@ export default {
                 appStore.timeout_selections,
                 this.current_timeout
             );
-            if (this.current_timeout == -1) return "Never";
-            if (matched_key !== undefined) return matched_key;
+
+            if (this.current_timeout == -1) return this.$t('clip.timeout_selections.never');
+            if (matched_key !== undefined) return this.$t('clip.timeout_selections.' + matched_key);
             if (this.current_timeout <= 3600)
                 return `${this.current_timeout / 60} minutes`;
             return `${this.current_timeout / 3600} hours`;

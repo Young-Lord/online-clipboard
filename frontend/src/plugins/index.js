@@ -10,12 +10,7 @@ import pinia from "../store";
 import router from "../router";
 import VueSweetalert2 from "vue-sweetalert2";
 import "sweetalert2/dist/sweetalert2.min.css";
-import { createI18n } from "vue-i18n";
-
-const i18n = createI18n({
-    fallbackLocale: "en",
-    legacy: false,
-});
+import i18n from "./i18n";
 
 const swal_options = {
     showClass: { popup: "animate__animated animate__fadeIn animate__faster" },

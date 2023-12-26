@@ -4,16 +4,16 @@
         <v-col cols="12" md="8">
             <v-card elevation="16" variant="tonal">
                 <v-card-title>
-                    <span class="headline">Welcome to Clip!</span>
+                    <span class="headline">{{ $t('home.welcome_to_clip') }}</span>
                 </v-card-title>
                 <v-card-subtitle><!--about button--><a @click="goToAboutPage"
-                        style="cursor: pointer">About</a></v-card-subtitle>
+                        style="cursor: pointer">{{ $t('home.about') }}</a></v-card-subtitle>
                 <v-card-text>
                     <v-form @submit.native.prevent>
                         <!--https://blog.csdn.net/Livenus_csdn/article/details/119573057-->
-                        <v-text-field v-model="name" label="Name" required @keydown.enter="goToClipPage"></v-text-field>
+                        <v-text-field v-model="name" :label="$t('home.name')" required @keydown.enter="goToClipPage"></v-text-field>
                         <v-btn color="primary" @click="goToClipPage" :disabled="!name" block>
-                            Go to Clip
+                            {{  $t('home.go_to_clip')  }}
                         </v-btn>
                     </v-form>
                 </v-card-text>
@@ -40,7 +40,6 @@ export default {
             });
         },
         goToAboutPage() {
-            console.log("goToAboutPage");
             this.$router.push({
                 name: "About",
             });

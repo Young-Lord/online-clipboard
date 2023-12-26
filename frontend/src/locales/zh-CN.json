@@ -1,0 +1,73 @@
+{
+    "page": {
+        "home": "主页"
+    },
+    "save_status": {
+        "new": "新剪贴板",
+        "success": "已保存",
+        "error": "出错！",
+        "editing": "正在编辑",
+        "saving": "正在保存",
+        "saved": "已保存"
+    },
+    "home": {
+        "title": "Clip",
+        "welcome_to_clip": "欢迎使用 Clip!",
+        "about": "查看介绍",
+        "go_to_clip": "启动！",
+        "name": "名字？"
+    },
+    "clip": {
+        "current_url_click_to_copy": "当前 URL (点击复制)",
+        "readonly_url_click_to_copy": "只读 URL (点击复制)",
+        "drag_or_click_to_upload_file": "拖拽或点击上传文件",
+        "expiration": "过期时间",
+        "timeout_selections": {
+            "1_minute": "1 分钟",
+            "10_minutes": "10 分钟",
+            "30_minutes": "30 分钟",
+            "1_hour": "1 小时",
+            "6_hours": "6 小时",
+            "12_hours": "12 小时",
+            "1_day": "1 天",
+            "7_days": "7 天",
+            "14_days": "14 天",
+            "30_days": "30 天",
+            "1_year": "1 年",
+            "3_years": "3 年",
+            "never": "永不过期"
+        },
+        "password_question": "新密码？",
+        "password_changed": "密码已更改！",
+        "ok": "确定",
+        "cancel": "取消",
+        "Error": "出现错误！",
+        "file": {
+            "deleted": "文件已删除！",
+            "your_file_has_been_deleted": "",
+            "failed_to_delete_file": "删除文件失败！",
+            "uploaded": "文件已上传！",
+            "your_file_has_been_uploaded": "",
+            "failed_to_upload_file": "上传文件失败！",
+            "expiration_date_is": "删除时间："
+        },
+        "delete": {
+            "are_you_sure": "真的吗？",
+            "you_wont_be_able_to_revert_this": "此操作不可逆！",
+            "yes_delete_it": "删！",
+            "your_clip_has_been_deleted": "剪贴板已删除。",
+            "deleted": "删除成功！"
+        },
+        "invalid_timeout": "过期时长不正确！",
+        "invalid_note_name": "剪贴板名字格式有误！"
+    },
+    "about": {
+        "author": "Author",
+        "test-about-by-author": "TEST about by {0} !!!",
+        "metadata-metadata": "Metadata = {0}",
+        "current-api-api_endpoint": "API 端点 = {0}",
+        "backend-version-backend_version": "后端版本 = {0}"
+    },
+    "loading...": "加载中…",
+    "failed.": "加载失败。"
+}
