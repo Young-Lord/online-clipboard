@@ -77,6 +77,9 @@
                                             <v-btn icon variant="text" @click="downloadFile(file)">
                                                 <v-icon>mdi-download</v-icon>
                                             </v-btn>
+                                                <v-btn icon variant="text" @click="previewFile(file)">
+                                                    <v-icon>mdi-eye</v-icon>
+                                                </v-btn>
                                             <v-btn icon variant="text" @click="deleteFile(file)">
                                                 <v-icon>mdi-delete</v-icon>
                                             </v-btn>
@@ -168,7 +171,10 @@ export default {
             }
         },
         async downloadFile(file) {
-            window.open(file.url, "_blank");
+            window.open(file.download_url, "_blank");
+        },
+        async previewFile(file) {
+            window.open(file.preview_url, "_blank");
         },
         async deleteFile(file) {
             this.uploading = true;
@@ -199,7 +205,7 @@ export default {
             if (this.is_readonly) return;
             this.save_status = "editing";
         },
-        async fetchContent(metadata_only = false) {
+        async fetchContent(no_update_content = false) {
             try {
                 let response;
                 try {
@@ -244,11 +250,11 @@ export default {
                     this.clip_version = 1;
                     return;
                 } else {
-                    if (!metadata_only) {
+                    if (!no_update_content) {
                         this.local_content = response.data.data.content;
-                        this.current_timeout = response.data.data.timeout_seconds;
-                        this.selected_timeout = this.getNoteTimeoutString();
                     }
+                    this.current_timeout = response.data.data.timeout_seconds;
+                    this.selected_timeout = this.getNoteTimeoutString();
                     this.remote_content = response.data.data.content;
                     this.clip_version = (response.data.data.clip_version ?? 1);
                     this.readonly_url = replaceLastPartOfUrl(
@@ -272,9 +278,7 @@ export default {
             if (this.save_status == "saving") return;
             this.last_updated = Date.now();
             this.save_status = "saving";
-            let current_content = this.local_content;
             await this.createIfNotExist();
-            this.local_content = current_content
             try {
                 let response = await axios.put(`/note/${this.name}`, {
                     content: this.local_content,

@@ -6,7 +6,7 @@ from pathlib import Path
 import time
 from flask_restx import Resource, marshal
 import functools
-from typing import Any
+from typing import Any, Literal, LiteralString
 from flask import (
     current_app,
     request,
@@ -15,6 +15,7 @@ from flask import (
 from flask_restx import Resource, fields
 from app.config import Config
 from app.models.datastore import (
+    File,
     Note,
     NoteDatastore,
     verify_name,
@@ -118,7 +119,20 @@ def timeout_note_decorator(f):
 
     return decorated_function
 
-
+def create_file_link(file: File, suffix: Literal["download", "preview"]) -> str:
+    return (
+        current_app.config["API_FULL_URL"]
+        + "/note/%s/file/%s/%s?jwt=%s"
+        % (
+            file.note.name,
+            file.id,
+            suffix,
+            create_access_token(
+                identity=file.note.name,
+                expires_delta=datetime.timedelta(seconds=file.timeout_seconds),
+            ),
+        )
+    )
 file_model = api.model(
     "File",
     {
@@ -130,17 +144,11 @@ file_model = api.model(
             attribute=lambda file: file.created_at
             + datetime.timedelta(seconds=file.timeout_seconds)
         ),
-        "url": fields.String(
-            attribute=lambda file: current_app.config["API_FULL_URL"]
-            + "/note/%s/file/%s/content?jwt=%s"
-            % (
-                file.note.name,
-                file.id,
-                create_access_token(
-                    identity=file.note.name,
-                    expires_delta=datetime.timedelta(seconds=file.timeout_seconds),
-                ),
-            )
+        "download_url": fields.String(
+            attribute=functools.partial(create_file_link, suffix="download")
+        ),
+        "preview_url": fields.String(
+            attribute=functools.partial(create_file_link, suffix="preview")
         ),
         "size": fields.Integer(attribute="file_size"),
     },
@@ -311,33 +319,43 @@ class FileRest(BaseRest):
         return return_json(status_code=204)
 
 
-@api.route("/note/<string:name>/file/<int:id>/content")
-class FileContentRest(BaseRest):
+def get_file(name: str, id: int, as_attachment: bool):
+    current_user = get_jwt_identity()
+    if name != current_user:
+        return return_json(status_code=403, message="Permission denied")
+    note = datastore.get_note(
+        name,
+    )
+    if note is None:
+        return return_json(status_code=404, message="No note found")
+    file = datastore.get_file(id)
+    if file is None:
+        return return_json(status_code=404, message="No file found")
+    file_path = Path(file.file_path).resolve()
+    basepath = Path(Config.UPLOAD_FOLDER).resolve()
+    relative_path = file_path.relative_to(basepath)
+    try:
+        return send_from_directory(
+            directory=basepath,
+            path=relative_path,
+            as_attachment=as_attachment,
+            download_name=file.filename,
+        )
+    except NotFound as e:
+        return return_json(status_code=500, message="File not exist at server!")
+
+
+@api.route("/note/<string:name>/file/<int:id>/download")
+class DownloadFileContentRest(BaseRest):
     decorators = [jwt_required(locations=["query_string"])] + [
         i for i in base_decorators if i is not password_protected_note
     ]
 
     def get(self, name: str, id: int):
-        current_user = get_jwt_identity()
-        if name != current_user:
-            return return_json(status_code=403, message="Permission denied")
-        note = datastore.get_note(
-            name,
-        )
-        if note is None:
-            return return_json(status_code=404, message="No note found")
-        file = datastore.get_file(id)
-        if file is None:
-            return return_json(status_code=404, message="No file found")
-        file_path = Path(file.file_path).resolve()
-        basepath = Path(Config.UPLOAD_FOLDER).resolve()
-        relative_path = file_path.relative_to(basepath)
-        try:
-            return send_from_directory(
-                directory=basepath,
-                path=relative_path,
-                as_attachment=True,
-                download_name=file.filename,
-            )
-        except NotFound as e:
-            return return_json(status_code=500, message="File not exist at server!")
+        return get_file(name, id, as_attachment=True)
+
+
+@api.route("/note/<string:name>/file/<int:id>/preview")
+class PreviewFileContentRest(DownloadFileContentRest):
+    def get(self, name: str, id: int):
+        return get_file(name, id, as_attachment=False)
