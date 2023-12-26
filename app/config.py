@@ -19,9 +19,6 @@ class Config:
     API_URL_SUFFIX = "/api"
     CORS_ORIGINS: list[str] = []
     MAX_CONTENT_LENGTH = Metadata.max_file_size
-    JWT_ACCESS_TOKEN_EXPIRES = datetime.timedelta(
-        seconds=Metadata.file_link_timeout
-    )  # Expire time -> 1 hour
 
     DEBUG = False
     FRONTEND_URL: str = "http://192.168.1.8:5000"

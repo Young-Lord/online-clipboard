@@ -2,6 +2,7 @@ import base64
 import binascii
 import datetime
 import os
+from pathlib import Path
 import time
 from flask_restx import Resource, marshal
 import functools
@@ -105,12 +106,9 @@ def timeout_note_decorator(f):
                 if delta.total_seconds() > note.timeout_seconds:
                     is_note_timeout = True
             for file in note.files:
-                if Metadata.default_file_timeout > 0:
+                if file.timeout_seconds > 0:
                     delta = now - file.created_at
-                    if (
-                        is_note_timeout
-                        or delta.total_seconds() > Metadata.default_file_timeout
-                    ):
+                    if is_note_timeout or delta.total_seconds() > file.timeout_seconds:
                         datastore.delete_file(file)
             if is_note_timeout:
                 datastore.delete_note(
@@ -127,11 +125,22 @@ file_model = api.model(
         "filename": fields.String(attribute="filename"),
         "id": fields.Integer,
         "created_at": fields.DateTime,
-        "timeout_seconds": fields.Integer(default=Metadata.default_file_timeout),
+        "timeout_seconds": fields.Integer,
+        "expire_at": fields.DateTime(
+            attribute=lambda file: file.created_at
+            + datetime.timedelta(seconds=file.timeout_seconds)
+        ),
         "url": fields.String(
             attribute=lambda file: current_app.config["API_FULL_URL"]
             + "/note/%s/file/%s/content?jwt=%s"
-            % (file.note.name, file.id, create_access_token(identity=file.note.name))
+            % (
+                file.note.name,
+                file.id,
+                create_access_token(
+                    identity=file.note.name,
+                    expires_delta=datetime.timedelta(seconds=file.timeout_seconds),
+                ),
+            )
         ),
         "size": fields.Integer(attribute="file_size"),
     },
@@ -198,6 +207,11 @@ class NoteRest(BaseRest):
         )
         if note is None:
             return return_json(status_code=204, message="No note found")
+        datastore.update_note(name)
+        note = datastore.get_note(
+            name,
+        )
+        assert note is not None
         return marshal_note(note)
 
     def post(self, name: str):
@@ -315,13 +329,13 @@ class FileContentRest(BaseRest):
         file = datastore.get_file(id)
         if file is None:
             return return_json(status_code=404, message="No file found")
-        basepath, file_path = file.file_path.replace("\\", "/").split("/", 1)
-        basepath = os.path.abspath(basepath)  # weird.
-        assert basepath == os.path.abspath(Config.UPLOAD_FOLDER)
+        file_path = Path(file.file_path).resolve()
+        basepath = Path(Config.UPLOAD_FOLDER).resolve()
+        relative_path = file_path.relative_to(basepath)
         try:
             return send_from_directory(
                 directory=basepath,
-                path=file_path,
+                path=relative_path,
                 as_attachment=True,
                 download_name=file.filename,
             )

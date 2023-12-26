@@ -121,7 +121,18 @@ export default {
         };
     },
     methods: {
+        async createIfNotExist() {
+            if (!this.is_new) return;
+            try {
+                let response = await axios.post(`/note/${this.name}`, {});
+                await this.fetchContent();
+                this.is_new = false;
+            } catch (e) {
+                console.log(e);
+            }
+        },
         async uploadFile() {
+            await this.createIfNotExist();
             this.uploading = true;
             var formData = new window.FormData();
             formData.append("file", this.file_to_upload[0]);
@@ -225,7 +236,7 @@ export default {
                 } else {
                     this.local_content = response.data.data.content;
                     this.remote_content = response.data.data.content;
-                    this.clip_version = (response.data.data.clip_version ?? 1) + 1;
+                    this.clip_version = (response.data.data.clip_version ?? 1);
                     this.current_timeout = response.data.data.timeout_seconds;
                     this.selected_timeout = this.getNoteTimeoutString();
                     this.readonly_url = replaceLastPartOfUrl(
@@ -249,14 +260,7 @@ export default {
             if (this.save_status == "saving...") return;
             this.last_updated = Date.now();
             this.save_status = "saving...";
-            if (this.is_new) {
-                try {
-                    let response = await axios.post(`/note/${this.name}`, {});
-                    this.is_new = false;
-                } catch (e) {
-                    console.log(e);
-                }
-            }
+            await this.createIfNotExist();
             try {
                 let response = await axios.put(`/note/${this.name}`, {
                     content: this.local_content,
@@ -324,9 +328,9 @@ export default {
             }
         },
         async setNoteTimeout(selected_timeout) {
+            await this.createIfNotExist();
             try {
                 let new_timeout = appStore.timeout_selections[selected_timeout];
-                console.log(new_timeout);
                 if (new_timeout === undefined) {
                     this.$swal({
                         title: "Invalid timeout!",

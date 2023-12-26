@@ -40,6 +40,9 @@ class File(db.Model, DatabaseColumnBase):
     note_id: Mapped[int] = mapped_column(Integer, ForeignKey("notes.id"))
     note: Mapped["Note"] = relationship("Note", back_populates="files")
     file_size: Mapped[int] = mapped_column(Integer)
+    timeout_seconds: Mapped[int] = mapped_column(
+        Integer, default=Metadata.default_file_timeout
+    )
 
     def __repr__(self):
         return f"<File {self.filename}> in {self.note.name} ({self.note.id})>"
@@ -89,20 +92,24 @@ class NoteDatastore(Datastore):
     def update_note(
         self,
         name: str,
-        clip_version: int = 1,
+        clip_version: Optional[int] = None,
         content: Optional[str] = None,
         password: Optional[str] = None,
         timeout_seconds: Optional[int] = None,
     ) -> None:
-        note: Optional[Note] = self.session.query(Note).filter_by(name=name).first()
+        note: Optional[Note] = self.get_note(name)
         if note is None:
             note = Note(
                 name=name,
             )
             note.content = ""
-            note.clip_version = clip_version
+            note.clip_version = 1
             note.readonly_name = READONLY_PREFIX + uuid.uuid4().hex
             note.timeout_seconds = Metadata.default_timeout
+        if clip_version is not None:
+            if clip_version < note.clip_version:
+                raise ValueError("clip_version too low")
+            note.clip_version = clip_version + 1
         if content is not None:
             note.content = content
         if password is not None:
