@@ -24,7 +24,7 @@
                 <v-icon>mdi-lock</v-icon>
             </v-btn>
             <!--save button-->
-            <v-btn icon @click="pushContent" v-if="!this.is_readonly">
+            <v-btn icon @click="pushContent()" v-if="!this.is_readonly">
                 <v-icon>mdi-content-save</v-icon>
             </v-btn>
             <!-- copy button-->
@@ -43,8 +43,8 @@
                     <v-col cols="12" md="8">
                         <!-- Larger Text Input Box -->
                         <v-textarea rows="15" variant="outlined" auto-grow v-model="local_content" @input="setEditingStatus"
-                            @keydown.ctrl.s.exact="pushContentIfChanged" @keydown.ctrl.s.exact.prevent
-                            @focusout="pushContentIfChanged">
+                            @keydown.ctrl.s.exact="pushContentIfChanged()" @keydown.ctrl.s.exact.prevent
+                            @focusout="pushContentIfChanged()">
                         </v-textarea>
                     </v-col>
                     <v-col cols="12" md="4">
