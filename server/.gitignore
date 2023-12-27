@@ -1,0 +1,8 @@
+/venv
+/*.log
+/*.log.1
+__pycache__
+/app/templates
+/instance
+/uploads
+/.env
