@@ -11,6 +11,7 @@ Developed using Flask, Vue 3, Vuetify 3.
 flask run --debug
 # Production
 FLASK_ENV=production python wsgi.py
+```
 
 ## Note
 
