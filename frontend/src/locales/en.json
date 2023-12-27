@@ -8,7 +8,9 @@
         "error": "Error!",
         "editing": "Editing",
         "saving": "Saving",
-        "saved": "Saved"
+        "saved": "Saved",
+        "local_outdated": "Edit conflict",
+        "conflict_resolved": "Pulled from remote"
     },
     "home": {
         "title": "Clip",
@@ -59,7 +61,9 @@
             "yes_delete_it": "Yes, delete it!",
             "deleted": "Deleted!",
             "your_clip_has_been_deleted": "Your clip has been deleted."
-        }
+        },
+        "outdated": "Remote clip is changed. Refresh to pull remote changes.",
+        "auto_fetch_remote_content": "Automatically fetch updates from remote clip"
     },
     "about": {
         "author": "Author",
@@ -71,16 +75,16 @@
     "loading...": "loading...",
     "failed.": "failed",
     "short": {
-      "year": "numeric",
-      "month": "short",
-      "day": "numeric"
+        "year": "numeric",
+        "month": "short",
+        "day": "numeric"
     },
     "long": {
-      "year": "numeric",
-      "month": "long",
-      "day": "numeric",
-      "weekday": "long",
-      "hour": "numeric",
-      "minute": "numeric"
+        "year": "numeric",
+        "month": "long",
+        "day": "numeric",
+        "weekday": "long",
+        "hour": "numeric",
+        "minute": "numeric"
     }
 }

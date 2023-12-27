@@ -1,5 +1,5 @@
 // Utilities
-import { defineStore } from "pinia";
+import { defineStore } from "pinia"
 
 export const useAppStore = defineStore("app", {
     state: () => ({
@@ -23,13 +23,13 @@ export const useAppStore = defineStore("app", {
     getters: {
         api_endpoint: (state) => {
             if (process.env.NODE_ENV === "development") {
-                return "http://127.0.0.1:5000" + state.api_path;
+                return "http://127.0.0.1:5000" + state.api_path
             }
             return (
                 (state.api_http_prefix ||
                     `${window.location.protocol}//${window.location.host}`) +
                 state.api_path
-            );
-        }
+            )
+        },
     },
-});
+})

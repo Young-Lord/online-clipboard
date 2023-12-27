@@ -1,15 +1,15 @@
 export function getKeyByValue(object, value) {
-    return Object.keys(object).find((key) => object[key] === value);
+    return Object.keys(object).find((key) => object[key] === value)
 }
 
 export function replaceLastPartOfUrl(href, new_part) {
     // replaceLastPartOfUrl("https://a.com/a/old?aa=1&dd=3#hash", "new") -> "https://a.com/a/new?aa=1&dd=3#hash"
-    let url = new URL(href);
-    const segments = url.pathname.split("/");
-    segments.pop();
-    segments.push(new_part);
-    url.pathname = segments.join("/");
-    return url.href;
+    let url = new URL(href)
+    const segments = url.pathname.split("/")
+    segments.pop()
+    segments.push(new_part)
+    url.pathname = segments.join("/")
+    return url.href
 }
 
 /**
@@ -24,25 +24,25 @@ export function replaceLastPartOfUrl(href, new_part) {
  */
 export function humanFileSize(bytes, si = false, dp = 1) {
     // https://stackoverflow.com/a/14919494
-    const thresh = si ? 1000 : 1024;
+    const thresh = si ? 1000 : 1024
 
     if (Math.abs(bytes) < thresh) {
-        return bytes + " B";
+        return bytes + " B"
     }
 
     const units = si
         ? ["kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"]
-        : ["KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"];
-    let u = -1;
-    const r = 10 ** dp;
+        : ["KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"]
+    let u = -1
+    const r = 10 ** dp
 
     do {
-        bytes /= thresh;
-        ++u;
+        bytes /= thresh
+        ++u
     } while (
         Math.round(Math.abs(bytes) * r) / r >= thresh &&
         u < units.length - 1
-    );
+    )
 
-    return bytes.toFixed(dp) + " " + units[u];
+    return bytes.toFixed(dp) + " " + units[u]
 }

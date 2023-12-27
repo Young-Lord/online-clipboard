@@ -6,7 +6,7 @@ from pathlib import Path
 import time
 from flask_restx import Resource, marshal
 import functools
-from typing import Any, Literal, LiteralString
+from typing import Any, Literal, Optional
 from flask import (
     current_app,
     request,
@@ -119,20 +119,19 @@ def timeout_note_decorator(f):
 
     return decorated_function
 
+
 def create_file_link(file: File, suffix: Literal["download", "preview"]) -> str:
-    return (
-        current_app.config["API_FULL_URL"]
-        + "/note/%s/file/%s/%s?jwt=%s"
-        % (
-            file.note.name,
-            file.id,
-            suffix,
-            create_access_token(
-                identity=file.note.name,
-                expires_delta=datetime.timedelta(seconds=file.timeout_seconds),
-            ),
-        )
+    return current_app.config["API_FULL_URL"] + "/note/%s/file/%s/%s?jwt=%s" % (
+        file.note.name,
+        file.id,
+        suffix,
+        create_access_token(
+            identity=file.note.name,
+            expires_delta=datetime.timedelta(seconds=file.timeout_seconds),
+        ),
     )
+
+
 file_model = api.model(
     "File",
     {
@@ -168,8 +167,8 @@ note_model = api.model(
 )
 
 
-def marshal_note(note: Note, status_code: int = 200):
-    return return_json(marshal(note, note_model), status_code=status_code)
+def marshal_note(note: Note, status_code: int = 200, message: Optional[str] = None):
+    return return_json(marshal(note, note_model), status_code=status_code, message=message)
 
 
 def mashal_readonly_note(note: Note, status_code: int = 200):
@@ -250,18 +249,26 @@ class NoteRest(BaseRest):
         password = params.get("password", "")
         if len(password) > Metadata.max_password_length:
             return return_json(status_code=400, message="Password too long")
-        try:
-            datastore.update_note(name=name, **params)
-        except ValueError as e:
-            return return_json(status_code=400, message=str(e))
-        note = datastore.get_note(
-            name,
-        )
         note = datastore.get_note(
             name,
         )
         if note is None:
             return return_json(status_code=404, message="No note found")
+        try:
+            datastore.update_note(name=name, **params)
+        except ValueError as e:
+            note = datastore.get_note(
+                name,
+            )
+            assert note is not None
+            status_code = 400
+            if str(e) == "clip_version too low":
+                status_code = 409  # Conflict
+            return marshal_note(note, status_code=status_code, message=str(e))
+        note = datastore.get_note(
+            name,
+        )
+        assert note is not None
         return marshal_note(note)
 
     def delete(self, name: str):

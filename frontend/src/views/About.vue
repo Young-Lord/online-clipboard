@@ -8,7 +8,7 @@
 </template>
 
 <script>
-import { axios, api_endpoint } from "@/api";
+import { axios, api_endpoint } from "@/api"
 
 export default {
     components: {},
@@ -18,25 +18,25 @@ export default {
             api_endpoint: api_endpoint,
             backend_version: this.$t('loading...'),
             metadata: {},
-        };
+        }
     },
     methods: {
         async getMetadata() {
             try {
-                let response = await axios.get("/metadata");
-                this.metadata = response.data.data;
-                this.backend_version = this.metadata.version;
-                this.author = this.metadata.owner;
+                let response = await axios.get("/metadata")
+                this.metadata = response.data.data
+                this.backend_version = this.metadata.version
+                this.author = this.metadata.owner
             } catch (e) {
-                this.backend_version = this.$t("failed.");
-                console.log(e);
+                this.backend_version = this.$t("failed.")
+                console.log(e)
             }
         },
     },
     beforeMount() {
-        this.getMetadata();
+        this.getMetadata()
     },
-};
+}
 </script>
 
 <style></style>

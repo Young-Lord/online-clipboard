@@ -1,13 +1,13 @@
 // Plugins
-import vue from "@vitejs/plugin-vue";
-import vuetify, { transformAssetUrls } from "vite-plugin-vuetify";
-import ViteFonts from "unplugin-fonts/vite";
-import path from "path";
-import VueI18nPlugin from "@intlify/unplugin-vue-i18n/vite";
+import vue from "@vitejs/plugin-vue"
+import vuetify, { transformAssetUrls } from "vite-plugin-vuetify"
+import ViteFonts from "unplugin-fonts/vite"
+import path from "path"
+import VueI18nPlugin from "@intlify/unplugin-vue-i18n/vite"
 
 // Utilities
-import { defineConfig } from "vite";
-import { fileURLToPath, URL } from "node:url";
+import { defineConfig } from "vite"
+import { fileURLToPath, URL } from "node:url"
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -37,7 +37,7 @@ export default defineConfig({
             },
         }),
         VueI18nPlugin({
-            include: ["src/locales/*.json"]
+            include: ["src/locales/*.json"],
         }),
     ],
     define: { "process.env": {} },
@@ -50,4 +50,4 @@ export default defineConfig({
     server: {
         port: 53000,
     },
-});
+})

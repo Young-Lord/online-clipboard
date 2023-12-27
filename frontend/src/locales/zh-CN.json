@@ -8,7 +8,9 @@
         "error": "出错！",
         "editing": "正在编辑",
         "saving": "正在保存",
-        "saved": "已保存"
+        "saved": "已保存",
+        "local_outdated": "编辑冲突",
+        "conflict_resolved": "已覆盖"
     },
     "home": {
         "title": "Clip",
@@ -59,7 +61,9 @@
             "deleted": "删除成功！"
         },
         "invalid_timeout": "过期时长不正确！",
-        "invalid_note_name": "剪贴板名字格式有误！"
+        "invalid_note_name": "剪贴板名字格式有误！",
+        "outdated": "剪贴板已在其他客户端更新，刷新网页以更新。",
+        "auto_fetch_remote_content": "自动从云端向本地同步更改"
     },
     "about": {
         "author": "Author",
