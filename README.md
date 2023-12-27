@@ -6,7 +6,7 @@ Developed using Flask, Vue 3, Vuetify 3.
 
 ## Run
 
-```bash
+```shell
 # Debug
 flask run --debug
 # Production
@@ -15,20 +15,20 @@ FLASK_ENV=production python wsgi.py
 
 ## Note
 
-### Frontend
+### Frontend initailization
 
-```bash
+```shell
 yarn install
 yarn dev
 yarn build
 ```
 
-### Backend
+### Backend initailization
 
-```bash
+```shell
+poetry shell
 poetry install
-poetry run flask db init
-poetry run flask db migrate
-poetry run flask db upgrade
-poetry run flask run
+flask db init
+flask db migrate
+flask db upgrade
 ```
