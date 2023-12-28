@@ -361,7 +361,7 @@ export default {
         async changePassword() {
             let password = (
                 await this.$swal({
-                    title: this.$t('clip.password_question'),
+                    title: this.$t('clip.new_password_question'),
                     input: "password",
                     showCancelButton: true,
                     cancelButtonText: this.$t('clip.cancel'),

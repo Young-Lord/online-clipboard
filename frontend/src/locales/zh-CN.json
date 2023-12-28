@@ -39,7 +39,8 @@
             "3_years": "3 年",
             "never": "永不过期"
         },
-        "password_question": "新密码？",
+        "password_question": "密码？",
+        "new_password_question": "新密码？",
         "password_changed": "密码已更改！",
         "ok": "确定",
         "cancel": "取消",

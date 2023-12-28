@@ -42,6 +42,7 @@
             "never": "Never"
         },
         "password_question": "Password?",
+        "new_password_question": "New password?",
         "password_changed": "Password changed!",
         "ok": "OK",
         "cancel": "Cancel",
