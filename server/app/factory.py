@@ -39,6 +39,8 @@ class Factory:
 
         db.init_app(self.flask)
         with self.flask.app_context():
+            # from app.models.datastore import Datastore
+            # Datastore(db).drop_it(yes_do_as_i_say=True)
             db.create_all()
 
     def set_migration(self):

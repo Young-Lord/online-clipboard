@@ -76,6 +76,12 @@ class Datastore(ABC):
     def __init__(self, _db: SQLAlchemy):
         self.session = _db.session
 
+    def drop_it(self, *, yes_do_as_i_say: bool = False) -> None:
+        assert yes_do_as_i_say
+        self.session.query(Note).delete()
+        self.session.query(File).delete()
+        self.session.commit()
+
 
 class NoteDatastore(Datastore):
     def __init__(self, _db):

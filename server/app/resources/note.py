@@ -215,10 +215,6 @@ class NoteRest(BaseRest):
         if note is None:
             return return_json(status_code=204, message="No note found")
         datastore.update_note(name)
-        note = datastore.get_note(
-            name,
-        )
-        assert note is not None
         return marshal_note(note)
 
     def post(self, name: str):
@@ -257,18 +253,10 @@ class NoteRest(BaseRest):
         try:
             datastore.update_note(name=name, **params)
         except ValueError as e:
-            note = datastore.get_note(
-                name,
-            )
-            assert note is not None
             status_code = 400
             if str(e) == "clip_version too low":
                 status_code = 409  # Conflict
             return marshal_note(note, status_code=status_code, message=str(e))
-        note = datastore.get_note(
-            name,
-        )
-        assert note is not None
         return marshal_note(note)
 
     def delete(self, name: str):
