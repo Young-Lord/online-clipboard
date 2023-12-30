@@ -4,26 +4,22 @@ import sys
 from logging.handlers import RotatingFileHandler
 from flask import Flask
 from .note_const import Metadata
-from .config import config
+from .config import config, FLASK_ENV
 
 
 class Factory:
     flask: Flask
 
-    def __init__(self, environment: str = "development"):
-        self._environment: str = os.environ.get("FLASK_ENV", environment)
+    def __init__(self):
+        self._environment: str = FLASK_ENV
 
     @property
     def environment(self) -> str:
         return self._environment
 
-    @environment.setter
-    def environment(self, env: str):
-        self._environment = env
-
     def set_flask(self, **kwargs):
         self.flask = Flask(__name__, **kwargs, static_folder=None, template_folder=None)
-        self.flask.config.from_object(config[self._environment])
+        self.flask.config.from_object(config)
         # setup logging
         file_handler = RotatingFileHandler("api.log", maxBytes=10000, backupCount=1)
         file_handler.setLevel(logging.INFO)

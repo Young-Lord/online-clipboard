@@ -5,10 +5,8 @@ from .factory import Factory
 from app import models  # this must be imported to make migration work
 
 
-def create_app(environment="development") -> Flask:
-    f = Factory(
-        environment,
-    )
+def create_app() -> Flask:
+    f = Factory()
     f.set_flask()
     app = f.flask
     f.set_db()
@@ -21,7 +19,7 @@ def create_app(environment="development") -> Flask:
         from .views import frontend
         from .views import api
 
-    app.register_blueprint(api, url_prefix="/api")
+    app.register_blueprint(api, url_prefix=app.config["API_SUFFIX"])
     app.register_blueprint(frontend, url_prefix="/")
 
     app.wsgi_app = ProxyFix(app.wsgi_app)  # type: ignore

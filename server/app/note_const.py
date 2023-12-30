@@ -17,7 +17,7 @@ READONLY_PREFIX: Final[str] = "ro*"
 
 @dataclass
 class BaseMetadata:
-    name: str = "Clipboard"
+    name: str = "Clipd"
     description: str = "A simple clipboard app"
     owner: str = "Niko"
     version: str = "0.0.3"

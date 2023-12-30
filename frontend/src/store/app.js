@@ -1,10 +1,9 @@
 // Utilities
+import { API_BASE_PATH } from "@/config"
 import { defineStore } from "pinia"
 
 export const useAppStore = defineStore("app", {
     state: () => ({
-        api_http_prefix: "",
-        api_path: "/api",
         timeout_selections: {
             "1_minute": 60,
             "10_minutes": 600,
@@ -20,16 +19,5 @@ export const useAppStore = defineStore("app", {
             "3_years": 94608000,
         },
     }),
-    getters: {
-        api_endpoint: (state) => {
-            if (process.env.NODE_ENV === "development") {
-                return "http://127.0.0.1:5000" + state.api_path
-            }
-            return (
-                (state.api_http_prefix ||
-                    `${window.location.protocol}//${window.location.host}`) +
-                state.api_path
-            )
-        },
-    },
+    getters: {},
 })

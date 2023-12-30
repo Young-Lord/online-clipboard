@@ -8,14 +8,15 @@
 </template>
 
 <script>
-import { axios, api_endpoint } from "@/api"
+import { axios } from "@/api"
+import { API_ENDPOINT } from "@/config"
 
 export default {
     components: {},
     data() {
         return {
             author: this.$t('about.author'),
-            api_endpoint: api_endpoint,
+            api_endpoint: API_ENDPOINT,
             backend_version: this.$t('loading...'),
             metadata: {},
         }

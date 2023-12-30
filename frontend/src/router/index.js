@@ -1,4 +1,5 @@
 // Composables
+import { BASE_PATH } from "@/config"
 import { createRouter, createWebHistory } from "vue-router"
 
 const routes = [
@@ -20,7 +21,7 @@ const routes = [
 ]
 
 const router = createRouter({
-    history: createWebHistory(process.env.BASE_URL),
+    history: createWebHistory(BASE_PATH),
     routes,
 })
 

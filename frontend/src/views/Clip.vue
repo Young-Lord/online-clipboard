@@ -303,7 +303,7 @@ export default {
             if (this.is_readonly) return
             if (this.save_status == "saving") return
             if (!force && this.is_local_outdated) return
-            if(force) this.clip_version = this.remote_version
+            if (force) this.clip_version = this.remote_version
             this.last_updated = Date.now()
             this.save_status = "saving"
             await this.createIfNotExist()
@@ -434,6 +434,20 @@ export default {
             return `${this.current_timeout / 3600} hours`
         },
         async copyString(content) {
+            if (!content) return
+            if (navigator?.clipboard?.writeText === undefined) {
+                // http fallback
+                // https://blog.csdn.net/qq_58340302/article/details/124480086
+                let textArea = document.createElement('textarea')
+                textArea.value = content
+                document.body.appendChild(textArea)
+                textArea.focus()
+                textArea.select()
+                return new Promise((res, rej) => {
+                    document.execCommand('copy') ? res() : rej()
+                    textArea.remove()
+                })
+            }
             try {
                 await navigator.clipboard.writeText(content)
             } catch (e) {

@@ -46,3 +46,12 @@ export function humanFileSize(bytes, si = false, dp = 1) {
 
     return bytes.toFixed(dp) + " " + units[u]
 }
+
+export function isNodejs() {
+    return (
+        typeof "process" !== "undefined" &&
+        process &&
+        process.versions &&
+        process.versions.node
+    )
+}
