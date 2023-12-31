@@ -4,6 +4,8 @@
 
 Developed using Flask, Vue 3, Vuetify 3.
 
+Runs on Node.js v18.16.0, Python 3.11.3.
+
 ## Run
 
 ```shell
