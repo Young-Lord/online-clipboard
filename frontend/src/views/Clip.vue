@@ -313,7 +313,7 @@ export default {
                     clip_version: this.clip_version,
                 })
                 this.clip_version = response.data.data.clip_version
-                this.fetchContent()
+                this.fetchContent(true)
                 this.save_status = "saved"
             } catch (e) {
                 if (e.response?.status == 409) {
