@@ -111,7 +111,7 @@ class NoteDatastore(Datastore):
             note.content = ""
             note.clip_version = 1
             note.readonly_name = READONLY_PREFIX + uuid.uuid4().hex
-            note.timeout_seconds = Metadata.default_timeout
+            note.timeout_seconds = Metadata.default_note_timeout
         if clip_version is not None:
             if clip_version < note.clip_version:
                 raise ValueError("clip_version too low")
