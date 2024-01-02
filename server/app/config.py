@@ -39,7 +39,7 @@ class ProdConfig(Config):
     SECRET_KEY = os.environ.get("APP_SECRET", "").encode("ascii")
     assert (
         FLASK_ENV != "production" or SECRET_KEY
-    ), "APP_SECRET must be set.\nUse `python -c 'import secrets; print(secrets.token_urlsafe(128))'` to generate one."
+    ), 'APP_SECRET must be set.\nUse `python -c "import secrets; print(secrets.token_urlsafe(128))"` to generate one.'
 
 
 configs: dict[str, type[Config]] = {"development": DevConfig, "production": ProdConfig}
