@@ -2,7 +2,7 @@
 
 [netcut.cn](https://netcut.cn) style, minimal editable online clipboard.
 
-Developed using Flask, Vue 3, Vuetify 3.
+Developed using Flask, Vue 3, Vuetify 3. Full i18n support.
 
 Runs on Node.js v18.16.0, Python 3.11.3.
 
