@@ -38,7 +38,7 @@ class ProdConfig(Config):
     BIND_HOST = "0.0.0.0"
     SECRET_KEY = os.environ.get("APP_SECRET", "").encode("ascii")
     assert (
-        SECRET_KEY
+        FLASK_ENV != "production" or SECRET_KEY
     ), "APP_SECRET must be set.\nUse `python -c 'import secrets; print(secrets.token_urlsafe(128))'` to generate one."
 
 
