@@ -6,30 +6,62 @@ Developed using Flask, Vue 3, Vuetify 3.
 
 Runs on Node.js v18.16.0, Python 3.11.3.
 
-## Run
+## Install
+
+1. Install `poetry` and `yarn`.
+2. Install Python and Node.js dependencies.
 
 ```shell
-# Debug
-flask run --debug
-# Production
-FLASK_ENV=production python wsgi.py
+# Install python dependencies
+pushd server
+poetry install
+popd
+# Install nodejs dependencies
+pushd frontend
+yarn install
+popd
+```
+
+## Config
+
+1. Edit `server/app/note_const.py`, `server/app/config.py`.
+2. Copy `.env.development` to `.env.production` and edit it.
+3. Generate `APP_SECRET` as described in `server/app/config.py` and save it to `.env.production`.
+4. Init database using `flask db upgrade` in `server` directory.
+
+## Run
+
+First, you need to build frontend files.
+
+```shell
+cd frontend
+yarn build
+```
+
+Then, you can run the server.
+
+```shell
+cd server
+FLASK_ENV=production poetry run  python wsgi.py
 ```
 
 ## Note
 
-### Frontend initailization
+### Debug
 
 ```shell
-yarn install
+# frontend
+cd frontend
 yarn dev
-yarn build
+# backend
+cd server
+poetry run flask run --debug
 ```
 
-### Backend initailization
+### Backend database initailization
 
 ```shell
 poetry shell
-poetry install
 flask db init
 flask db migrate
 flask db upgrade
