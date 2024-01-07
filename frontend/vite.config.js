@@ -14,10 +14,10 @@ export default defineConfig(({ command, mode }) => {
     const env = loadEnv(mode, path.resolve(__dirname, ".."))
     return {
         envDir: "..",
-        base: env.VITE_HOMEPAGE_BASEPATH,
+        base: env.VITE_BASE_PATH,
         build: {
             outDir: path.resolve(__dirname, "../server/app/templates"),
-            assetsDir: "static"
+            assetsDir: "static",
         },
         plugins: [
             vue({
@@ -53,6 +53,6 @@ export default defineConfig(({ command, mode }) => {
         },
         server: {
             port: 53000,
-        }
+        },
     }
 })
