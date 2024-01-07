@@ -411,11 +411,11 @@ export default {
                     })
                     this.timeout_seconds = new_timeout
                 } catch (e) {
-                    console.log(e)
                     if (e.response?.status == 400) {
                         invalid_timeout_toast()
                         return
                     }
+                    console.log(e)
                 }
             } catch (e) {
                 console.log(e)

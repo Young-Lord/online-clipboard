@@ -6,4 +6,3 @@ export const axios = original_axios.create({
     baseURL: API_ENDPOINT,
 })
 axios.defaults.headers.common["Content-Type"] = "application/json"
-console.log(API_ENDPOINT)
