@@ -16,7 +16,9 @@ class Config:
 
     # upload stuff
     UPLOAD_FOLDER = "uploads"
-    CORS_ORIGINS: list[str] = []
+    CORS_ORIGINS: list[str] = os.environ.get(
+        "CORS_ORIGINS", ""
+    ).split()  # separate consecutive whitespace, https://stackoverflow.com/a/46882411
     MAX_CONTENT_LENGTH = Metadata.max_file_size
 
     DEBUG = False
@@ -30,7 +32,6 @@ class Config:
 
 
 class DevConfig(Config):
-    CORS_ORIGINS = ["http://localhost:53000"]
     DEBUG = True
 
 
