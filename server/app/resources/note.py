@@ -176,7 +176,7 @@ def mashal_readonly_note(note: Note, status_code: int = 200):
     allow_props = ["content", "readonly_name", "files"]
     assert isinstance(ret, dict)
     ret = {
-        k: v if k in allow_props else default_value_for_types[type(v)]
+        k: v if k in allow_props else type(v)()  # create object with default value (0 or empty)
         for k, v in ret.items()
     }
     ret["is_readonly"] = True

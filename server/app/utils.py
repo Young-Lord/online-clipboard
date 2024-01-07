@@ -31,16 +31,6 @@ cors_decorator = cross_origin(
     automatic_options=True,
 )
 
-default_value_for_types = {
-    bool: False,
-    int: 0,
-    float: 0.0,
-    str: "",
-    list: [],
-    dict: {},
-    tuple: (),
-    set: set(),
-}
 
 
 def ensure_dir(path: str) -> str:
