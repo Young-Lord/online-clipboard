@@ -44,7 +44,7 @@ Then, you can run the server.
 
 ```shell
 cd server
-FLASK_ENV=production poetry run  python wsgi.py
+FLASK_ENV=production poetry run python wsgi.py
 ```
 
 ## Note
