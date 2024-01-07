@@ -23,7 +23,7 @@ from app.models.datastore import (
 )
 from .base import api_restx as api
 from app.note_const import READONLY_PREFIX, Metadata, ALLOW_CHAR_IN_NAMES
-from app.utils import cors_decorator, ensure_dir, return_json, default_value_for_types
+from app.utils import cors_decorator, ensure_dir, return_json
 from app.models.base import db
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import NotFound
@@ -176,7 +176,7 @@ def mashal_readonly_note(note: Note, status_code: int = 200):
     allow_props = ["content", "readonly_name", "files"]
     assert isinstance(ret, dict)
     ret = {
-        k: v if k in allow_props else default_value_for_types[type(v)]
+        k: v if k in allow_props else type(v)()  # create object with default value (0 or empty)
         for k, v in ret.items()
     }
     ret["is_readonly"] = True
