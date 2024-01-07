@@ -194,7 +194,7 @@ base_decorators = [  # this is fking from bottom to top!
 class BaseRest(Resource):
     decorators = base_decorators
 
-    def options(self):
+    def options(self, *args, **kwargs):
         return return_json(status_code=200)
 
 
