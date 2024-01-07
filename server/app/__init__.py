@@ -11,9 +11,10 @@ def create_app() -> Flask:
     app = f.flask
     f.set_db()
     f.set_migration()
+    f.set_cors()
     with app.app_context():
         f.set_jwt()
-        f.set_api()
+        # f.set_api()
 
     with app.app_context():
         from .views import frontend

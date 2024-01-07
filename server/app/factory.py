@@ -1,10 +1,10 @@
 import logging
-import os
 import sys
 from logging.handlers import RotatingFileHandler
 from flask import Flask
 from .note_const import Metadata
 from .config import config, FLASK_ENV
+from flask_cors import CORS
 
 
 class Factory:
@@ -43,6 +43,15 @@ class Factory:
         from .models.base import db, migrate
 
         migrate.init_app(self.flask, db)
+
+    def set_cors(self):
+        CORS(
+            self.flask,
+            origins=self.flask.config["CORS_ORIGINS"],
+            allow_headers=["Content-Type", "Authorization"],
+            supports_credentials=True,
+            automatic_options=True,
+        )
 
     def set_api(self):
         return

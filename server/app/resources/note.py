@@ -23,7 +23,7 @@ from app.models.datastore import (
 )
 from .base import api_restx as api
 from app.note_const import READONLY_PREFIX, Metadata, ALLOW_CHAR_IN_NAMES
-from app.utils import cors_decorator, ensure_dir, return_json, default_value_for_types
+from app.utils import ensure_dir, return_json
 from app.models.base import db
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import NotFound
@@ -188,7 +188,6 @@ base_decorators = [  # this is fking from bottom to top!
     verify_name_decorator,
     verify_dict_decorator,
     timeout_note_decorator,
-    cors_decorator,
 ]
 
 

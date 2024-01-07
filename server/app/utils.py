@@ -22,17 +22,6 @@ def return_json(
     )
 
 
-from flask_cors import cross_origin
-
-cors_decorator = cross_origin(
-    origins=current_app.config["CORS_ORIGINS"],
-    allow_headers=["Content-Type", "Authorization"],
-    supports_credentials=True,
-    automatic_options=True,
-)
-
-
-
 def ensure_dir(path: str) -> str:
     os.makedirs(path, exist_ok=True)
     return path
