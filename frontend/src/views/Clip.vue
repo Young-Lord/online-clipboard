@@ -44,7 +44,7 @@
                         <!-- Larger Text Input Box -->
                         <v-textarea rows="15" variant="outlined" auto-grow v-model="local_content" @input="setEditingStatus"
                             @keydown.ctrl.s.exact="pushContentIfChanged()" @keydown.ctrl.s.exact.prevent
-                            @focusout="pushContentIfChanged()">
+                            @focusout="pushContentIfChanged()" :disabled="this.uploading">
                         </v-textarea>
                     </v-col>
                     <v-col cols="12" md="4">
@@ -77,7 +77,7 @@
                             <!-- Drag or click to upload file -->
                             <v-file-input :label="$t('clip.drag_or_click_to_upload_file')" prepend-icon="mdi-file-upload"
                                 @change="uploadFile" v-if="!this.is_readonly && !this.is_new" :disabled="this.uploading"
-                                v-model="file_to_upload">
+                                v-model="file_to_upload" multiple>
                             </v-file-input>
                             <!--all files, with download and delete button-->
                             <v-list v-if="!this.is_new">
@@ -158,17 +158,20 @@ export default {
                 console.log(e)
             }
         },
+        async uploadSingleFile(file) {
+            var formData = new window.FormData()
+            formData.append("file", this.file_to_upload[0])
+            let response = await axios.post(`/note/${this.name}/file/0`, formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            })
+        },
         async uploadFile() {
             await this.createIfNotExist()
             this.uploading = true
-            var formData = new window.FormData()
-            formData.append("file", this.file_to_upload[0])
             try {
-                let response = await axios.post(`/note/${this.name}/file/0`, formData, {
-                    headers: {
-                        "Content-Type": "multipart/form-data",
-                    },
-                })
+                await Promise.all(this.file_to_upload.map(this.uploadSingleFile))
                 this.fetchContent()
                 this.$swal
                     .fire({
@@ -178,7 +181,8 @@ export default {
                         timer: 1200,
                         confirmButtonText: this.$t('clip.ok'),
                     })
-            } catch (e) {
+            }
+            catch (e) {
                 console.log(e)
                 this.$swal.fire({
                     title: this.$t('clip.Error'),
