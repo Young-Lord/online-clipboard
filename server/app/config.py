@@ -3,8 +3,8 @@ from dotenv import load_dotenv
 from app.note_const import Metadata
 
 FLASK_ENV = os.environ.get("FLASK_ENV", "development")
-load_dotenv(f"../.env.{FLASK_ENV}")
-load_dotenv(f"../.env")
+load_dotenv(f"../.env.{FLASK_ENV}", override=True)
+load_dotenv(f"../.env", override=True)
 
 
 class Config:
