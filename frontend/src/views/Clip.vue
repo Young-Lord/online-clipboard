@@ -192,7 +192,7 @@ export default {
             }
         },
         async downloadFile(file) {
-            window.open(file.download_url, "_blank")
+            window.open(file.download_url, "_self")
         },
         async previewFile(file) {
             window.open(file.preview_url, "_blank")
