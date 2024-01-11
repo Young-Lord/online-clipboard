@@ -172,6 +172,8 @@ note_model = api.model(
         "timeout_seconds": fields.Integer,
         "is_readonly": fields.Boolean(default=False),
         "files": fields.List(fields.Nested(file_model)),
+        "file_count": fields.Integer(attribute=lambda note: len(note.files)),
+        "all_file_size": fields.Integer,
     },
 )
 
@@ -226,7 +228,6 @@ class NoteRest(BaseRest):
         )
         if note is None:
             return return_json(status_code=204, message="No note found")
-        datastore.update_note(name)
         return marshal_note(note)
 
     def post(self, name: str):
@@ -305,6 +306,8 @@ class FileRest(BaseRest):
         )
         if note is None:
             return return_json(status_code=404, message="No note found")
+        if len(note.files) >= Metadata.max_file_count:
+            return return_json(status_code=400, message="Too many files")
         file = request.files.get("file")
         if file is None:
             return return_json(status_code=400, message="No file provided")
@@ -315,6 +318,9 @@ class FileRest(BaseRest):
         ensure_dir(Config.UPLOAD_FOLDER)
         file.save(file_path)
         file_size = os.path.getsize(file_path)
+        if file_size + note.all_file_size > Metadata.max_file_size:
+            os.remove(file_path)
+            return return_json(status_code=400, message="Too large file")
         datastore.add_file(note, file.filename, file_path, file_size)
         return return_json(status_code=201)
 

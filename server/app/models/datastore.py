@@ -2,7 +2,7 @@ from abc import ABC
 import os
 from typing import Optional
 import uuid
-from sqlalchemy import Integer, String, ForeignKey
+from sqlalchemy import Integer, String, ForeignKey, func, sql
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.note_const import PASSWORD_SCHEMES
 from passlib.context import CryptContext
@@ -28,6 +28,11 @@ class Note(db.Model, DatabaseColumnBase):
     readonly_name: Mapped[str] = mapped_column(String, unique=True)
     timeout_seconds: Mapped[int] = mapped_column(Integer)
     files: Mapped[set["File"]] = relationship("File", back_populates="note")
+    all_file_size: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        server_default=sql.expression.literal(0),
+    )
 
     def __repr__(self):
         return f"<Note {self.name}>"
@@ -60,8 +65,10 @@ def verify_name(name: str) -> bool:
         return False
     return True
 
+
 def combine_name_and_password(name: str, password: str) -> str:
     return name + password
+
 
 def verify_timeout_seconds(timeout_seconds: int) -> bool:
     return 1 <= timeout_seconds <= Metadata.max_timeout
@@ -115,9 +122,7 @@ class NoteDatastore(Datastore):
             note.content = content
         if password is not None:
             note.password = passlib_context.hash(
-                combine_name_and_password(
-                    name, password
-                )
+                combine_name_and_password(name, password)
             )
         if timeout_seconds is not None:
             if not verify_timeout_seconds(timeout_seconds):
@@ -142,10 +147,14 @@ class NoteDatastore(Datastore):
             filename=filename, file_path=file_path, note=note, file_size=file_size
         )
         self.session.add(file)
+        note.all_file_size += file_size
+        self.session.add(note)
         self.session.commit()
 
     def delete_file(self, file: File) -> None:
         file_path = file.file_path
+        file.note.all_file_size -= file.file_size
+        self.session.add(file.note)
         try:
             os.remove(file_path)
         except:
