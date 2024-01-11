@@ -1,12 +1,11 @@
 from abc import ABC
 import os
-import string
-from typing import Optional, Final
+from typing import Optional
 import uuid
-from sqlalchemy import Column, DateTime, func, Integer, String, ForeignKey
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, Session
-from app.config import Config
-
+from sqlalchemy import Integer, String, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from app.note_const import PASSWORD_SCHEMES
+from passlib.context import CryptContext
 from app.note_const import (
     ALLOW_CHAR_IN_NAMES,
     DISABLE_WORDS_IN_NAMES,
@@ -15,6 +14,8 @@ from app.note_const import (
 )
 from .base import DatabaseColumnBase, db
 from flask_sqlalchemy import SQLAlchemy
+
+passlib_context = CryptContext(schemes=PASSWORD_SCHEMES)
 
 
 class Note(db.Model, DatabaseColumnBase):
@@ -59,14 +60,8 @@ def verify_name(name: str) -> bool:
         return False
     return True
 
-
-def get_password_hash(password: str, name: str = "") -> str:
-    return name + "|" + password
-
-
-def verify_password_hash(password_hash: str, password: str, name: str = "") -> bool:
-    return password_hash == get_password_hash(password, name=name)
-
+def combine_name_and_password(name: str, password: str) -> str:
+    return name + password
 
 def verify_timeout_seconds(timeout_seconds: int) -> bool:
     return 1 <= timeout_seconds <= Metadata.max_timeout
@@ -119,7 +114,11 @@ class NoteDatastore(Datastore):
         if content is not None:
             note.content = content
         if password is not None:
-            note.password = get_password_hash(password, name)
+            note.password = passlib_context.hash(
+                combine_name_and_password(
+                    name, password
+                )
+            )
         if timeout_seconds is not None:
             if not verify_timeout_seconds(timeout_seconds):
                 raise ValueError("Invalid timeout_seconds")

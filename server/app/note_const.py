@@ -15,6 +15,9 @@ DISABLE_WORDS_IN_NAMES: Final[set[str]] = {
 READONLY_PREFIX: Final[str] = "ro*"
 
 
+# https://passlib.readthedocs.io/en/stable/narr/quickstart.html#choosing-a-hash
+PASSWORD_SCHEMES: list[str] = ["pbkdf2_sha256", "bcrypt", "argon2", "sha512_crypt"]
+
 @dataclass
 class BaseMetadata:
     name: str = "Clipd"

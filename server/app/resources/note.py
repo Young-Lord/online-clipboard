@@ -18,8 +18,9 @@ from app.models.datastore import (
     File,
     Note,
     NoteDatastore,
+    combine_name_and_password,
     verify_name,
-    verify_password_hash,
+    passlib_context,
 )
 from .base import api_restx as api
 from app.note_const import READONLY_PREFIX, Metadata, ALLOW_CHAR_IN_NAMES
@@ -84,9 +85,17 @@ def password_protected_note(f):
             # allow operate on non-exist note
             return f(*args, **kwargs)
             # return return_json(status_code=404, message="No note found")
-        if note.password is not None:
-            if not verify_password_hash(note.password, password, name=name):
+        if note.password:
+            print(note.name, password, note.password)
+            valid, new_hash = passlib_context.verify_and_update(
+                combine_name_and_password(note.name, password), note.password
+            )
+            if not valid:
                 return return_json(status_code=401, message="Wrong password")
+            if new_hash:
+                note.password = new_hash
+                datastore.session.add(note)
+                datastore.session.commit()
         return f(*args, **kwargs)
 
     return decorated_function
@@ -168,7 +177,9 @@ note_model = api.model(
 
 
 def marshal_note(note: Note, status_code: int = 200, message: Optional[str] = None):
-    return return_json(marshal(note, note_model), status_code=status_code, message=message)
+    return return_json(
+        marshal(note, note_model), status_code=status_code, message=message
+    )
 
 
 def mashal_readonly_note(note: Note, status_code: int = 200):
@@ -176,7 +187,9 @@ def mashal_readonly_note(note: Note, status_code: int = 200):
     allow_props = ["content", "readonly_name", "files"]
     assert isinstance(ret, dict)
     ret = {
-        k: v if k in allow_props else type(v)()  # create object with default value (0 or empty)
+        k: v
+        if k in allow_props
+        else type(v)()  # create object with default value (0 or empty)
         for k, v in ret.items()
     }
     ret["is_readonly"] = True
