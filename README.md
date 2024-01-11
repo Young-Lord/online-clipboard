@@ -2,6 +2,8 @@
 
 [netcut.cn](https://netcut.cn) style, minimal editable online clipboard.
 
+**NOT READY FOR PRODUCTION YET!**
+
 ![Preview image](https://github.com/Young-Lord/online-clipboard/assets/51789698/5178dc37-e64e-4bb1-81a0-b3c59ff42805)
 
 Developed using Flask, Vue 3, Vuetify 3. Full i18n support.
