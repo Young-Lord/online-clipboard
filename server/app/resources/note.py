@@ -135,7 +135,7 @@ def create_file_link(file: File, suffix: Literal["download", "preview"]) -> str:
         file.id,
         suffix,
         create_access_token(
-            identity=file.note.name,
+            identity=combine_name_and_password(file.note.name, file.note.password),
             expires_delta=datetime.timedelta(seconds=file.timeout_seconds),
         ),
     )
@@ -333,14 +333,14 @@ class FileRest(BaseRest):
 
 
 def get_file(name: str, id: int, as_attachment: bool):
-    current_user = get_jwt_identity()
-    if name != current_user:
-        return return_json(status_code=403, message="Permission denied")
     note = datastore.get_note(
         name,
     )
     if note is None:
         return return_json(status_code=404, message="No note found")
+    current_user = get_jwt_identity()
+    if combine_name_and_password(name, note.password) != current_user:
+        return return_json(status_code=403, message="Permission denied")
     file = datastore.get_file(id)
     if file is None:
         return return_json(status_code=404, message="No file found")
