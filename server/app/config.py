@@ -19,6 +19,7 @@ class Config:
     CORS_ORIGINS: list[str] = os.environ.get(
         "CORS_ORIGINS", ""
     ).split()  # separate consecutive whitespace, https://stackoverflow.com/a/46882411
+    MAX_CONTENT_LENGTH = Metadata.max_file_size
 
     DEBUG = False
     API_SUFFIX: str = os.environ["VITE_API_SUFFIX"]
