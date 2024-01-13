@@ -18,6 +18,7 @@ READONLY_PREFIX: Final[str] = "ro*"
 # https://passlib.readthedocs.io/en/stable/narr/quickstart.html#choosing-a-hash
 PASSWORD_SCHEMES: list[str] = ["pbkdf2_sha256", "bcrypt", "argon2", "sha512_crypt"]
 
+
 @dataclass
 class BaseMetadata:
     name: str = "Clipd"
@@ -32,6 +33,7 @@ class BaseMetadata:
     max_password_length: int = 256
     max_file_size: int = 200 * 1024 * 1024  # 200 MiB
     max_file_count: int = 10
+    max_all_file_size: int = 1024 * 1024 * 1024  # 1 GiB
     max_timeout: int = 60 * 60 * 24 * 365 * 3  # 3 years
     default_note_timeout: int = 60 * 60 * 24 * 30  # 30 day
     default_file_timeout: int = 60 * 60 * 24 * 30  # 30 day

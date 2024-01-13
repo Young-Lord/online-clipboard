@@ -313,14 +313,26 @@ class FileRest(BaseRest):
             return return_json(status_code=400, message="No file provided")
         if file.filename is None:
             return return_json(status_code=400, message="Filename is empty")
+
+        # save file to local
         filename = secure_filename("%s_%s_%s" % (time.time(), name, file.filename))
         file_path = os.path.join(Config.UPLOAD_FOLDER, filename)
         ensure_dir(Config.UPLOAD_FOLDER)
         file.save(file_path)
+
+        # check limits
         file_size = os.path.getsize(file_path)
-        if file_size + note.all_file_size > Metadata.max_file_size:
+        all_file_size_limit_hit = file_size + note.all_file_size > Metadata.max_all_file_size
+        single_file_size_limit_hit = file_size > Metadata.max_file_size
+        if all_file_size_limit_hit or single_file_size_limit_hit:
             os.remove(file_path)
-            return return_json(status_code=400, message="Too large file")
+            if all_file_size_limit_hit:
+                message = "Too large all file size"
+            else:
+                message = "Too large file"
+            return return_json(status_code=400, message=message)
+        
+        # add file to database
         datastore.add_file(note, file.filename, file_path, file_size)
         return return_json(status_code=201)
 
