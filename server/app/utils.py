@@ -1,3 +1,4 @@
+from hashlib import sha256 as _sha256, sha512 as _sha512
 import os
 from typing import Any, Optional
 from flask import (
@@ -33,3 +34,10 @@ def return_json(
 def ensure_dir(path: str) -> str:
     os.makedirs(path, exist_ok=True)
     return path
+
+
+def sha256(string: str) -> str:
+    return _sha256(string.encode()).hexdigest()
+
+def sha512(string: str) -> str:
+    return _sha512(string.encode()).hexdigest()

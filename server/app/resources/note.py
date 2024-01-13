@@ -24,7 +24,7 @@ from app.models.datastore import (
 )
 from .base import api_restx as api
 from app.note_const import READONLY_PREFIX, Metadata, ALLOW_CHAR_IN_NAMES
-from app.utils import ensure_dir, return_json
+from app.utils import ensure_dir, return_json, sha256
 from app.models.base import db
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import NotFound
@@ -128,16 +128,24 @@ def timeout_note_decorator(f):
 
     return decorated_function
 
+def note_to_jwt_id(note: Note) -> str:
+    return sha256(combine_name_and_password(note.name, note.password))
+
+def create_access_token_for_note(note: Note) -> str:
+    return create_access_token(
+        identity=note_to_jwt_id(note),
+        expires_delta=datetime.timedelta(seconds=note.timeout_seconds),
+    )
+
+def verify_access_token_for_note(note: Note) -> bool:
+    return get_jwt_identity() == note_to_jwt_id(note)
 
 def create_file_link(file: File, suffix: Literal["download", "preview"]) -> str:
     return current_app.config["API_FULL_URL"] + "/note/%s/file/%s/%s?jwt=%s" % (
         file.note.name,
         file.id,
         suffix,
-        create_access_token(
-            identity=combine_name_and_password(file.note.name, file.note.password),
-            expires_delta=datetime.timedelta(seconds=file.timeout_seconds),
-        ),
+        create_access_token_for_note(file.note),
     )
 
 
@@ -356,8 +364,7 @@ def get_file(name: str, id: int, as_attachment: bool):
     )
     if note is None:
         return return_json(status_code=404, message="No note found")
-    current_user = get_jwt_identity()
-    if combine_name_and_password(name, note.password) != current_user:
+    if not verify_access_token_for_note(note):
         return return_json(status_code=403, message="Permission denied")
     file = datastore.get_file(id)
     if file is None:
