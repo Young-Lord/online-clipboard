@@ -1,4 +1,4 @@
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 import string
 from typing import Any, Final
 
@@ -39,6 +39,22 @@ class BaseMetadata:
     default_file_timeout: int = 60 * 60 * 24 * 30  # 30 day
     file_link_timeout: int = 60 * 60 * 1  # 1 hour
     allow_chars: str = ALLOW_CHAR_IN_NAMES
+    timeout_selections: list[int] = field(
+        default_factory=lambda: [
+            60 * 1,  # 1 minute
+            60 * 10,  # 10 minutes
+            60 * 30,  # 30 minutes
+            60 * 60,  # 1 hour
+            60 * 60 * 6,  # 6 hours
+            60 * 60 * 12,  # 12 hours
+            60 * 60 * 24,  # 1 day
+            60 * 60 * 24 * 7,  # 7 days
+            60 * 60 * 24 * 14,  # 14 days
+            60 * 60 * 24 * 30,  # 30 days
+            60 * 60 * 24 * 365,  # 1 year
+            60 * 60 * 24 * 365 * 3,  # 3 years
+        ]
+    )
 
     def __repr__(self):
         return f"<Metadata {self.name}>"

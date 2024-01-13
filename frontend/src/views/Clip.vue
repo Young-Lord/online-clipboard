@@ -50,8 +50,7 @@
                     <v-col cols="12" md="4">
                         <v-card id="sidebar">
                             <!-- 下拉框，选择过期时间 -->
-                            <v-select
-                                v-bind:items="timeout_keys.map((key) => { return $t('clip.timeout_selections.' + key) })"
+                            <v-select v-bind:items="timeout_selections.map((key) => { return timeDeltaToString(key) })"
                                 :label="$t('clip.expiration')" @update:model-value="setNoteTimeout"
                                 v-model="selected_timeout" prepend-inner-icon="mdi-clock"
                                 v-if="!this.is_new && !this.is_readonly">
@@ -116,6 +115,7 @@ import { useAppStore } from "@/store/app"
 const appStore = useAppStore()
 import { getKeyByValue, replaceLastPartOfUrl, humanFileSize } from "@/utils"
 import { Buffer } from 'buffer'
+import { timeDeltaToString } from "@/plugins/i18n"
 
 export default {
     data() {
@@ -130,7 +130,8 @@ export default {
             is_new: false,
             meta_data: {},
             password: "",
-            timeout_keys: Object.keys(appStore.timeout_selections),
+            timeout_selections: [],
+            timeDeltaToString: timeDeltaToString,
             current_timeout: -1,
             selected_timeout: "",
             current_url: window.location.href,
@@ -231,6 +232,17 @@ export default {
             if (this.is_readonly) return
             this.save_status = "editing"
         },
+        async showDetailWarning(title, text, pop_to_home = false) {
+            await this.$swal.fire({
+                title: title,
+                text: text,
+                icon: "error",
+                confirmButtonText: this.$t('clip.ok'),
+            })
+            if (pop_to_home) {
+                this.$router.push({ name: "Home" })
+            }
+        },
         async fetchContent(no_update_content = false) {
             try {
                 let response
@@ -280,7 +292,7 @@ export default {
                         this.local_content = response.data.data.content
                     }
                     this.current_timeout = response.data.data.timeout_seconds
-                    this.selected_timeout = this.getNoteTimeoutString()
+                    this.selected_timeout = timeDeltaToString(this.current_timeout)
                     this.remote_content = response.data.data.content
                     this.remote_version = this.clip_version = (response.data.data.clip_version ?? 1)
                     this.readonly_url = replaceLastPartOfUrl(
@@ -389,14 +401,13 @@ export default {
         async setNoteTimeout(selected_timeout) {
             await this.createIfNotExist()
             try {
-                let new_timeout_key = undefined
-                this.timeout_keys.forEach((key) => {
-                    if (this.$t('clip.timeout_selections.' + key) === selected_timeout) {
-                        new_timeout_key = key
+                let new_timeout = undefined
+                this.timeout_selections.forEach((timeout) => {
+                    if (timeDeltaToString(timeout) === selected_timeout) {
+                        new_timeout = timeout
                     }
                 })
 
-                let new_timeout = appStore.timeout_selections[new_timeout_key]
 
                 let invalid_timeout_toast = () => {
                     this.$swal({
@@ -405,7 +416,7 @@ export default {
                     })
                 }
 
-                if (new_timeout_key === undefined || new_timeout === undefined) {
+                if (new_timeout === undefined) {
                     invalid_timeout_toast()
                     return
                 }
@@ -424,18 +435,6 @@ export default {
             } catch (e) {
                 console.log(e)
             }
-        },
-        getNoteTimeoutString() {
-            let matched_key = getKeyByValue(
-                appStore.timeout_selections,
-                this.current_timeout
-            )
-
-            if (this.current_timeout == -1) return this.$t('clip.timeout_selections.never')
-            if (matched_key !== undefined) return this.$t('clip.timeout_selections.' + matched_key)
-            if (this.current_timeout <= 3600)
-                return `${this.current_timeout / 60} minutes`
-            return `${this.current_timeout / 3600} hours`
         },
         async copyString(content) {
             if (!content) return
@@ -494,6 +493,17 @@ export default {
         axios.interceptors.request.use((config) => {
             config.headers["Authorization"] = `Bearer ${Buffer.from(this.password, 'utf8').toString('base64')}`
             return config
+        })
+
+        appStore.metadata().then((metadata) => {
+            this.timeout_selections = metadata.timeout_selections
+        }).catch((e) => {
+            console.log(e)
+            this.showDetailWarning(
+                this.$t('clip.Error'),
+                this.$t('clip.failed_to_fetch_metadata'),
+                true
+            )
         })
     },
     beforeMount() {

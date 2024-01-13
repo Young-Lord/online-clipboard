@@ -24,21 +24,6 @@
         "readonly_url_click_to_copy": "只读 URL (点击复制)",
         "drag_or_click_to_upload_file": "拖拽或点击上传文件",
         "expiration": "过期时间",
-        "timeout_selections": {
-            "1_minute": "1 分钟",
-            "10_minutes": "10 分钟",
-            "30_minutes": "30 分钟",
-            "1_hour": "1 小时",
-            "6_hours": "6 小时",
-            "12_hours": "12 小时",
-            "1_day": "1 天",
-            "7_days": "7 天",
-            "14_days": "14 天",
-            "30_days": "30 天",
-            "1_year": "1 年",
-            "3_years": "3 年",
-            "never": "永不过期"
-        },
         "password_question": "密码？",
         "new_password_question": "新密码？",
         "password_changed": "密码已更改！",
@@ -64,7 +49,8 @@
         "invalid_timeout": "过期时长不正确！",
         "invalid_note_name": "剪贴板名字格式有误！",
         "outdated": "剪贴板已在其他客户端更新，刷新网页以更新。",
-        "auto_fetch_remote_content": "自动从云端向本地同步更改"
+        "auto_fetch_remote_content": "自动从云端向本地同步更改",
+        "failed_to_fetch_metadata": "获取剪贴板信息失败！"
     },
     "about": {
         "author": "Author",
