@@ -84,8 +84,7 @@
                                     <v-list-item-title>{{ file.filename }}
                                     </v-list-item-title>
                                     <v-list-item-subtitle>{{ humanFileSize(file.size) }} {{
-                                        $t('clip.file.expiration_date_is') }}{{ $d(new Date(file.expire_at), 'long')
-    }}</v-list-item-subtitle>
+                                        $t('clip.file.expiration_date_is', [$d(new Date(file.expire_at), 'long')]) }}</v-list-item-subtitle>
                                     <template v-slot:append>
                                         <v-list-item-action end>
                                             <v-btn icon variant="text" @click="downloadFile(file)">

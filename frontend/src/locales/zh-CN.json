@@ -37,7 +37,7 @@
             "uploaded": "文件已上传！",
             "your_file_has_been_uploaded": "",
             "failed_to_upload_file": "上传文件失败！",
-            "expiration_date_is": "删除时间："
+            "expiration_date_is": "删除时间：{0}"
         },
         "delete": {
             "are_you_sure": "真的吗？",
