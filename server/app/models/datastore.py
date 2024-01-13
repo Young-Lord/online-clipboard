@@ -67,6 +67,8 @@ def verify_name(name: str) -> bool:
 
 
 def combine_name_and_password(name: str, password: str) -> str:
+    if password is None:
+        password = ""
     return name + password
 
 
@@ -111,6 +113,8 @@ class NoteDatastore(Datastore):
                 name=name,
             )
             note.content = ""
+            if password is None:
+                password = ""
             note.clip_version = 1
             note.readonly_name = READONLY_PREFIX + uuid.uuid4().hex
             note.timeout_seconds = Metadata.default_note_timeout
