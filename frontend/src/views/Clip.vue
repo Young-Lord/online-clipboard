@@ -206,7 +206,7 @@ export default {
             this.uploading = true
             try {
                 let response = await axios.delete(`/note/${this.name}/file/${file.id}`)
-                this.fetchContent()
+                this.fetchContent(true)
                 this.$swal
                     .fire({
                         title: this.$t('clip.file.deleted'),
