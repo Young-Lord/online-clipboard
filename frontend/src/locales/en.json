@@ -22,7 +22,8 @@
   "clip": {
     "current_url_click_to_copy": "Current URL (click to copy)",
     "readonly_url_click_to_copy": "Readonly URL (click to copy)",
-    "drag_or_click_to_upload_file": "Drag or Click to upload file",
+    "drag_or_click_to_upload_file": "Drag or Click to upload file(s)",
+    "file_limits": "(max {0} per file, current uploaded: {1} / {2}, storage quota left: {3} / {4})",
     "invalid_note_name": "Invalid note name.",
     "expiration": "Expiration",
     "invalid_timeout": "Invalid timeout!",

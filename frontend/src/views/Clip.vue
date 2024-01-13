@@ -74,7 +74,7 @@
                     <v-col cols="12">
                         <v-card id="file-card">
                             <!-- Drag or click to upload file -->
-                            <v-file-input :label="$t('clip.drag_or_click_to_upload_file')" prepend-icon="mdi-file-upload"
+                            <v-file-input :label="$t('clip.drag_or_click_to_upload_file') + ' ' + $t('clip.file_limits', [humanFileSize(this.metadata.max_file_size), this.remote_files.length, this.metadata.max_file_count, humanFileSize(this.remote_files.reduce((partialSum, a) => partialSum + a.size, 0)), humanFileSize(this.metadata.max_all_file_size)])" prepend-icon="mdi-file-upload"
                                 @change="uploadFile" v-if="!this.is_readonly && !this.is_new" :disabled="this.uploading"
                                 v-model="file_to_upload" multiple>
                             </v-file-input>
@@ -127,10 +127,9 @@ export default {
             save_status: "",
             save_interval: 3 * 1000,
             is_new: false,
-            meta_data: {},
+            metadata: {},
             password: "",
             timeout_selections: [],
-            timeDeltaToString: timeDeltaToString,
             current_timeout: -1,
             selected_timeout: "",
             current_url: window.location.href,
@@ -148,6 +147,7 @@ export default {
     },
     methods: {
         humanFileSize: humanFileSize,
+        timeDeltaToString: timeDeltaToString,
         async createIfNotExist() {
             if (!this.is_new) return
             try {
@@ -496,6 +496,7 @@ export default {
         })
 
         appStore.metadata().then((metadata) => {
+            this.metadata = metadata
             this.timeout_selections = metadata.timeout_selections
         }).catch((e) => {
             console.log(e)

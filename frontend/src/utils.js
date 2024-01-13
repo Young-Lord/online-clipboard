@@ -22,7 +22,7 @@ export function replaceLastPartOfUrl(href, new_part) {
  *
  * @return Formatted string.
  */
-export function humanFileSize(bytes, si = false, dp = 1) {
+export function humanFileSize(bytes, si = false, dp = 1, remove_suffix_zero = true) {
     // https://stackoverflow.com/a/14919494
     const thresh = si ? 1000 : 1024
 
@@ -43,8 +43,11 @@ export function humanFileSize(bytes, si = false, dp = 1) {
         Math.round(Math.abs(bytes) * r) / r >= thresh &&
         u < units.length - 1
     )
-
-    return bytes.toFixed(dp) + " " + units[u]
+    let result = bytes.toFixed(dp)
+    if (remove_suffix_zero) {
+        result = parseFloat(result).toString()
+    }
+    return result + " " + units[u]
 }
 
 export function isNodejs() {

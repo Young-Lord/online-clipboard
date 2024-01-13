@@ -23,6 +23,7 @@
         "current_url_click_to_copy": "当前 URL (点击复制)",
         "readonly_url_click_to_copy": "只读 URL (点击复制)",
         "drag_or_click_to_upload_file": "拖拽或点击上传文件",
+        "file_limits": "（单个文件最大 {0}，当前共有文件 {1} / {2} 个，占用空间 {3} / {4}）",
         "expiration": "过期时间",
         "password_question": "密码？",
         "new_password_question": "新密码？",
