@@ -193,6 +193,7 @@ export default {
             } finally {
                 this.file_to_upload = null
                 this.uploading = false
+                this.fetchContent(no_update_content=true)
             }
         },
         async downloadFile(file) {
