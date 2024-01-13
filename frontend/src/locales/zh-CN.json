@@ -38,7 +38,12 @@
             "uploaded": "文件已上传！",
             "your_file_has_been_uploaded": "",
             "failed_to_upload_file": "上传文件失败！",
-            "expiration_date_is": "删除时间：{0}"
+            "expiration_date_is": "删除时间：{0}",
+            "error": {
+                "TOTAL_FILES_COUNT_LIMIT_HIT": "文件数量超过限制！",
+                "SINGLE_FILE_SIZE_LIMIT_HIT": "文件大小超过限制！",
+                "TOTAL_FILES_SIZE_LIMIT_HIT": "总文件大小超过限制！"
+            }
         },
         "delete": {
             "are_you_sure": "真的吗？",

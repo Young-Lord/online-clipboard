@@ -74,9 +74,10 @@
                     <v-col cols="12">
                         <v-card id="file-card">
                             <!-- Drag or click to upload file -->
-                            <v-file-input :label="$t('clip.drag_or_click_to_upload_file') + ' ' + $t('clip.file_limits', [humanFileSize(this.metadata.max_file_size), this.remote_files.length, this.metadata.max_file_count, humanFileSize(this.remote_files.reduce((partialSum, a) => partialSum + a.size, 0)), humanFileSize(this.metadata.max_all_file_size)])" prepend-icon="mdi-file-upload"
-                                @change="uploadFile" v-if="!this.is_readonly && !this.is_new" :disabled="this.uploading"
-                                v-model="file_to_upload" multiple>
+                            <v-file-input
+                                :label="$t('clip.drag_or_click_to_upload_file') + ' ' + $t('clip.file_limits', [humanFileSize(this.metadata.max_file_size), this.remote_files.length, this.metadata.max_file_count, humanFileSize(this.remote_files.reduce((partialSum, a) => partialSum + a.size, 0)), humanFileSize(this.metadata.max_all_file_size)])"
+                                prepend-icon="mdi-file-upload" @change="uploadFile" v-if="!this.is_readonly && !this.is_new"
+                                :disabled="this.uploading" v-model="file_to_upload" multiple>
                             </v-file-input>
                             <!--all files, with download and delete button-->
                             <v-list v-if="!this.is_new">
@@ -84,7 +85,8 @@
                                     <v-list-item-title>{{ file.filename }}
                                     </v-list-item-title>
                                     <v-list-item-subtitle>{{ humanFileSize(file.size) }} {{
-                                        $t('clip.file.expiration_date_is', [$d(new Date(file.expire_at), 'long')]) }}</v-list-item-subtitle>
+                                        $t('clip.file.expiration_date_is', [$d(new Date(file.expire_at), 'long')])
+                                    }}</v-list-item-subtitle>
                                     <template v-slot:append>
                                         <v-list-item-action end>
                                             <v-btn icon variant="text" @click="downloadFile(file)">
@@ -170,9 +172,35 @@ export default {
         async uploadFile() {
             await this.createIfNotExist()
             this.uploading = true
+            let error_string = null
+            let file_count = this.file_to_upload.length + this.remote_files.length
+            if (this.metadata.max_file_count && file_count > this.metadata.max_file_count) {
+                error_string = this.$t('clip.file.error.TOTAL_FILES_COUNT_LIMIT_HIT')
+            }
+            this.file_to_upload.forEach((file) => {
+                if (this.metadata.max_file_size && file.size > this.metadata.max_file_size) {
+                    error_string = this.$t('clip.file.error.SINGLE_FILE_SIZE_LIMIT_HIT')
+                }
+            })
+            let total_size = this.file_to_upload.concat(this.remote_files).reduce((partialSum, a) => partialSum + a.size, 0)
+
+            if (this.metadata.max_all_file_size && total_size > this.metadata.max_all_file_size) {
+                error_string = this.$t('clip.file.error.TOTAL_FILES_SIZE_LIMIT_HIT')
+            }
+            if (error_string !== null) {
+                this.$swal.fire({
+                    title: this.$t('clip.Error'),
+                    text: error_string,
+                    icon: "error",
+                    confirmButtonText: this.$t('clip.ok'),
+                })
+                this.file_to_upload = null
+                this.uploading = false
+                return
+            }
             try {
                 await Promise.all(this.file_to_upload.map(this.uploadSingleFile))
-                this.fetchContent()
+                this.fetchContent(true)
                 this.$swal
                     .fire({
                         title: this.$t('clip.file.uploaded'),
@@ -184,16 +212,20 @@ export default {
             }
             catch (e) {
                 console.log(e)
+                error_string = this.$t('clip.file.failed_to_upload_file')
+                if (e?.response?.status === 400 && e?.response?.data?.error_id !== null) {
+                    error_string = this.$t('clip.file.error.' + e.response.data.error_id)
+                }
                 this.$swal.fire({
                     title: this.$t('clip.Error'),
-                    text: this.$t('clip.file.failed_to_upload_file'),
+                    text: error_string,
                     icon: "error",
                     confirmButtonText: this.$t('clip.ok'),
                 })
             } finally {
                 this.file_to_upload = null
                 this.uploading = false
-                this.fetchContent(no_update_content=true)
+                this.fetchContent(true)
             }
         },
         async downloadFile(file) {

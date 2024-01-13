@@ -307,7 +307,11 @@ class FileRest(BaseRest):
         if note is None:
             return return_json(status_code=404, message="No note found")
         if len(note.files) >= Metadata.max_file_count:
-            return return_json(status_code=400, message="Too many files")
+            return return_json(
+                status_code=400,
+                message="Too many files",
+                error_id="TOTAL_FILES_COUNT_LIMIT_HIT",
+            )
         file = request.files.get("file")
         if file is None:
             return return_json(status_code=400, message="No file provided")
@@ -328,10 +332,12 @@ class FileRest(BaseRest):
             os.remove(file_path)
             if all_file_size_limit_hit:
                 message = "Too large all file size"
+                error_id = "ALL_FILE_SIZE_LIMIT_HIT"
             else:
                 message = "Too large file"
-            return return_json(status_code=400, message=message)
-        
+                error_id = "SINGLE_FILE_SIZE_LIMIT_HIT"
+            return return_json(status_code=400, message=message, error_id=error_id)
+
         # add file to database
         datastore.add_file(note, file.filename, file_path, file_size)
         return return_json(status_code=201)

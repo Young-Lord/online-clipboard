@@ -40,7 +40,12 @@
       "uploaded": "Uploaded!",
       "your_file_has_been_uploaded": "Your file has been uploaded.",
       "failed_to_delete_file": "Failed to delete file.",
-      "expiration_date_is": "Expiration date: {0}"
+      "expiration_date_is": "Expiration date: {0}",
+      "error": {
+        "TOTAL_FILES_COUNT_LIMIT_HIT": "Total files count limit hit!",
+        "SINGLE_FILE_SIZE_LIMIT_HIT": "Single file size limit hit!",
+        "TOTAL_FILES_SIZE_LIMIT_HIT": "Total files size limit hit!"
+      }
     },
     "delete": {
       "are_you_sure": "Are you sure?",

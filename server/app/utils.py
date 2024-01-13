@@ -13,11 +13,19 @@ def return_json(
     message: Optional[str] = None,
     status_code: int = 200,
     http_status_code: Optional[int] = None,
+    error_id: Optional[str] = None,
 ) -> Response:
     if http_status_code is None:
         http_status_code = status_code
     return make_response(
-        jsonify({"status": status_code, "message": message, "data": data}),
+        jsonify(
+            {
+                "status": status_code,
+                "message": message,
+                "data": data,
+                "error_id": error_id,
+            }
+        ),
         http_status_code,
     )
 
