@@ -6,7 +6,7 @@ from pathlib import Path
 import time
 from flask_restx import Resource, marshal
 import functools
-from typing import Any, Literal, Optional
+from typing import Any, ClassVar, Literal, Optional
 from flask import (
     current_app,
     request,
@@ -127,8 +127,10 @@ def timeout_note_decorator(f):
 
     return decorated_function
 
+
 def note_to_jwt_id(note: Note) -> str:
     return sha256(combine_name_and_password(note.name, note.password))
+
 
 def create_access_token_for_note(note: Note) -> str:
     return create_access_token(
@@ -136,8 +138,10 @@ def create_access_token_for_note(note: Note) -> str:
         expires_delta=datetime.timedelta(seconds=note.timeout_seconds),
     )
 
+
 def verify_access_token_for_note(note: Note) -> bool:
     return get_jwt_identity() == note_to_jwt_id(note)
+
 
 def create_file_link(file: File, suffix: Literal["download", "preview"]) -> str:
     return current_app.config["API_FULL_URL"] + "/note/%s/file/%s/%s?jwt=%s" % (
@@ -256,7 +260,13 @@ class NoteRest(BaseRest):
         params = request.get_json()
         if "new_password" in params:
             params["password"] = params["new_password"]
-        allow_props = ["content", "password", "clip_version", "timeout_seconds", "user_property"]
+        allow_props = [
+            "content",
+            "password",
+            "clip_version",
+            "timeout_seconds",
+            "user_property",
+        ]
         params = {k: v for k, v in params.items() if k in allow_props}
         if len(params) == 0:
             return return_json(status_code=400, message="No property to update")
@@ -334,7 +344,9 @@ class FileRest(BaseRest):
 
         # check limits
         file_size = os.path.getsize(file_path)
-        all_file_size_limit_hit = file_size + note.all_file_size > Metadata.max_all_file_size
+        all_file_size_limit_hit = (
+            file_size + note.all_file_size > Metadata.max_all_file_size
+        )
         single_file_size_limit_hit = file_size > Metadata.max_file_size
         if all_file_size_limit_hit or single_file_size_limit_hit:
             os.remove(file_path)
@@ -388,12 +400,12 @@ class DownloadFileContentRest(BaseRest):
     decorators = [jwt_required(locations=["query_string"])] + [
         i for i in base_decorators if i is not password_protected_note
     ]
+    as_attachment: ClassVar[bool] = True
 
     def get(self, name: str, id: int):
-        return get_file(name, id, as_attachment=True)
+        return get_file(name, id, as_attachment=self.as_attachment)
 
 
 @api.route("/note/<string:name>/file/<int:id>/preview")
 class PreviewFileContentRest(DownloadFileContentRest):
-    def get(self, name: str, id: int):
-        return get_file(name, id, as_attachment=False)
+    as_attachment = False
