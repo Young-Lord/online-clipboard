@@ -66,4 +66,3 @@ export interface UserProperty {
     encrypt_text_content: boolean | undefined
     encrypt_text_content_algo: string | undefined
 }
-

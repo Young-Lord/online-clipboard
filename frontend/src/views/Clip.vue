@@ -306,10 +306,10 @@ export default {
         },
         async deleteContent() {
             dangerousConfirm({
-                    title: this.$t('clip.delete.are_you_sure'),
-                    text: this.$t('clip.delete.you_wont_be_able_to_revert_this'),
-                    confirmButtonText: this.$t('clip.delete.yes_delete_it'),
-                })
+                title: this.$t('clip.delete.are_you_sure'),
+                text: this.$t('clip.delete.you_wont_be_able_to_revert_this'),
+                confirmButtonText: this.$t('clip.delete.yes_delete_it'),
+            })
                 .then(async (result) => {
                     if (result.isConfirmed) {
                         try {
@@ -524,13 +524,13 @@ export default {
         }
     },
     computed: {
-        name() {
-            return this.$route.params.name
+        name(): string {
+            return this.$route.params.name as string
         },
-        encryptPassword() {
+        encryptPassword(): string {
             return CryptoJS.SHA256(this.name + this.password).toString()
         },
-        timeout_selections() {
+        timeout_selections(): number[] {
             return this.metadata.timeout_selections || []
         }
     },
