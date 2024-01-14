@@ -24,7 +24,7 @@ class BaseMetadata:
     name: str = "Clip"
     description: str = "A simple clipboard app"
     owner: str = "Niko"
-    version: str = "0.0.9"
+    version: str = "0.0.10"
     url: str = ""
     logo: str = ""
     repository: str = "https://github.com/Young-Lord/online-clipboard"
