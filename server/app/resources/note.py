@@ -144,8 +144,7 @@ def verify_access_token_for_note(note: Note) -> bool:
 
 
 def create_file_link(file: File, suffix: Literal["download", "preview"]) -> str:
-    return current_app.config["API_FULL_URL"] + "/note/%s/file/%s/%s?jwt=%s" % (
-        file.note.name,
+    return current_app.config["API_FULL_URL"] + "/file/%s/%s?jwt=%s" % (
         file.id,
         suffix,
         create_access_token_for_note(file.note),
@@ -197,8 +196,11 @@ def marshal_note(note: Note, status_code: int = 200, message: Optional[str] = No
         marshal(note, note_model), status_code=status_code, message=message
     )
 
+
 ALLOW_PROPS = ["content", "readonly_name", "files"]
 PROP_DEFAULT_VALUES = {"user_property": "{}"}
+
+
 def mashal_readonly_note(note: Note, status_code: int = 200):
     ret = marshal(note, note_model)
     assert isinstance(ret, dict)
@@ -374,17 +376,15 @@ class FileRest(BaseRest):
         return return_json(status_code=204)
 
 
-def get_file(name: str, id: int, as_attachment: bool):
-    note = datastore.get_note(
-        name,
-    )
+def get_file(id: int, as_attachment: bool):
+    file = datastore.get_file(id)
+    if file is None:
+        return return_json(status_code=404, message="No file found")
+    note = file.note
     if note is None:
         return return_json(status_code=404, message="No note found")
     if not verify_access_token_for_note(note):
         return return_json(status_code=403, message="Permission denied")
-    file = datastore.get_file(id)
-    if file is None:
-        return return_json(status_code=404, message="No file found")
     file_path = Path(file.file_path).resolve()
     basepath = Path(Config.UPLOAD_FOLDER).resolve()
     relative_path = file_path.relative_to(basepath)
@@ -399,17 +399,19 @@ def get_file(name: str, id: int, as_attachment: bool):
         return return_json(status_code=500, message="File not exist at server!")
 
 
-@api.route("/note/<string:name>/file/<int:id>/download")
+@api.route("/file/<int:id>/download")
 class DownloadFileContentRest(BaseRest):
     decorators = [jwt_required(locations=["query_string"])] + [
-        i for i in base_decorators if i is not password_protected_note
+        i
+        for i in base_decorators
+        if i not in {password_protected_note, verify_name_decorator}
     ]
     as_attachment: ClassVar[bool] = True
 
-    def get(self, name: str, id: int):
-        return get_file(name, id, as_attachment=self.as_attachment)
+    def get(self, id: int):
+        return get_file(id, as_attachment=self.as_attachment)
 
 
-@api.route("/note/<string:name>/file/<int:id>/preview")
+@api.route("/file/<int:id>/preview")
 class PreviewFileContentRest(DownloadFileContentRest):
     as_attachment = False
