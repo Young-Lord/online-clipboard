@@ -340,11 +340,11 @@ export default {
                     this.user_property = JSON.parse(response.data.data.user_property)
                     this.encrypt_text_content = this.user_property.encrypt_text_content
                     let content = response.data.data.content
-                    if(this.user_property.encrypt_text_content){
-                        if(this.user_property.encrypt_text_content_algo == "aes"){
+                    if (this.user_property.encrypt_text_content) {
+                        if (this.user_property.encrypt_text_content_algo == "aes") {
                             content = CryptoJS.AES.decrypt(content, this.encryptPassword).toString(CryptoJS.enc.Utf8)
                         }
-                        else{
+                        else {
                             this.$swal.fire({
                                 title: this.$t('clip.Error'),
                                 text: this.$t('clip.encrypt_text_content_algo_not_supported'),
@@ -405,6 +405,7 @@ export default {
             }
             try {
                 let response = await axios.put(`/note/${this.name}`, {
+                    user_property: JSON.stringify(this.user_property),
                     content: content,
                     clip_version: this.clip_version,
                 })
@@ -550,15 +551,6 @@ export default {
             document.body.removeChild(tmpLink)
             URL.revokeObjectURL(url)
         },
-        async pushUserProperty() {
-            try {
-                let response = await axios.put(`/note/${this.name}`, {
-                    user_property: JSON.stringify(this.user_property)
-                })
-            } catch (e) {
-                console.log(e)
-            }
-        },
         async updateEncryptText() {
             if (this.encrypt_text_content) {
                 this.user_property.encrypt_text_content = true
@@ -569,7 +561,6 @@ export default {
                 this.user_property.encrypt_text_content_algo = ""
             }
             this.pushContent()
-            this.pushUserProperty()
         }
     },
     computed: {
