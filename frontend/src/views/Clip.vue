@@ -145,7 +145,6 @@ export default {
             is_new: false,
             metadata: {},
             password: "",
-            timeout_selections: [],
             current_timeout: -1,
             selected_timeout: "",
             current_url: window.location.href,
@@ -574,6 +573,9 @@ export default {
         },
         encryptPassword() {
             return CryptoJS.SHA256(this.name + this.password).toString()
+        },
+        timeout_selections() {
+            return this.metadata.timeout_selections || []
         }
     },
     mounted() {
@@ -586,7 +588,6 @@ export default {
         // fetch metadata
         appStore.metadata().then((metadata) => {
             this.metadata = metadata
-            this.timeout_selections = metadata.timeout_selections
         }).catch((e) => {
             console.log(e)
             this.showDetailWarning(
