@@ -179,7 +179,9 @@ note_model = api.model(
         "name": fields.String,
         "content": fields.String,
         "clip_version": fields.Integer,
-        "readonly_name": fields.String,
+        "readonly_name": fields.String(
+            attribute=lambda note: note.readonly_name_if_has
+        ),
         "timeout_seconds": fields.Integer,
         "is_readonly": fields.Boolean(default=False),
         "files": fields.List(fields.Nested(file_model)),
@@ -195,17 +197,18 @@ def marshal_note(note: Note, status_code: int = 200, message: Optional[str] = No
         marshal(note, note_model), status_code=status_code, message=message
     )
 
-
+ALLOW_PROPS = ["content", "readonly_name", "files"]
+PROP_DEFAULT_VALUES = {"user_property": "{}"}
 def mashal_readonly_note(note: Note, status_code: int = 200):
     ret = marshal(note, note_model)
-    allow_props = ["content", "readonly_name", "files"]
     assert isinstance(ret, dict)
     ret = {
         k: v
-        if k in allow_props
+        if k in ALLOW_PROPS
         else type(v)()  # create object with default value (0 or empty)
         for k, v in ret.items()
     }
+    ret = {**ret, **PROP_DEFAULT_VALUES}
     ret["is_readonly"] = True
     return return_json(ret, status_code=status_code)
 
@@ -266,6 +269,7 @@ class NoteRest(BaseRest):
             "clip_version",
             "timeout_seconds",
             "user_property",
+            "enable_readonly",
         ]
         params = {k: v for k, v in params.items() if k in allow_props}
         if len(params) == 0:

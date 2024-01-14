@@ -60,9 +60,11 @@
                                 v-if="!is_readonly">
                             </v-text-field>
                             <!-- readonly url, click to copy-->
-                            <v-text-field :label="$t('clip.readonly_url_click_to_copy')" v-model="readonly_url" readonly
-                                prepend-inner-icon="mdi-link" v-if="readonly_url" @click="copyString(readonly_url)"
-                                class="cursor-pointer">
+                            <v-text-field :label="$t('clip.readonly_url_click_to_copy')" v-model="readonly_url_check_empty"
+                                readonly prepend-inner-icon="mdi-link" @click="hasReadonlyName && copyString(readonly_url)"
+                                class="cursor-pointer" v-if="readonly_url"
+                                :append-inner-icon="hasReadonlyName ? 'mdi-delete' : 'mdi-plus-circle-outline'"
+                                @click:append-inner="toggleReadonlyUrl()">
                             </v-text-field>
                             <v-list v-model:opened="sidebar_list_opened" v-if="!is_new">
                                 <v-list-group value="Advanced Settings">
@@ -77,7 +79,7 @@
                                     </v-checkbox>
                                     <!-- checkbox for auto fetch cloud version -->
                                     <v-checkbox v-model="encrypt_text_content" :label="$t('clip.encrypt_content')"
-                                        @change="updateEncryptText()">
+                                        v-if="!is_readonly" @change="updateEncryptText()">
                                     </v-checkbox>
                                 </v-list-group>
                             </v-list>
@@ -149,7 +151,7 @@ export default {
             current_timeout: -1,
             selected_timeout: "",
             current_url: window.location.href,
-            readonly_url: "",
+            readonly_name: "",
             is_readonly: false,
             uploading: false,
             file_to_upload: [] as File[],
@@ -220,7 +222,17 @@ export default {
                     this.remote_version = this.clip_version = 1
                     return
                 } else {
-                    this.user_property = JSON.parse(response.data.data.user_property) as UserProperty
+                    try {
+                        this.user_property = JSON.parse(response.data.data.user_property) as UserProperty
+                    }
+                    catch {
+                        this.user_property = {} as UserProperty
+                        console.log(response.data.data.user_property)
+                        showDetailWarning({
+                            title: this.$t('clip.Error'),
+                            text: this.$t('clip.failed_to_parse_user_property')
+                        })
+                    }
                     this.encrypt_text_content = this.user_property.encrypt_text_content ?? false
                     let content = response.data.data.content
                     if (this.user_property.encrypt_text_content) {
@@ -241,10 +253,7 @@ export default {
                     this.selected_timeout = timeDeltaToString(this.current_timeout)
                     this.remote_content = content
                     this.remote_version = this.clip_version = (response.data.data.clip_version ?? 1)
-                    this.readonly_url = replaceLastPartOfUrl(
-                        window.location.href,
-                        response.data.data.readonly_name
-                    )
+                    this.readonly_name = response.data.data.readonly_name
                     this.is_readonly = response.data.data.is_readonly
                     this.remote_files = response.data.data.files
                     this.is_local_outdated = false
@@ -521,6 +530,17 @@ export default {
             tmpLink.click()
             document.body.removeChild(tmpLink)
             URL.revokeObjectURL(url)
+        },
+        // readonly url
+        async toggleReadonlyUrl() {
+            try {
+                let response = await axios.put(`/note/${this.name}`, {
+                    enable_readonly: !this.hasReadonlyName
+                })
+                this.fetchContent()
+            } catch (e: any) {
+                console.log(e)
+            }
         }
     },
     computed: {
@@ -532,7 +552,19 @@ export default {
         },
         timeout_selections(): number[] {
             return this.metadata.timeout_selections || []
-        }
+        },
+        hasReadonlyName(): boolean {
+            return this.readonly_name !== ""
+        },
+        readonly_url(): string {
+            return replaceLastPartOfUrl(
+                window.location.href,
+                this.readonly_name
+            )
+        },
+        readonly_url_check_empty(): string {
+            return this.hasReadonlyName ? this.readonly_url : ' '
+        },
     },
     mounted() {
         // add auth header

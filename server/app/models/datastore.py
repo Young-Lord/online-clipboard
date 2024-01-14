@@ -2,7 +2,7 @@ from abc import ABC
 import os
 from typing import Optional
 import uuid
-from sqlalchemy import Integer, String, ForeignKey, func, sql
+from sqlalchemy import Boolean, Integer, String, ForeignKey, func, sql
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.note_const import PASSWORD_SCHEMES
 from passlib.context import CryptContext
@@ -28,7 +28,12 @@ class Note(db.Model, DatabaseColumnBase):
     password: Mapped[str] = mapped_column(
         String, nullable=False, default="", server_default=""
     )  # empty string for no password, passlib hash otherwise
-    readonly_name: Mapped[str] = mapped_column(String, unique=True)
+    readonly_name: Mapped[str] = mapped_column(
+        String, nullable=False
+    )  # always non-empty
+    has_readonly_name: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default=sql.expression.true()
+    )
     timeout_seconds: Mapped[int] = mapped_column(Integer)
     files: Mapped[set["File"]] = relationship("File", back_populates="note")
     all_file_size: Mapped[int] = mapped_column(
@@ -39,6 +44,12 @@ class Note(db.Model, DatabaseColumnBase):
     user_property: Mapped[str] = mapped_column(
         String, default="{}", server_default="{}"
     )
+
+    @property
+    def readonly_name_if_has(self) -> str:
+        if self.has_readonly_name:
+            return self.readonly_name
+        return ""
 
     def __repr__(self):
         return f"<Note {self.name}>"
@@ -103,7 +114,13 @@ class NoteDatastore(Datastore):
         return self.session.query(Note).filter_by(name=name).first()
 
     def get_note_by_readonly_name(self, readonly_name: str) -> Optional[Note]:
-        return self.session.query(Note).filter_by(readonly_name=readonly_name).first()
+        return self.session.query(Note).filter_by(readonly_name=readonly_name, has_readonly_name=True).first()
+
+    def get_unique_readonly_name(self) -> str:
+        while True:
+            readonly_name = READONLY_PREFIX + uuid.uuid4().hex
+            if self.get_note_by_readonly_name(readonly_name) is None:
+                return readonly_name
 
     def update_note(
         self,
@@ -113,6 +130,7 @@ class NoteDatastore(Datastore):
         password: Optional[str] = None,
         timeout_seconds: Optional[int] = None,
         user_property: Optional[str] = None,
+        enable_readonly: Optional[bool] = None,
     ) -> None:
         note: Optional[Note] = self.get_note(name)
         if note is None:
@@ -123,7 +141,7 @@ class NoteDatastore(Datastore):
             if password is None:
                 password = ""
             note.clip_version = 1
-            note.readonly_name = READONLY_PREFIX + uuid.uuid4().hex
+            enable_readonly = True
             note.timeout_seconds = Metadata.default_note_timeout
         if clip_version is not None:
             if clip_version < note.clip_version:
@@ -144,6 +162,12 @@ class NoteDatastore(Datastore):
             note.timeout_seconds = timeout_seconds
         if user_property is not None:
             note.user_property = user_property
+        if enable_readonly is not None:
+            if enable_readonly:
+                note.readonly_name = self.get_unique_readonly_name()
+                note.has_readonly_name = True
+            else:
+                note.has_readonly_name = False
         self.session.add(note)
         self.session.commit()
 
