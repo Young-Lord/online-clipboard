@@ -433,11 +433,11 @@ export default {
                 await axios.put(`/note/${this.name}`, {
                     new_password: password === "" ? "" : CryptoJS.SHA512(password).toString(),
                 })
+                this.password = password
                 await this.updateEncryptText()
                 showAutoCloseSuccess({
                     title: this.$t('clip.password_changed'),
                 })
-                this.password = password
             } catch (e: any) {
                 console.log(e)
             }
@@ -451,7 +451,7 @@ export default {
                 this.user_property.encrypt_text_content = false
                 this.user_property.encrypt_text_content_algo = ""
             }
-            this.pushContent()
+            await this.pushContent()
         },
         async setNoteTimeout(selected_timeout: string) {
             await this.createIfNotExist()
