@@ -277,7 +277,8 @@ class NoteRest(BaseRest):
         if len(params) == 0:
             return return_json(status_code=400, message="No property to update")
         content = params.get("content", "")
-        if len(content) > Metadata.max_content_length:
+        user_property = params.get("user_property", "")
+        if len(content) + len(user_property) > Metadata.max_content_length:
             return return_json(status_code=400, message="Content too long")
         password = params.get("password", "")
         if len(password) > Metadata.max_password_length:
