@@ -165,122 +165,9 @@ export default {
         }
     },
     methods: {
+        // UI / UX
         humanFileSize: humanFileSize,
         timeDeltaToString: timeDeltaToString,
-        async createIfNotExist() {
-            if (!this.is_new) return
-            try {
-                let response = await axios.post(`/note/${this.name}`, {})
-                await this.fetchContent(true)
-                this.is_new = false
-            } catch (e) {
-                console.log(e)
-            }
-        },
-        async uploadSingleFile(file) {
-            var formData = new window.FormData()
-            formData.append("file", this.file_to_upload[0])
-            let response = await axios.post(`/note/${this.name}/file/0`, formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                },
-            })
-        },
-        async uploadFile() {
-            await this.createIfNotExist()
-            this.uploading = true
-            let error_string = null
-            let file_count = this.file_to_upload.length + this.remote_files.length
-            if (this.metadata.max_file_count && file_count > this.metadata.max_file_count) {
-                error_string = this.$t('clip.file.error.TOTAL_FILES_COUNT_LIMIT_HIT')
-            }
-            this.file_to_upload.forEach((file) => {
-                if (this.metadata.max_file_size && file.size > this.metadata.max_file_size) {
-                    error_string = this.$t('clip.file.error.SINGLE_FILE_SIZE_LIMIT_HIT')
-                }
-            })
-            let total_size = this.file_to_upload.concat(this.remote_files).reduce((partialSum, a) => partialSum + a.size, 0)
-
-            if (this.metadata.max_all_file_size && total_size > this.metadata.max_all_file_size) {
-                error_string = this.$t('clip.file.error.TOTAL_FILES_SIZE_LIMIT_HIT')
-            }
-            if (error_string !== null) {
-                this.$swal.fire({
-                    title: this.$t('clip.Error'),
-                    text: error_string,
-                    icon: "error",
-                    confirmButtonText: this.$t('clip.ok'),
-                })
-                this.file_to_upload = null
-                this.uploading = false
-                return
-            }
-            try {
-                await Promise.all(this.file_to_upload.map(this.uploadSingleFile))
-                this.fetchContent(true)
-                this.$swal
-                    .fire({
-                        title: this.$t('clip.file.uploaded'),
-                        text: this.$t('clip.file.your_file_has_been_uploaded'),
-                        icon: "success",
-                        timer: 1200,
-                        confirmButtonText: this.$t('clip.ok'),
-                    })
-            }
-            catch (e) {
-                console.log(e)
-                error_string = this.$t('clip.file.failed_to_upload_file')
-                if (e?.response?.status === 400 && e?.response?.data?.error_id !== null) {
-                    error_string = this.$t('clip.file.error.' + e.response.data.error_id)
-                }
-                this.$swal.fire({
-                    title: this.$t('clip.Error'),
-                    text: error_string,
-                    icon: "error",
-                    confirmButtonText: this.$t('clip.ok'),
-                })
-            } finally {
-                this.file_to_upload = null
-                this.uploading = false
-                this.fetchContent(true)
-            }
-        },
-        async downloadFile(file) {
-            window.open(file.download_url, "_self")
-        },
-        async previewFile(file) {
-            window.open(file.preview_url, "_blank")
-        },
-        async deleteFile(file) {
-            this.uploading = true
-            try {
-                let response = await axios.delete(`/note/${this.name}/file/${file.id}`)
-                this.fetchContent(true)
-                this.$swal
-                    .fire({
-                        title: this.$t('clip.file.deleted'),
-                        text: this.$t('clip.file.your_file_has_been_deleted'),
-                        icon: "success",
-                        timer: 1200,
-                        confirmButtonText: this.$t('clip.ok'),
-                    })
-            } catch (e) {
-                console.log(e)
-                this.$swal.fire({
-                    title: this.$t('clip.Error'),
-                    text: this.$t('clip.file.failed_to_delete_file'),
-                    icon: "error",
-                    confirmButtonText: this.$t('clip.ok'),
-                })
-            } finally {
-                this.uploading = false
-            }
-        },
-        async setEditingStatus() {
-            this.last_edit_time = Date.now()
-            if (this.is_readonly) return
-            this.save_status = "editing"
-        },
         async showDetailWarning(title, text, pop_to_home = false) {
             await this.$swal.fire({
                 title: title,
@@ -290,6 +177,22 @@ export default {
             })
             if (pop_to_home) {
                 this.$router.push({ name: "Home" })
+            }
+        },
+        async setEditingStatus() {
+            this.last_edit_time = Date.now()
+            if (this.is_readonly) return
+            this.save_status = "editing"
+        },
+        // create / fetch / push / delete
+        async createIfNotExist() {
+            if (!this.is_new) return
+            try {
+                let response = await axios.post(`/note/${this.name}`, {})
+                await this.fetchContent(true)
+                this.is_new = false
+            } catch (e) {
+                console.log(e)
             }
         },
         async fetchContent(no_update_content = false) {
@@ -455,6 +358,107 @@ export default {
                     }
                 })
         },
+        // file
+        async uploadSingleFile(file) {
+            var formData = new window.FormData()
+            formData.append("file", this.file_to_upload[0])
+            let response = await axios.post(`/note/${this.name}/file/0`, formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            })
+        },
+        async uploadFile() {
+            await this.createIfNotExist()
+            this.uploading = true
+            let error_string = null
+            let file_count = this.file_to_upload.length + this.remote_files.length
+            if (this.metadata.max_file_count && file_count > this.metadata.max_file_count) {
+                error_string = this.$t('clip.file.error.TOTAL_FILES_COUNT_LIMIT_HIT')
+            }
+            this.file_to_upload.forEach((file) => {
+                if (this.metadata.max_file_size && file.size > this.metadata.max_file_size) {
+                    error_string = this.$t('clip.file.error.SINGLE_FILE_SIZE_LIMIT_HIT')
+                }
+            })
+            let total_size = this.file_to_upload.concat(this.remote_files).reduce((partialSum, a) => partialSum + a.size, 0)
+
+            if (this.metadata.max_all_file_size && total_size > this.metadata.max_all_file_size) {
+                error_string = this.$t('clip.file.error.TOTAL_FILES_SIZE_LIMIT_HIT')
+            }
+            if (error_string !== null) {
+                this.$swal.fire({
+                    title: this.$t('clip.Error'),
+                    text: error_string,
+                    icon: "error",
+                    confirmButtonText: this.$t('clip.ok'),
+                })
+                this.file_to_upload = null
+                this.uploading = false
+                return
+            }
+            try {
+                await Promise.all(this.file_to_upload.map(this.uploadSingleFile))
+                this.fetchContent(true)
+                this.$swal
+                    .fire({
+                        title: this.$t('clip.file.uploaded'),
+                        text: this.$t('clip.file.your_file_has_been_uploaded'),
+                        icon: "success",
+                        timer: 1200,
+                        confirmButtonText: this.$t('clip.ok'),
+                    })
+            }
+            catch (e) {
+                console.log(e)
+                error_string = this.$t('clip.file.failed_to_upload_file')
+                if (e?.response?.status === 400 && e?.response?.data?.error_id !== null) {
+                    error_string = this.$t('clip.file.error.' + e.response.data.error_id)
+                }
+                this.$swal.fire({
+                    title: this.$t('clip.Error'),
+                    text: error_string,
+                    icon: "error",
+                    confirmButtonText: this.$t('clip.ok'),
+                })
+            } finally {
+                this.file_to_upload = null
+                this.uploading = false
+                this.fetchContent(true)
+            }
+        },
+        async downloadFile(file) {
+            window.open(file.download_url, "_self")
+        },
+        async previewFile(file) {
+            window.open(file.preview_url, "_blank")
+        },
+        async deleteFile(file) {
+            this.uploading = true
+            try {
+                let response = await axios.delete(`/note/${this.name}/file/${file.id}`)
+                this.fetchContent(true)
+                this.$swal
+                    .fire({
+                        title: this.$t('clip.file.deleted'),
+                        text: this.$t('clip.file.your_file_has_been_deleted'),
+                        icon: "success",
+                        timer: 1200,
+                        confirmButtonText: this.$t('clip.ok'),
+                    })
+            } catch (e) {
+                console.log(e)
+                this.$swal.fire({
+                    title: this.$t('clip.Error'),
+                    text: this.$t('clip.file.failed_to_delete_file'),
+                    icon: "error",
+                    confirmButtonText: this.$t('clip.ok'),
+                })
+            } finally {
+                this.uploading = false
+            }
+        },
+        // password
         async changePassword() {
             let password = (
                 await this.$swal({
@@ -479,6 +483,17 @@ export default {
             } catch (e) {
                 console.log(e)
             }
+        },
+        async updateEncryptText() {
+            if (this.encrypt_text_content) {
+                this.user_property.encrypt_text_content = true
+                this.user_property.encrypt_text_content_algo = "aes"
+            }
+            else {
+                this.user_property.encrypt_text_content = false
+                this.user_property.encrypt_text_content_algo = ""
+            }
+            this.pushContent()
         },
         async setNoteTimeout(selected_timeout) {
             await this.createIfNotExist()
@@ -518,6 +533,7 @@ export default {
                 console.log(e)
             }
         },
+        // useful features
         async copyString(content) {
             if (!content) return
             if (navigator?.clipboard?.writeText === undefined) {
@@ -540,7 +556,7 @@ export default {
             }
         },
         async downloadContent() {
-            // blob
+            // save as blob
             const blob = new Blob([this.local_content], { type: "text/plain" })
             const url = window.URL.createObjectURL(blob)
             const tmpLink = document.createElement("a")
@@ -550,17 +566,6 @@ export default {
             tmpLink.click()
             document.body.removeChild(tmpLink)
             URL.revokeObjectURL(url)
-        },
-        async updateEncryptText() {
-            if (this.encrypt_text_content) {
-                this.user_property.encrypt_text_content = true
-                this.user_property.encrypt_text_content_algo = "aes"
-            }
-            else {
-                this.user_property.encrypt_text_content = false
-                this.user_property.encrypt_text_content_algo = ""
-            }
-            this.pushContent()
         }
     },
     computed: {
@@ -572,25 +577,13 @@ export default {
         }
     },
     mounted() {
-        setInterval(() => {
-            if (Date.now() - this.last_updated > this.save_interval) {
-                this.pushContentIfChanged()
-            }
-        }, this.save_interval)
-
-        setInterval(
-            () => {
-                if (this.auto_fetch_remote_content && Date.now() - this.last_edit_time > this.auto_fetch_remote_content_min_idle_time) {
-                    this.fetchContent()
-                }
-            }, this.auto_fetch_remote_content_interval
-        )
-
+        // add auth header
         axios.interceptors.request.use((config) => {
             config.headers["Authorization"] = `Bearer ${Buffer.from(CryptoJS.SHA512(this.password).toString(), 'utf8').toString('base64')}`
             return config
         })
 
+        // fetch metadata
         appStore.metadata().then((metadata) => {
             this.metadata = metadata
             this.timeout_selections = metadata.timeout_selections
@@ -603,16 +596,35 @@ export default {
             )
         })
 
+        // auto save
+        setInterval(() => {
+            if (Date.now() - this.last_updated > this.save_interval) {
+                this.pushContentIfChanged()
+            }
+        }, this.save_interval)
+
+        // auto update
+        setInterval(
+            () => {
+                if (this.auto_fetch_remote_content && Date.now() - this.last_edit_time > this.auto_fetch_remote_content_min_idle_time) {
+                    this.fetchContent()
+                }
+            }, this.auto_fetch_remote_content_interval
+        )
+
+        // first fetch
         this.fetchContent()
     }
 }
 </script>
 
 <style>
+/* show pointer cursor for `click to copy`*/
 .cursor-pointer * {
     cursor: pointer;
 }
 
+/*remove useless padding in sidebar*/
 #sidebar .v-input__details {
     display: none;
 }
