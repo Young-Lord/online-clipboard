@@ -35,7 +35,7 @@ class Note(db.Model, DatabaseColumnBase):
         Boolean, nullable=False, default=True, server_default=sql.expression.true()
     )
     timeout_seconds: Mapped[int] = mapped_column(Integer)
-    files: Mapped[set["File"]] = relationship("File", back_populates="note")
+    files: Mapped[list["File"]] = relationship("File", back_populates="note")
     all_file_size: Mapped[int] = mapped_column(
         Integer,
         default=0,
