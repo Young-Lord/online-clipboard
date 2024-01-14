@@ -1,9 +1,10 @@
 import original_axios from "axios"
-import { API_ENDPOINT } from "./config"
+import { useAppStore } from "./store/app"
+const appStore = useAppStore()
 
 export const axios = original_axios.create({
     withCredentials: true,
-    baseURL: API_ENDPOINT,
+    baseURL: appStore.api_endpoint,
 })
 axios.defaults.headers.common["Content-Type"] = "application/json"
 

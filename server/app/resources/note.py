@@ -54,7 +54,7 @@ def verify_dict_decorator(f):
 def verify_name_decorator(f):
     @functools.wraps(f)
     def decorated_function(*args, **kwargs):
-        name = kwargs.get("name", "")
+        name: str = kwargs.get("name", "")
         if not verify_name(name) and not name.startswith(READONLY_PREFIX):
             return return_json(status_code=400, message="Invalid name")
         return f(*args, **kwargs)

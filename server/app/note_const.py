@@ -21,7 +21,7 @@ PASSWORD_SCHEMES: list[str] = ["pbkdf2_sha256", "bcrypt", "argon2", "sha512_cryp
 
 @dataclass
 class BaseMetadata:
-    name: str = "Clipd"
+    name: str = "Clip"
     description: str = "A simple clipboard app"
     owner: str = "Niko"
     version: str = "0.0.8"

@@ -63,10 +63,9 @@
   },
   "about": {
     "author": "Author",
-    "metadata-metadata": "Metadata = {0}",
-    "backend-version-backend_version": "Backend version = {0}",
-    "current-api-api_endpoint": "Current API = {0}",
-    "test-about-by-author": "TEST about by {0} !!!"
+    "metadata": "Debug info",
+    "description": "Pick a name, create a clip, upload files, set password, share it with others or keep it yourself.",
+    "api_endpoint": "API endpoint"
   },
   "loading...": "loading...",
   "failed.": "failed",
