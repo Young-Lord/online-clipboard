@@ -16,11 +16,11 @@
             <v-toolbar-title>{{ save_status ? $t(`save_status.${save_status}`) : '' }}</v-toolbar-title>
             <v-spacer></v-spacer>
             <!--delete button-->
-            <v-btn icon @click="deleteContent" v-if="!this.is_new && !this.is_readonly">
+            <v-btn icon @click="deleteContent()" v-if="!this.is_new && !this.is_readonly">
                 <v-icon>mdi-delete</v-icon>
             </v-btn>
             <!-- password button-->
-            <v-btn icon @click="changePassword" v-if="!this.is_new && !this.is_readonly">
+            <v-btn icon @click="changePassword()" v-if="!this.is_new && !this.is_readonly">
                 <v-icon>mdi-lock</v-icon>
             </v-btn>
             <!--save button-->
@@ -32,7 +32,7 @@
                 <v-icon>mdi-content-copy</v-icon>
             </v-btn>
             <!-- download button-->
-            <v-btn icon @click="downloadContent">
+            <v-btn icon @click="downloadContent()">
                 <v-icon>mdi-download</v-icon>
             </v-btn>
         </v-app-bar>
@@ -42,7 +42,7 @@
                 <v-row rows="12">
                     <v-col cols="12" md="8">
                         <!-- Larger Text Input Box -->
-                        <v-textarea rows="15" variant="outlined" auto-grow v-model="local_content" @input="setEditingStatus"
+                        <v-textarea rows="15" variant="outlined" auto-grow v-model="local_content" @input="setEditingStatus()"
                             @keydown.ctrl.s.exact="pushContentIfChanged()" @keydown.ctrl.s.exact.prevent
                             @focusout="pushContentIfChanged()" :disabled="this.uploading">
                         </v-textarea>
@@ -89,7 +89,7 @@
                             <!-- Drag or click to upload file -->
                             <v-file-input
                                 :label="$t('clip.drag_or_click_to_upload_file') + ' ' + $t('clip.file_limits', [humanFileSize(this.metadata.max_file_size), this.remote_files.length, this.metadata.max_file_count, humanFileSize(this.remote_files.reduce((partialSum, a) => partialSum + a.size, 0)), humanFileSize(this.metadata.max_all_file_size)])"
-                                prepend-icon="mdi-file-upload" @change="uploadFile" v-if="!this.is_readonly && !this.is_new"
+                                prepend-icon="mdi-file-upload" @change="uploadFile()" v-if="!this.is_readonly && !this.is_new"
                                 :disabled="this.uploading" v-model="file_to_upload" multiple>
                             </v-file-input>
                             <!--all files, with download and delete button-->
