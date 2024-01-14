@@ -7,9 +7,10 @@
     </v-container>
 </template>
 
-<script>
-import { axios } from "@/api"
+<script lang="ts">
+import { MetaData, axios } from "@/api"
 import { API_ENDPOINT } from "@/config"
+import { useAppStore } from "@/store/app"
 
 export default {
     components: {},
@@ -18,14 +19,13 @@ export default {
             author: this.$t('about.author'),
             api_endpoint: API_ENDPOINT,
             backend_version: this.$t('loading...'),
-            metadata: {},
+            metadata: {} as MetaData,
         }
     },
     methods: {
         async getMetadata() {
             try {
-                let response = await axios.get("/metadata")
-                this.metadata = response.data.data
+                this.metadata = await useAppStore().metadata()
                 this.backend_version = this.metadata.version
                 this.author = this.metadata.owner
             } catch (e) {

@@ -1,4 +1,3 @@
-// Composables
 import { BASE_PATH } from "@/config"
 import { createRouter, createWebHistory } from "vue-router"
 

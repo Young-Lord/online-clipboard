@@ -1,8 +1,12 @@
-export function getKeyByValue(object, value) {
+interface Dictionary<T> {
+    [Key: string]: T
+}
+
+export function getKeyByValue(object: Dictionary<any>, value: any): any {
     return Object.keys(object).find((key) => object[key] === value)
 }
 
-export function replaceLastPartOfUrl(href, new_part) {
+export function replaceLastPartOfUrl(href: string, new_part: string): string {
     // replaceLastPartOfUrl("https://a.com/a/old?aa=1&dd=3#hash", "new") -> "https://a.com/a/new?aa=1&dd=3#hash"
     let url = new URL(href)
     const segments = url.pathname.split("/")
@@ -22,7 +26,12 @@ export function replaceLastPartOfUrl(href, new_part) {
  *
  * @return Formatted string.
  */
-export function humanFileSize(bytes, si = false, dp = 1, remove_suffix_zero = true) {
+export function humanFileSize(
+    bytes: number,
+    si: boolean = false,
+    dp: number = 1,
+    remove_suffix_zero: boolean = true
+): string {
     // https://stackoverflow.com/a/14919494
     const thresh = si ? 1000 : 1024
 
@@ -50,11 +59,20 @@ export function humanFileSize(bytes, si = false, dp = 1, remove_suffix_zero = tr
     return result + " " + units[u]
 }
 
-export function isNodejs() {
-    return (
+export function isNodejs(): boolean {
+    return !!(
         typeof "process" !== "undefined" &&
+        // @ts-ignore
         process &&
+        // @ts-ignore
         process.versions &&
+        // @ts-ignore
         process.versions.node
     )
+}
+
+export function assert(condition: any): asserts condition {
+    if (!condition) {
+        throw new Error()
+    }
 }
