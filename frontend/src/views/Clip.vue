@@ -418,7 +418,7 @@ export default {
             if (password === undefined) return
             try {
                 let response = await axios.put(`/note/${this.name}`, {
-                    new_password: password,
+                    new_password: password === "" ? "" : sha512(password).toString(),
                 })
                 this.$swal({
                     title: this.$t('clip.password_changed'),
