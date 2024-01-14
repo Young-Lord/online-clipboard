@@ -56,7 +56,10 @@
         "invalid_note_name": "剪贴板名字格式有误！",
         "outdated": "剪贴板已在其他客户端更新，刷新网页以更新。",
         "auto_fetch_remote_content": "自动从云端向本地同步更改",
-        "failed_to_fetch_metadata": "获取剪贴板信息失败！"
+        "failed_to_fetch_metadata": "获取剪贴板信息失败！",
+        "advanced_settings": "高级设置",
+        "encrypt_content": "加密内容",
+        "encrypt_text_content_algo_not_supported": "加密内容失败！"
     },
     "about": {
         "author": "Author",

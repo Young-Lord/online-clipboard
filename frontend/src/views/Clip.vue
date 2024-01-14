@@ -65,10 +65,23 @@
                                 prepend-inner-icon="mdi-link" v-if="this.readonly_url" @click="copyString(readonly_url)"
                                 class="cursor-pointer">
                             </v-text-field>
-                            <!-- checkbox for auto fetch cloud version -->
-                            <v-checkbox v-model="auto_fetch_remote_content" :label="$t('clip.auto_fetch_remote_content')"
-                                v-if="!this.is_new">
-                            </v-checkbox>
+                            <v-list v-model:opened="sidebar_list_opened" v-if="!this.is_new">
+                                <v-list-group value="Advanced Settings">
+                                    <template v-slot:activator="{ props }">
+                                        <v-list-item v-bind="props" prepend-icon="mdi-cog"
+                                            :title="$t('clip.advanced_settings')"></v-list-item>
+                                    </template>
+
+                                    <!-- checkbox for auto fetch cloud version -->
+                                    <v-checkbox v-model="auto_fetch_remote_content"
+                                        :label="$t('clip.auto_fetch_remote_content')">
+                                    </v-checkbox>
+                                    <!-- checkbox for auto fetch cloud version -->
+                                    <v-checkbox v-model="encrypt_text_content" :label="$t('clip.encrypt_content')"
+                                        @change="updateEncryptText()">
+                                    </v-checkbox>
+                                </v-list-group>
+                            </v-list>
                         </v-card>
                     </v-col>
                     <v-col cols="12">
@@ -117,6 +130,7 @@ const appStore = useAppStore()
 import { getKeyByValue, replaceLastPartOfUrl, humanFileSize } from "@/utils"
 import { Buffer } from 'buffer'
 import { timeDeltaToString } from "@/plugins/i18n"
+import CryptoJS from 'crypto-js'
 
 export default {
     data() {
@@ -144,7 +158,10 @@ export default {
             auto_fetch_remote_content: false,
             auto_fetch_remote_content_min_idle_time: 5 * 1000,
             auto_fetch_remote_content_interval: 5 * 1000,
-            last_edit_time: Date.now()
+            last_edit_time: Date.now(),
+            user_property: {},
+            sidebar_list_opened: [],
+            encrypt_text_content: false,
         }
     },
     methods: {
@@ -320,12 +337,28 @@ export default {
                     this.remote_version = this.clip_version = 1
                     return
                 } else {
+                    this.user_property = JSON.parse(response.data.data.user_property)
+                    this.encrypt_text_content = this.user_property.encrypt_text_content
+                    let content = response.data.data.content
+                    if(this.user_property.encrypt_text_content){
+                        if(this.user_property.encrypt_text_content_algo == "aes"){
+                            content = CryptoJS.AES.decrypt(content, this.encryptPassword).toString(CryptoJS.enc.Utf8)
+                        }
+                        else{
+                            this.$swal.fire({
+                                title: this.$t('clip.Error'),
+                                text: this.$t('clip.encrypt_text_content_algo_not_supported'),
+                                icon: "error",
+                                confirmButtonText: this.$t('clip.ok'),
+                            })
+                        }
+                    }
                     if (!no_update_content) {
-                        this.local_content = response.data.data.content
+                        this.local_content = content
                     }
                     this.current_timeout = response.data.data.timeout_seconds
                     this.selected_timeout = timeDeltaToString(this.current_timeout)
-                    this.remote_content = response.data.data.content
+                    this.remote_content = content
                     this.remote_version = this.clip_version = (response.data.data.clip_version ?? 1)
                     this.readonly_url = replaceLastPartOfUrl(
                         window.location.href,
@@ -355,9 +388,24 @@ export default {
             this.last_updated = Date.now()
             this.save_status = "saving"
             await this.createIfNotExist()
+            let content = this.local_content
+            if (this.encrypt_text_content) {
+                if (this.user_property.encrypt_text_content_algo == "aes") {
+                    content = CryptoJS.AES.encrypt(content, this.encryptPassword).toString()
+                }
+                else {
+                    this.$swal.fire({
+                        title: this.$t('clip.Error'),
+                        text: this.$t('clip.encrypt_text_content_algo_not_supported'),
+                        icon: "error",
+                        confirmButtonText: this.$t('clip.ok'),
+                    })
+                    return
+                }
+            }
             try {
                 let response = await axios.put(`/note/${this.name}`, {
-                    content: this.local_content,
+                    content: content,
                     clip_version: this.clip_version,
                 })
                 this.clip_version = response.data.data.clip_version
@@ -417,9 +465,10 @@ export default {
             ).value
             if (password === undefined) return
             try {
-                let response = await axios.put(`/note/${this.name}`, {
-                    new_password: password === "" ? "" : sha512(password).toString(),
+                await axios.put(`/note/${this.name}`, {
+                    new_password: password === "" ? "" : CryptoJS.SHA512(password).toString(),
                 })
+                await this.updateEncryptText()
                 this.$swal({
                     title: this.$t('clip.password_changed'),
                     icon: "success",
@@ -501,11 +550,35 @@ export default {
             document.body.removeChild(tmpLink)
             URL.revokeObjectURL(url)
         },
+        async pushUserProperty() {
+            try {
+                let response = await axios.put(`/note/${this.name}`, {
+                    user_property: JSON.stringify(this.user_property)
+                })
+            } catch (e) {
+                console.log(e)
+            }
+        },
+        async updateEncryptText() {
+            if (this.encrypt_text_content) {
+                this.user_property.encrypt_text_content = true
+                this.user_property.encrypt_text_content_algo = "aes"
+            }
+            else {
+                this.user_property.encrypt_text_content = false
+                this.user_property.encrypt_text_content_algo = ""
+            }
+            this.pushContent()
+            this.pushUserProperty()
+        }
     },
     computed: {
         name() {
             return this.$route.params.name
         },
+        encryptPassword() {
+            return CryptoJS.SHA256(this.name + this.password).toString()
+        }
     },
     mounted() {
         setInterval(() => {
@@ -523,7 +596,7 @@ export default {
         )
 
         axios.interceptors.request.use((config) => {
-            config.headers["Authorization"] = `Bearer ${Buffer.from(this.password, 'utf8').toString('base64')}`
+            config.headers["Authorization"] = `Bearer ${Buffer.from(CryptoJS.SHA512(this.password).toString(), 'utf8').toString('base64')}`
             return config
         })
 
@@ -538,10 +611,9 @@ export default {
                 true
             )
         })
-    },
-    beforeMount() {
+
         this.fetchContent()
-    },
+    }
 }
 </script>
 
@@ -550,7 +622,11 @@ export default {
     cursor: pointer;
 }
 
-#sidebar>.v-input>.v-input__details {
+#sidebar .v-input__details {
     display: none;
+}
+
+#sidebar .v-list {
+    padding: 0;
 }
 </style>

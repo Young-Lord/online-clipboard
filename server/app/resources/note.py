@@ -86,7 +86,6 @@ def password_protected_note(f):
             return f(*args, **kwargs)
             # return return_json(status_code=404, message="No note found")
         if note.password:
-            print(note.name, password, note.password)
             valid, new_hash = passlib_context.verify_and_update(
                 combine_name_and_password(note.name, password), note.password
             )
@@ -182,6 +181,7 @@ note_model = api.model(
         "files": fields.List(fields.Nested(file_model)),
         "file_count": fields.Integer(attribute=lambda note: len(note.files)),
         "all_file_size": fields.Integer,
+        "user_property": fields.String,
     },
 )
 
@@ -256,7 +256,7 @@ class NoteRest(BaseRest):
         params = request.get_json()
         if "new_password" in params:
             params["password"] = params["new_password"]
-        allow_props = ["content", "password", "clip_version", "timeout_seconds"]
+        allow_props = ["content", "password", "clip_version", "timeout_seconds", "user_property"]
         params = {k: v for k, v in params.items() if k in allow_props}
         if len(params) == 0:
             return return_json(status_code=400, message="No property to update")

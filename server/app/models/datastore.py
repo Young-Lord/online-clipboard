@@ -12,6 +12,7 @@ from app.note_const import (
     READONLY_PREFIX,
     Metadata,
 )
+from app.utils import sha512
 from .base import DatabaseColumnBase, db
 from flask_sqlalchemy import SQLAlchemy
 
@@ -24,7 +25,9 @@ class Note(db.Model, DatabaseColumnBase):
     name: Mapped[str] = mapped_column(String, unique=True)
     content: Mapped[str] = mapped_column(String)
     clip_version: Mapped[int] = mapped_column(Integer)
-    password: Mapped[str] = mapped_column(String, nullable=True)
+    password: Mapped[str] = mapped_column(
+        String, nullable=False, default="", server_default=""
+    )  # empty string for no password, passlib hash otherwise
     readonly_name: Mapped[str] = mapped_column(String, unique=True)
     timeout_seconds: Mapped[int] = mapped_column(Integer)
     files: Mapped[set["File"]] = relationship("File", back_populates="note")
@@ -32,6 +35,9 @@ class Note(db.Model, DatabaseColumnBase):
         Integer,
         default=0,
         server_default=sql.expression.literal(0),
+    )
+    user_property: Mapped[str] = mapped_column(
+        String, default="{}", server_default="{}"
     )
 
     def __repr__(self):
@@ -106,6 +112,7 @@ class NoteDatastore(Datastore):
         content: Optional[str] = None,
         password: Optional[str] = None,
         timeout_seconds: Optional[int] = None,
+        user_property: Optional[str] = None,
     ) -> None:
         note: Optional[Note] = self.get_note(name)
         if note is None:
@@ -125,13 +132,18 @@ class NoteDatastore(Datastore):
         if content is not None:
             note.content = content
         if password is not None:
-            note.password = passlib_context.hash(
-                combine_name_and_password(name, password)
-            )
+            if password == "":
+                note.password = ""
+            else:
+                note.password = passlib_context.hash(
+                    combine_name_and_password(name, password)
+                )
         if timeout_seconds is not None:
             if not verify_timeout_seconds(timeout_seconds):
                 raise ValueError("Invalid timeout_seconds")
             note.timeout_seconds = timeout_seconds
+        if user_property is not None:
+            note.user_property = user_property
         self.session.add(note)
         self.session.commit()
 

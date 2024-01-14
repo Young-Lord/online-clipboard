@@ -70,3 +70,11 @@ flask db init
 flask db migrate
 flask db upgrade
 ```
+
+### Crypto
+
+Password protect: sha512 hash through Internet, pbkdf2_sha256 in database.
+
+File access: JWT with note.name and note.password(the hash stored in database as above)
+
+Content encryption: AES-256-CBC with note.name and sha256(note.password)
