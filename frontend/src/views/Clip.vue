@@ -584,6 +584,12 @@ export default {
         },
     },
     mounted() {
+        // get password from url in hash part
+        // example: https://example.com/name#password
+        if (window.location.hash) {
+            this.password = window.location.hash.slice(1)  // remove #
+        }
+
         // add auth header
         axios.interceptors.request.use((config) => {
             config.headers["Authorization"] = `Bearer ${Buffer.from(CryptoJS.SHA512(this.password).toString(), 'utf8').toString('base64')}`
