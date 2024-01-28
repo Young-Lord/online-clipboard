@@ -60,11 +60,12 @@
                                 v-if="!is_readonly">
                             </v-text-field>
                             <!-- readonly url, click to copy-->
-                            <v-text-field :label="$t('clip.readonly_url_click_to_copy')" v-model="readonly_url_check_empty"
-                                readonly prepend-inner-icon="mdi-link" @click="hasReadonlyName && copyString(readonly_url)"
-                                class="cursor-pointer" v-if="readonly_url"
+                            <v-text-field
+                                :label="hasReadonlyName ? $t('clip.readonly_url_click_to_copy') : $t('clip.readonly_url_is_disabled')"
+                                v-model="readonly_url_check_empty" readonly prepend-inner-icon="mdi-link"
+                                @click="hasReadonlyName && copyString(readonly_url)" class="cursor-pointer"
                                 :append-inner-icon="hasReadonlyName ? 'mdi-delete' : 'mdi-plus-circle-outline'"
-                                @click:append-inner="toggleReadonlyUrl()">
+                                @click:append-inner="toggleReadonlyUrl()" v-if="hasReadonlyName">
                             </v-text-field>
                             <v-list v-model:opened="sidebar_list_opened" v-if="!is_new">
                                 <v-list-group value="Advanced Settings">
@@ -574,7 +575,7 @@ export default {
             )
         },
         readonly_url_check_empty(): string {
-            return this.hasReadonlyName ? this.readonly_url : ' '
+            return this.hasReadonlyName ? this.readonly_url : " "
         },
     },
     mounted() {
