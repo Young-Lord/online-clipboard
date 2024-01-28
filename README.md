@@ -75,4 +75,4 @@ Password protect: `sha512(note.password)` through Internet, `pbkdf2_sha256(sha51
 
 File access: JWT generated with `note.name` and `pbkdf2_sha256(sha512(note.password))` (the hash stored in database as above)
 
-Content encryption: AES-256-CBC/PKCS7 with `note.name` and `sha256(note.password)`, see [CryptoJS behaviour](https://stackoverflow.com/a/64802091)
+Content encryption: AES-256-CBC/PKCS7 with `sha256(note.password)`, see [CryptoJS behaviour](https://stackoverflow.com/a/64802091)

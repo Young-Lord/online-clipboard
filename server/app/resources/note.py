@@ -1,6 +1,7 @@
 import base64
 import binascii
 import datetime
+import json
 import os
 from pathlib import Path
 import time
@@ -77,11 +78,29 @@ def password_protected_note(f):
                 password = base64.b64decode(password).decode("utf-8")
             except (binascii.Error, UnicodeDecodeError):
                 return return_json(status_code=400, message="Invalid password provided")
-        name = kwargs.get("name", "")
-        note = datastore.get_note(
-            name,
-        )
-        if note is None or request.method.lower() == "options":
+        name: str = kwargs.get("name", "")
+
+        if (
+            name.startswith(READONLY_PREFIX)
+            and (note := datastore.get_note_by_readonly_name(name)) is not None
+        ):
+            # for encrypted read-only note, we must make sure user has the password
+            note_property = note.user_property
+            try:
+                prop_dict = json.loads(note_property)
+            except json.JSONDecodeError:
+                prop_dict = {}
+            # check if encrypted
+            if not prop_dict.get("encrypt_text_content", False):
+                return f(*args, **kwargs)
+            if not (prop_dict.get("encrypt_text_content_algo", "") == "aes"):
+                return f(*args, **kwargs)
+        else:
+            note = datastore.get_note(
+                name,
+            )
+
+        if note is None:
             # allow operate on non-exist note
             return f(*args, **kwargs)
             # return return_json(status_code=404, message="No note found")
@@ -197,8 +216,14 @@ def marshal_note(note: Note, status_code: int = 200, message: Optional[str] = No
     )
 
 
-ALLOW_PROPS = ["content", "readonly_name", "files"]
-PROP_DEFAULT_VALUES = {"user_property": "{}"}
+ALLOW_PROPS: list[str] = [
+    "content",
+    "readonly_name",
+    "files",
+    "all_file_size",
+    "user_property",
+]
+PROP_DEFAULT_VALUES: dict[str, Any] = {}
 
 
 def mashal_readonly_note(note: Note, status_code: int = 200):

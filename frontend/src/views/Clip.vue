@@ -91,7 +91,8 @@
                             <!-- Drag or click to upload file -->
                             <v-file-input
                                 :label="$t('clip.drag_or_click_to_upload_file') + ' ' + $t('clip.file_limits', [humanFileSize(metadata.max_file_size), remote_files.length, metadata.max_file_count, humanFileSize(getTotalSize(remote_files)), humanFileSize(metadata.max_all_file_size)])"
-                                prepend-icon="mdi-file-upload" @change="uploadFile()" v-if="!is_readonly && !is_new && metadata.max_file_count > 0 && metadata.max_all_file_size > 0"
+                                prepend-icon="mdi-file-upload" @change="uploadFile()"
+                                v-if="!is_readonly && !is_new && metadata.max_file_count > 0 && metadata.max_all_file_size > 0"
                                 :disabled="uploading || metadata.max_file_count <= remote_files.length || metadata.max_all_file_size <= getTotalSize(remote_files)"
                                 v-model="file_to_upload" multiple>
                             </v-file-input>
@@ -136,6 +137,7 @@ import { timeDeltaToString } from "@/plugins/i18n"
 import CryptoJS from 'crypto-js'
 import { showDetailWarning, showAutoCloseSuccess, cancelableInput, dangerousConfirm } from "@/plugins/swal"
 import { isAxiosError } from 'axios'
+import { SweetAlertResult } from "sweetalert2"
 
 export default {
     data() {
@@ -181,6 +183,12 @@ export default {
             this.save_status = "editing"
         },
         // create / fetch / push / delete
+        async requestPassword(): Promise<SweetAlertResult<any>> {
+            return cancelableInput({
+                title: this.$t('clip.password_question'),
+                input: "password",
+            })
+        },
         async createIfNotExist() {
             if (!this.is_new) return
             try {
@@ -203,18 +211,14 @@ export default {
                                 .then(this.goToHome)
                             return
                         } else if (e.response?.status === 401) {
-                            cancelableInput({
-                                title: this.$t('clip.password_question'),
-                                input: "password",
+                            this.requestPassword().then((result) => {
+                                if (result.isConfirmed) {
+                                    this.password = result.value as string
+                                    this.fetchContent()
+                                } else {
+                                    this.goToHome()
+                                }
                             })
-                                .then((result) => {
-                                    if (result.isConfirmed) {
-                                        this.password = result.value
-                                        this.fetchContent()
-                                    } else {
-                                        this.goToHome
-                                    }
-                                })
                             return
                         }
                     }
@@ -560,7 +564,7 @@ export default {
             return this.$route.params.name as string
         },
         encryptPassword(): string {
-            return CryptoJS.SHA256(this.name + this.password).toString()
+            return CryptoJS.SHA256(this.password).toString()
         },
         timeout_selections(): number[] {
             return this.metadata.timeout_selections || []
