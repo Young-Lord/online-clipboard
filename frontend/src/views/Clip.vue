@@ -106,12 +106,19 @@
                                     }}</v-list-item-subtitle>
                                     <template v-slot:append>
                                         <v-list-item-action end>
-                                            <v-btn icon variant="text" @click="downloadFile(file)">
-                                                <v-icon>mdi-download</v-icon>
-                                            </v-btn>
-                                            <v-btn icon variant="text" @click="previewFile(file)">
-                                                <v-icon>mdi-eye</v-icon>
-                                            </v-btn>
+                                            <!--tabindex=-1 make it not focusable-->
+                                            <a :href="file.download_url" target="_self" style="color:inherit;"
+                                                tabindex="-1">
+                                                <v-btn icon variant="text">
+                                                    <v-icon>mdi-download</v-icon>
+                                                </v-btn>
+                                            </a>
+                                            <a :href="file.preview_url" target="_blank" style="color:inherit;"
+                                                tabindex="-1">
+                                                <v-btn icon variant="text">
+                                                    <v-icon>mdi-eye</v-icon>
+                                                </v-btn>
+                                            </a>
                                             <v-btn icon variant="text" @click="deleteFile(file)">
                                                 <v-icon>mdi-delete</v-icon>
                                             </v-btn>
@@ -420,12 +427,6 @@ export default {
                 this.uploading = false
                 this.fetchContent(true)
             }
-        },
-        async downloadFile(file: FileData) {
-            window.open(file.download_url, "_self")
-        },
-        async previewFile(file: FileData) {
-            window.open(file.preview_url, "_blank")
         },
         async deleteFile(file: FileData) {
             this.uploading = true
