@@ -1,4 +1,5 @@
 from abc import ABC
+import datetime
 import os
 from typing import Optional
 import uuid
@@ -54,6 +55,17 @@ class Note(db.Model, DatabaseColumnBase):
     def __repr__(self):
         return f"<Note {self.name}>"
 
+    @property
+    def is_expired(self) -> bool:
+        return (
+            self.timeout_seconds is not None
+            and self.timeout_seconds > 0
+            and (
+                datetime.datetime.now()
+                > self.updated_at + datetime.timedelta(seconds=self.timeout_seconds)
+            )
+        )
+
 
 class File(db.Model, DatabaseColumnBase):
     __tablename__ = "files"
@@ -66,6 +78,17 @@ class File(db.Model, DatabaseColumnBase):
     timeout_seconds: Mapped[int] = mapped_column(
         Integer, default=Metadata.default_file_timeout
     )
+
+    @property
+    def is_expired(self) -> bool:
+        return (
+            self.timeout_seconds is not None
+            and self.timeout_seconds > 0
+            and (
+                datetime.datetime.now()
+                > self.updated_at + datetime.timedelta(seconds=self.timeout_seconds)
+            )
+        )
 
     def __repr__(self):
         return f"<File {self.filename}> in {self.note.name} ({self.note.id})>"
@@ -88,8 +111,16 @@ def combine_name_and_password(name: str, password: str) -> str:
         password = ""
     return name + password
 
-def combine_name_and_password_and_readonly(name: str, password: str, readonly_if_has: str) -> str:
-    return combine_name_and_password(name, password) + readonly_if_has + ("1" if readonly_if_has else "0")
+
+def combine_name_and_password_and_readonly(
+    name: str, password: str, readonly_if_has: str
+) -> str:
+    return (
+        combine_name_and_password(name, password)
+        + readonly_if_has
+        + ("1" if readonly_if_has else "0")
+    )
+
 
 def verify_timeout_seconds(timeout_seconds: int) -> bool:
     return 1 <= timeout_seconds <= Metadata.max_timeout
@@ -107,16 +138,17 @@ class Datastore(ABC):
 
 
 class NoteDatastore(Datastore):
-    def __init__(self, _db):
-        super().__init__(_db)
-
     def get_note(self, name: str) -> Optional[Note]:
         if not verify_name(name):
             return None
         return self.session.query(Note).filter_by(name=name).first()
 
     def get_note_by_readonly_name(self, readonly_name: str) -> Optional[Note]:
-        return self.session.query(Note).filter_by(readonly_name=readonly_name, has_readonly_name=True).first()
+        return (
+            self.session.query(Note)
+            .filter_by(readonly_name=readonly_name, has_readonly_name=True)
+            .first()
+        )
 
     def get_unique_readonly_name(self) -> str:
         while True:
@@ -175,12 +207,16 @@ class NoteDatastore(Datastore):
 
     def delete_note(
         self,
-        name: str,
+        note: Note,
     ) -> None:
-        note: Optional[Note] = self.session.query(Note).filter_by(name=name).first()
-        if note is not None:
-            self.session.delete(note)
-            self.session.commit()
+        """
+        Delete a note and all its files.
+        The object note will be invalid after this call.
+        """
+        for file in note.files:
+            self.delete_file(file)
+        self.session.delete(note)
+        self.session.commit()
 
     def add_file(
         self, note: Note, filename: str, file_path: str, file_size: int
@@ -207,3 +243,6 @@ class NoteDatastore(Datastore):
     def get_file(self, file_id) -> Optional[File]:
         file: Optional[File] = self.session.query(File).filter_by(id=file_id).first()
         return file
+
+
+datastore = NoteDatastore(db)

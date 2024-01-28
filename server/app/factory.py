@@ -2,6 +2,8 @@ import logging
 import sys
 from logging.handlers import RotatingFileHandler
 from flask import Flask
+
+from .schedule_task import RemoveExpiredThings
 from .note_const import Metadata
 from .config import config, FLASK_ENV
 from flask_cors import CORS
@@ -69,3 +71,6 @@ class Factory:
         from .resources.base import file_jwt
 
         file_jwt.init_app(self.flask)
+
+    def set_schedule_task(self):
+        RemoveExpiredThings(self.flask)

@@ -18,7 +18,7 @@ from app.config import Config
 from app.models.datastore import (
     File,
     Note,
-    NoteDatastore,
+    datastore,
     combine_name_and_password,
     combine_name_and_password_and_readonly,
     verify_name,
@@ -32,7 +32,6 @@ from werkzeug.utils import secure_filename
 from werkzeug.exceptions import NotFound
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
 
-datastore = NoteDatastore(db)
 
 NO_DATA_METHODS = {"get", "options", "delete"}
 
@@ -120,37 +119,11 @@ def password_protected_note(f):
     return decorated_function
 
 
-def timeout_note_decorator(f):
-    @functools.wraps(f)
-    def decorated_function(*args, **kwargs):
-        name = kwargs.get("name", "")
-        note = datastore.get_note(
-            name,
-        )
-        now = datetime.datetime.utcnow()
-        is_note_timeout = False
-        if note is not None:
-            if note.timeout_seconds > 0:
-                delta = now - note.updated_at
-                if delta.total_seconds() > note.timeout_seconds:
-                    is_note_timeout = True
-            for file in note.files:
-                if file.timeout_seconds > 0:
-                    delta = now - file.created_at
-                    if is_note_timeout or delta.total_seconds() > file.timeout_seconds:
-                        datastore.delete_file(file)
-            if is_note_timeout:
-                datastore.delete_note(
-                    name,
-                )
-        return f(*args, **kwargs)
-
-    return decorated_function
-
-
 def note_to_jwt_id(note: Note) -> str:
     return sha256(
-        combine_name_and_password_and_readonly(note.name, note.password, note.readonly_name_if_has)
+        combine_name_and_password_and_readonly(
+            note.name, note.password, note.readonly_name_if_has
+        )
     )
 
 
@@ -247,7 +220,6 @@ base_decorators = [  # this is fking from bottom to top!
     password_protected_note,
     verify_name_decorator,
     verify_dict_decorator,
-    timeout_note_decorator,
 ]
 
 
@@ -333,7 +305,7 @@ class NoteRest(BaseRest):
             return return_json(status_code=404, message="No note found")
         for file in note.files:
             datastore.delete_file(file)
-        datastore.delete_note(name)
+        datastore.delete_note(note)
         return return_json(status_code=204, message="Note deleted")
 
 
