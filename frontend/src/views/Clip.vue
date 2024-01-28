@@ -133,7 +133,7 @@ import { Buffer } from 'buffer'
 import { timeDeltaToString } from "@/plugins/i18n"
 import CryptoJS from 'crypto-js'
 import { showDetailWarning, showAutoCloseSuccess, cancelableInput, dangerousConfirm } from "@/plugins/swal"
-
+import { isAxiosError } from 'axios'
 
 export default {
     data() {
@@ -195,26 +195,30 @@ export default {
                 try {
                     response = await axios.get(`/note/${this.name}`)
                 } catch (e: any) {
-                    if (e.response?.status == 400) {
-                        showDetailWarning({ title: this.$t('clip.Error'), text: this.$t('clip.invalid_note_name') })
-                            .then(this.goToHome)
-                    } else if (e.response?.status == 401) {
-                        cancelableInput({
-                            title: this.$t('clip.password_question'),
-                            input: "password",
-                        })
-                            .then((result) => {
-                                if (result.isConfirmed) {
-                                    this.password = result.value
-                                    this.fetchContent()
-                                } else {
-                                    this.goToHome
-                                }
+                    if (isAxiosError(e)) {
+                        if (e.response?.status === 400) {
+                            showDetailWarning({ title: this.$t('clip.Error'), text: this.$t('clip.invalid_note_name') })
+                                .then(this.goToHome)
+                            return
+                        } else if (e.response?.status === 401) {
+                            cancelableInput({
+                                title: this.$t('clip.password_question'),
+                                input: "password",
                             })
-                    } else throw e
-                    return
+                                .then((result) => {
+                                    if (result.isConfirmed) {
+                                        this.password = result.value
+                                        this.fetchContent()
+                                    } else {
+                                        this.goToHome
+                                    }
+                                })
+                            return
+                        }
+                    }
+                    throw e
                 }
-                if (response.status == 204) {
+                if (response.status === 204) {
                     this.is_new = true
                     this.save_status = "new"
                     this.local_content = ""
@@ -236,7 +240,7 @@ export default {
                     this.encrypt_text_content = this.user_property.encrypt_text_content ?? false
                     let content = response.data.data.content
                     if (this.user_property.encrypt_text_content) {
-                        if (this.user_property.encrypt_text_content_algo == "aes") {
+                        if (this.user_property.encrypt_text_content_algo === "aes") {
                             content = CryptoJS.AES.decrypt(content, this.encryptPassword).toString(CryptoJS.enc.Utf8)
                         }
                         else {
@@ -257,7 +261,7 @@ export default {
                     this.is_readonly = response.data.data.is_readonly
                     this.remote_files = response.data.data.files
                     this.is_local_outdated = false
-                    if (this.save_status == "local_outdated") {
+                    if (this.save_status === "local_outdated") {
                         this.save_status = "conflict_resolved"
                     }
                 }
@@ -272,7 +276,7 @@ export default {
         },
         async pushContent(force = false) {
             if (this.is_readonly) return
-            if (this.save_status == "saving") return
+            if (this.save_status === "saving") return
             if (!force && this.is_local_outdated) return
             if (force) this.clip_version = this.remote_version
             this.last_updated = Date.now()
@@ -280,7 +284,7 @@ export default {
             await this.createIfNotExist()
             let content = this.local_content
             if (this.encrypt_text_content) {
-                if (this.user_property.encrypt_text_content_algo == "aes") {
+                if (this.user_property.encrypt_text_content_algo === "aes") {
                     content = CryptoJS.AES.encrypt(content, this.encryptPassword).toString()
                 }
                 else {
@@ -303,11 +307,13 @@ export default {
                 this.fetchContent(true)
                 this.save_status = "saved"
             } catch (e: any) {
-                if (e.response?.status == 409) {
-                    this.remote_version = e.response.data.data.clip_version
-                    this.is_local_outdated = true
-                    this.save_status = "local_outdated"
-                    return
+                if (isAxiosError(e)) {
+                    if (e.response?.status === 409) {
+                        this.remote_version = e.response.data.data.clip_version
+                        this.is_local_outdated = true
+                        this.save_status = "local_outdated"
+                        return
+                    }
                 }
                 console.log(e)
                 this.save_status = "error"
@@ -392,8 +398,10 @@ export default {
             catch (e: any) {
                 console.log(e)
                 error_string = this.$t('clip.file.failed_to_upload_file')
-                if (e?.response?.status === 400 && e?.response?.data?.error_id !== null) {
-                    error_string = this.$t('clip.file.error.' + e.response.data.error_id)
+                if (isAxiosError(e)) {
+                    if (e.response?.status === 400 && e.response?.data?.error_id !== null) {
+                        error_string = this.$t('clip.file.error.' + e.response.data.error_id)
+                    }
                 }
                 showDetailWarning(
                     {
@@ -487,9 +495,11 @@ export default {
                     })
                     this.current_timeout = new_timeout
                 } catch (e: any) {
-                    if (e.response?.status == 400) {
-                        invalid_timeout_toast()
-                        return
+                    if (isAxiosError(e)) {
+                        if (e.response?.status === 400) {
+                            invalid_timeout_toast()
+                            return
+                        }
                     }
                     console.log(e)
                 }
