@@ -20,6 +20,7 @@ from app.models.datastore import (
     Note,
     NoteDatastore,
     combine_name_and_password,
+    combine_name_and_password_and_readonly,
     verify_name,
     passlib_context,
 )
@@ -148,7 +149,9 @@ def timeout_note_decorator(f):
 
 
 def note_to_jwt_id(note: Note) -> str:
-    return sha256(combine_name_and_password(note.name, note.password))
+    return sha256(
+        combine_name_and_password_and_readonly(note.name, note.password, note.readonly_name_if_has)
+    )
 
 
 def create_access_token_for_note(note: Note) -> str:

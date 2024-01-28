@@ -88,6 +88,8 @@ def combine_name_and_password(name: str, password: str) -> str:
         password = ""
     return name + password
 
+def combine_name_and_password_and_readonly(name: str, password: str, readonly_if_has: str) -> str:
+    return combine_name_and_password(name, password) + readonly_if_has + ("1" if readonly_if_has else "0")
 
 def verify_timeout_seconds(timeout_seconds: int) -> bool:
     return 1 <= timeout_seconds <= Metadata.max_timeout
