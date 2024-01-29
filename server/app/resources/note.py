@@ -120,6 +120,7 @@ def password_protected_note(f):
 
     return decorated_function
 
+
 def illegal_note_filter(f):
     @functools.wraps(f)
     def decorated_function(*args, **kwargs):
@@ -142,6 +143,7 @@ def illegal_note_filter(f):
         return f(*args, **kwargs)
 
     return decorated_function
+
 
 base_decorators = [  # this is fking from bottom to top!
     password_protected_note,
@@ -247,6 +249,7 @@ def mashal_readonly_note(note: Note, status_code: int = 200):
     ret["is_readonly"] = True
     return return_json(ret, status_code=status_code)
 
+
 class BaseRest(Resource):
     decorators = base_decorators
 
@@ -289,16 +292,16 @@ class NoteRest(BaseRest):
 
     def put(self, name: str):
         # update a note
-        params = request.get_json()
+        orig_params = request.get_json()
         # handle illegal note report
-        if params.get("report", False):
+        if orig_params.get("report", False):
             note = datastore.get_note(name=name)
             assert note is not None
             datastore.report_note(note)
             return return_json(status_code=200, message="Note reported")
         # otherwise, handle normal update
-        if "new_password" in params:
-            params["password"] = params["new_password"]
+        if "new_password" in orig_params:
+            orig_params["password"] = orig_params["new_password"]
         allow_props = [
             "content",
             "password",
@@ -307,7 +310,7 @@ class NoteRest(BaseRest):
             "user_property",
             "enable_readonly",
         ]
-        params = {k: v for k, v in params.items() if k in allow_props}
+        params = {k: v for k, v in orig_params.items() if k in allow_props}
         if len(params) == 0:
             return return_json(status_code=400, message="No property to update")
         content = params.get("content", "")
@@ -322,6 +325,15 @@ class NoteRest(BaseRest):
         )
         if note is None:
             return return_json(status_code=404, message="No note found")
+        if "combine_mode" in orig_params:
+            if orig_params["combine_mode"] == "prepend":
+                params["content"] = content + note.content
+            elif orig_params["combine_mode"] == "append":
+                params["content"] = note.content + content
+            else:
+                return return_json(status_code=400, message="Invalid combine_mode")
+            params.pop("combine_mode", None)
+            params.pop("clip_version", None)
         try:
             datastore.update_note(name=name, **params)
         except ValueError as e:

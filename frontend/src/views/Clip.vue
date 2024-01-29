@@ -79,7 +79,7 @@
                                     </v-checkbox>
                                     <!-- save interval -->
                                     <v-text-field v-model="save_interval" :label="$t('clip.auto_save_interval')" outlined
-                                        dense type="number" @keyup="onUpdateSaveInterval()">
+                                        dense type="number" @keyup="onUpdateSaveInterval()" v-if="!is_readonly">
                                     </v-text-field>
                                     <!-- auto fetch remote content interval -->
                                     <v-text-field v-model="fetch_interval" :label="$t('clip.auto_fetch_interval')" outlined
@@ -89,6 +89,11 @@
                                     <v-list-item prepend-icon="mdi-alert-octagon" @click="reportClip()">
                                         <v-list-item-title>{{ $t('clip.report.report_clip') }}</v-list-item-title>
                                     </v-list-item>
+                                    <!--prepend single line message-->
+                                    <v-text-field v-model="combine_content" :label="$t('clip.prepend_message')"
+                                        :disabled="user_property.encrypt_text_content === true" outlined dense @keydown.enter.exact="combinePushContent()"
+                                        append-inner-icon="mdi-comment-arrow-right" @click:append-inner="combinePushContent()" v-if="!is_readonly">
+                                    </v-text-field>
                                 </v-list-group>
                             </v-list>
                         </v-card>
@@ -184,7 +189,8 @@ export default {
             user_property: {} as UserProperty,
             sidebar_list_opened: [],
             encrypt_text_content: false,
-            max_interval: 1e10
+            max_interval: 1e10,
+            combine_content: "",
         }
     },
     methods: {
@@ -302,6 +308,18 @@ export default {
             if (this.local_content != this.remote_content) {
                 this.pushContent()
             }
+        },
+        async combinePushContent() {
+            if(this.is_readonly || this.combine_content === "" || this.encrypt_text_content) return
+            let combine_mode = "prepend"
+            let response = await axios.put(`/note/${this.name}`, {
+                content: this.combine_content + "\n",
+                combine_mode: combine_mode,
+            })
+            this.clip_version = response.data.data.clip_version
+            this.combine_content = ""
+            this.local_content = this.remote_content= response.data.data.content
+            this.clip_version = this.remote_version = response.data.data.clip_version
         },
         async pushContent(force = false) {
             if (this.is_readonly) return

@@ -70,7 +70,8 @@
       "reported": "Reported!",
       "clip_has_been_reported": "Clip has been reported.",
       "clip_has_been_banned": "Clip has been temporarily banned."
-    }
+    },
+    "prepend_message": "Prepend message to begin of clip. Useful for IM."
   },
   "about": {
     "author": "Author",
