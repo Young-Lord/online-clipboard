@@ -25,7 +25,7 @@ class BaseMetadata:
     description: str = "A simple clipboard app"
     owner: str = "Niko"
     email: str = "ly-niko@qq.com"
-    version: str = "0.0.10"
+    version: str = "0.0.11"
     url: str = ""
     logo: str = ""
     repository: str = "https://github.com/Young-Lord/online-clipboard"
@@ -57,11 +57,17 @@ class BaseMetadata:
             60 * 60 * 24 * 365 * 3,  # 3 years
         ]
     )
-    limiter_default: list[str] = field(default_factory=lambda: ["100/minute"]) # limiter for some API endpoint
+    limiter_default: list[str] = field(
+        default_factory=lambda: ["100/minute"]
+    )  # limiter for some API endpoint
     limiter_file: str = "15/minute"  # delim with `;`, limiter for file upload / download / delete / get info
-    limiter_note: str = "100/minute" # limiter for any note API, doesn't include file-related API
+    limiter_note: str = (
+        "100/minute"  # limiter for any note API, doesn't include file-related API
+    )
     limiter_send_mail: str = "20/hour"  # limiter for sending mail
-    illegal_ban_time: list[int] = field(  # how long should clip been banned for each report
+    illegal_ban_time: list[
+        int
+    ] = field(  # how long should clip been banned for each report
         default_factory=lambda: [
             60 * 30,  # 30 minutes
             60 * 60 * 24,  # 1 day
@@ -71,7 +77,7 @@ class BaseMetadata:
     )
     allow_mail: bool = True
     mail_max_content: int = max_content_length
-    mail_verify_timeout: int = 60 * 60 * 24 * 180 # 180 days
+    mail_verify_timeout: int = 60 * 60 * 24 * 180  # 180 days
 
     def __repr__(self):
         return f"<Metadata {self.name}>"
