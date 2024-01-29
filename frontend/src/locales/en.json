@@ -57,6 +57,8 @@
     },
     "outdated": "Remote clip is changed. Refresh to pull remote changes.",
     "auto_fetch_remote_content": "Automatically fetch updates from remote clip",
+    "auto_save_interval": "Auto save interval (seconds, empty to disable)",
+    "auto_fetch_interval": "Auto fetch interval (seconds, empty to disable)",
     "failed_to_fetch_metadata": "Failed to fetch essential data from server.",
     "advanced_settings": "Advanced settings",
     "encrypt_content": "Encrypt content",

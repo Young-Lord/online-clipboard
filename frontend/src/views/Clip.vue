@@ -73,15 +73,19 @@
                                         <v-list-item v-bind="props" prepend-icon="mdi-cog"
                                             :title="$t('clip.advanced_settings')"></v-list-item>
                                     </template>
-
-                                    <!-- checkbox for auto fetch cloud version -->
-                                    <v-checkbox v-model="auto_fetch_remote_content"
-                                        :label="$t('clip.auto_fetch_remote_content')">
-                                    </v-checkbox>
-                                    <!-- checkbox for auto fetch cloud version -->
+                                    <!-- checkbox for encrypt text content -->
                                     <v-checkbox v-model="encrypt_text_content" :label="$t('clip.encrypt_content')"
                                         v-if="!is_readonly" @change="updateEncryptText()">
                                     </v-checkbox>
+                                    <!-- save interval -->
+                                    <v-text-field v-model="save_interval" :label="$t('clip.auto_save_interval')" outlined
+                                        dense type="number" @keyup="onUpdateSaveInterval()">
+                                    </v-text-field>
+                                    <!-- auto fetch remote content interval -->
+                                    <v-text-field v-model="fetch_interval"
+                                        :label="$t('clip.auto_fetch_interval')" outlined dense type="number"
+                                        @keyup="onUpdateFetchInterval()">
+                                    </v-text-field>
                                 </v-list-group>
                             </v-list>
                         </v-card>
@@ -138,7 +142,7 @@
 import { MetaData, FileData, axios, UserProperty } from "@/api"
 import { useAppStore } from "@/store/app"
 const appStore = useAppStore()
-import { replaceLastPartOfUrl, humanFileSize } from "@/utils"
+import { replaceLastPartOfUrl, humanFileSize, assert } from "@/utils"
 import { Buffer } from 'buffer'
 import { timeDeltaToString } from "@/plugins/i18n"
 import CryptoJS from 'crypto-js'
@@ -153,9 +157,8 @@ export default {
             remote_version: 1,
             local_content: "",
             remote_content: "",
-            last_updated: Date.now(),
+            last_saved: Date.now(),
             save_status: "",
-            save_interval: 3 * 1000,
             is_new: false,
             metadata: {} as MetaData,
             password: "",
@@ -168,13 +171,16 @@ export default {
             file_to_upload: [] as File[],
             remote_files: [] as FileData[],
             is_local_outdated: false,
-            auto_fetch_remote_content: false,
-            auto_fetch_remote_content_min_idle_time: 5 * 1000,
-            auto_fetch_remote_content_interval: 5 * 1000,
+            save_interval: 3 as number | string,
+            fetch_min_idle_time: 1,
+            fetch_interval: 0 as number | string,
+            save_timer: null as number | null,
+            fetch_timer: null as number | null,
             last_edit_time: Date.now(),
             user_property: {} as UserProperty,
             sidebar_list_opened: [],
             encrypt_text_content: false,
+            max_interval: 1e10
         }
     },
     methods: {
@@ -292,7 +298,7 @@ export default {
             if (this.save_status === "saving") return
             if (!force && this.is_local_outdated) return
             if (force) this.clip_version = this.remote_version
-            this.last_updated = Date.now()
+            this.last_saved = Date.now()
             this.save_status = "saving"
             await this.createIfNotExist()
             let content = this.local_content
@@ -558,6 +564,37 @@ export default {
             } catch (e: any) {
                 console.log(e)
             }
+        },
+        // auto save & fetch
+        onAutoSave() {
+            assert(typeof this.save_interval === "number")
+            if (Date.now() - this.last_saved > this.save_interval * 1000) {
+                this.pushContentIfChanged()
+            }
+        },
+        onAutoFetch() {
+            if (Date.now() - this.last_edit_time > this.fetch_min_idle_time) {
+                this.fetchContent()
+            }
+        },
+        onUpdateSaveInterval() {
+            this.save_interval = parseInt(this.save_interval.toString())
+            if (Number.isNaN(this.save_interval) || this.save_interval < 0) this.save_interval = 0
+            if (this.save_interval > this.max_interval) this.save_interval = this.max_interval
+            if (this.save_timer !== null) clearInterval(this.save_timer)
+            this.save_timer = null
+            if (this.save_interval > 0) this.save_timer = setInterval(this.onAutoSave, this.save_interval * 1000)
+            if (this.save_interval === 0) this.save_interval = ""
+        },
+        onUpdateFetchInterval() {
+            this.fetch_interval = parseInt(this.fetch_interval.toString())
+            if (Number.isNaN(this.fetch_interval) || this.fetch_interval < 0) this.fetch_interval = 0
+            if (this.fetch_interval > this.max_interval) this.fetch_interval = this.max_interval
+            console.log(this.fetch_interval, typeof this.fetch_interval)
+            if (this.fetch_timer !== null) clearInterval(this.fetch_timer)
+            this.fetch_timer = null
+            if (this.fetch_interval > 0) this.fetch_timer = setInterval(this.onAutoFetch, this.fetch_interval * 1000)
+            if (this.fetch_interval === 0) this.fetch_interval = ""
         }
     },
     computed: {
@@ -609,21 +646,9 @@ export default {
             ).then(this.goToHome)
         })
 
-        // auto save
-        setInterval(() => {
-            if (Date.now() - this.last_updated > this.save_interval) {
-                this.pushContentIfChanged()
-            }
-        }, this.save_interval)
-
-        // auto update
-        setInterval(
-            () => {
-                if (this.auto_fetch_remote_content && Date.now() - this.last_edit_time > this.auto_fetch_remote_content_min_idle_time) {
-                    this.fetchContent()
-                }
-            }, this.auto_fetch_remote_content_interval
-        )
+        // register auto save & fetch
+        this.onUpdateSaveInterval()
+        this.onUpdateFetchInterval()
 
         // first fetch
         this.fetchContent()
