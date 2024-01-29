@@ -56,6 +56,9 @@ class BaseMetadata:
             60 * 60 * 24 * 365 * 3,  # 3 years
         ]
     )
+    limiter_default: list[str] = field(default_factory=lambda: ["100/minute"])
+    limiter_file: str = "15/minute"  # delim with `;`
+    limiter_note: str = "100/minute"
 
     def __repr__(self):
         return f"<Metadata {self.name}>"

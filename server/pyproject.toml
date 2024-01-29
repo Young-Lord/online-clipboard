@@ -19,6 +19,7 @@ flask-jwt-extended = "^4.6.0"
 python-dotenv = "^1.0.0"
 passlib = "^1.7.4"
 schedule = "^1.2.1"
+flask-limiter = "^3.5.0"
 
 
 [tool.poetry.group.dev.dependencies]

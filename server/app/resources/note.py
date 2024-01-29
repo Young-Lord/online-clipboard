@@ -24,7 +24,7 @@ from app.models.datastore import (
     verify_name,
     passlib_context,
 )
-from .base import api_restx as api
+from .base import api_restx as api, limiter
 from app.note_const import READONLY_PREFIX, Metadata, ALLOW_CHAR_IN_NAMES
 from app.utils import ensure_dir, return_json, sha256
 from app.models.base import db
@@ -34,6 +34,8 @@ from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_requir
 
 
 NO_DATA_METHODS = {"get", "options", "delete"}
+LIMITER_METHODS = ["get", "post", "put", "delete"]
+limiter_with_methods = functools.partial(limiter.limit, methods=LIMITER_METHODS)
 
 
 def verify_dict_decorator(f):
@@ -232,6 +234,8 @@ class BaseRest(Resource):
 
 @api.route("/note/<string:name>")
 class NoteRest(BaseRest):
+    decorators = [limiter_with_methods(Metadata.limiter_note)] + base_decorators
+
     def get(self, name: str):
         if name.startswith(READONLY_PREFIX):
             note = datastore.get_note_by_readonly_name(
@@ -311,6 +315,8 @@ class NoteRest(BaseRest):
 
 @api.route("/note/<string:name>/file/<int:id>")
 class FileRest(BaseRest):
+    decorators = [limiter_with_methods(Metadata.limiter_file)] + base_decorators
+
     def get(self, name: str, id: int):
         note = datastore.get_note(
             name,
@@ -402,11 +408,15 @@ def get_file(id: int, as_attachment: bool):
 
 @api.route("/file/<int:id>/download")
 class DownloadFileContentRest(BaseRest):
-    decorators = [jwt_required(locations=["query_string"])] + [
-        i
-        for i in base_decorators
-        if i not in {password_protected_note, verify_name_decorator}
-    ]
+    decorators = (
+        [limiter_with_methods(Metadata.limiter_file)]
+        + [jwt_required(locations=["query_string"])]
+        + [
+            i
+            for i in base_decorators
+            if i not in {password_protected_note, verify_name_decorator}
+        ]
+    )
     as_attachment: ClassVar[bool] = True
 
     def get(self, id: int):

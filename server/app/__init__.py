@@ -15,6 +15,7 @@ def create_app() -> Flask:
     with app.app_context():
         f.set_jwt()
         # f.set_api()
+    f.set_rate_limit()
     f.set_schedule_task()
 
     with app.app_context():

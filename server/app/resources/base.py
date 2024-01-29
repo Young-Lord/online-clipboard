@@ -1,8 +1,15 @@
 from flask import Blueprint
 from flask_jwt_extended import JWTManager
+from flask_limiter.util import get_remote_address
+from flask_limiter import Limiter
 from flask_restx import Api
+
+from app.note_const import Metadata
 
 
 api_bp = Blueprint("api", "api")
 api_restx = Api(api_bp)
 file_jwt = JWTManager()
+# this is global JWT, but only used for file download now
+limiter = Limiter(get_remote_address, default_limits=Metadata.limiter_default)  # type: ignore
+# this raises 429 error when rate limit in `app/note_const.py` exceeded

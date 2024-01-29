@@ -74,3 +74,8 @@ class Factory:
 
     def set_schedule_task(self):
         RemoveExpiredThings(self.flask)
+
+    def set_rate_limit(self):
+        from .resources.base import limiter
+
+        limiter.init_app(self.flask)
