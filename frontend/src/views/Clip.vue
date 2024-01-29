@@ -82,9 +82,8 @@
                                         dense type="number" @keyup="onUpdateSaveInterval()">
                                     </v-text-field>
                                     <!-- auto fetch remote content interval -->
-                                    <v-text-field v-model="fetch_interval"
-                                        :label="$t('clip.auto_fetch_interval')" outlined dense type="number"
-                                        @keyup="onUpdateFetchInterval()">
+                                    <v-text-field v-model="fetch_interval" :label="$t('clip.auto_fetch_interval')" outlined
+                                        dense type="number" @keyup="onUpdateFetchInterval()">
                                     </v-text-field>
                                 </v-list-group>
                             </v-list>
@@ -153,6 +152,7 @@ import { SweetAlertResult } from "sweetalert2"
 export default {
     data() {
         return {
+            first_fetched: false,
             clip_version: 1,
             remote_version: 1,
             local_content: "",
@@ -269,13 +269,15 @@ export default {
                             })
                         }
                     }
-                    if (!no_update_content) {
+                    this.remote_version = response.data.data.clip_version ?? 1
+                    if (!no_update_content && ((this.remote_version > this.clip_version) || (this.first_fetched === false))) {
                         this.local_content = content
                     }
+                    this.first_fetched = true
                     this.current_timeout = response.data.data.timeout_seconds
                     this.selected_timeout = timeDeltaToString(this.current_timeout)
                     this.remote_content = content
-                    this.remote_version = this.clip_version = (response.data.data.clip_version ?? 1)
+                    this.clip_version = this.remote_version
                     this.readonly_name = response.data.data.readonly_name
                     this.is_readonly = response.data.data.is_readonly
                     this.remote_files = response.data.data.files
