@@ -62,6 +62,7 @@
     "failed_to_fetch_metadata": "Failed to fetch essential data from server.",
     "advanced_settings": "More options",
     "encrypt_content": "Encrypt content",
+    "encrypt_file": "Encrypt file (password must remain same!)",
     "encrypt_text_content_algo_not_supported": "Encrypt text content is not working!",
     "failed_to_parse_user_property": "Failed to parse auxiliary information, encryption may not work properly.",
     "report": {

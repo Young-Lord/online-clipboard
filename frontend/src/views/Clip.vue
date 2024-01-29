@@ -73,9 +73,12 @@
                                         <v-list-item v-bind="props" prepend-icon="mdi-cog"
                                             :title="$t('clip.advanced_settings')"></v-list-item>
                                     </template>
-                                    <!-- checkbox for encrypt text content -->
+                                    <!-- checkbox for encrypt text content / file -->
                                     <v-checkbox v-model="encrypt_text_content" :label="$t('clip.encrypt_content')"
                                         v-if="!is_readonly" @change="updateEncryptText()">
+                                    </v-checkbox>
+                                    <v-checkbox v-model="encrypt_file" :label="$t('clip.encrypt_file')" v-if="!is_readonly"
+                                        :disabled="uploading" @change="updateEncryptFile()">
                                     </v-checkbox>
                                     <!-- save interval -->
                                     <v-text-field v-model="save_interval" :label="$t('clip.auto_save_interval')" outlined
@@ -97,8 +100,8 @@
                                         @click:append-inner="combinePushContent()" v-if="!is_readonly">
                                     </v-text-field>
                                     <!--send by mail-->
-                                    <v-text-field v-model="mail_address" :label="$t('clip.mail.send_to_mail')" outlined dense
-                                        @keydown.enter.exact="sendToMail()" append-inner-icon="mdi-email-fast"
+                                    <v-text-field v-model="mail_address" :label="$t('clip.mail.send_to_mail')" outlined
+                                        dense @keydown.enter.exact="sendToMail()" append-inner-icon="mdi-email-fast"
                                         @click:append-inner="sendToMail()" v-if="allow_mail">
                                     </v-text-field>
                                 </v-list-group>
@@ -118,7 +121,7 @@
                             <!--all files, with download and delete button-->
                             <v-list v-if="!is_new">
                                 <v-list-item v-for="file in remote_files" :key="file.id">
-                                    <v-list-item-title>{{ file.filename }}
+                                    <v-list-item-title>{{ mayDecryptFilename(file.filename) }}
                                     </v-list-item-title>
                                     <v-list-item-subtitle>{{ humanFileSize(file.size) }} {{
                                         $t('clip.file.expiration_date_is', [$d(new Date(file.expire_at), 'long')])
@@ -126,18 +129,22 @@
                                     <template v-slot:append>
                                         <v-list-item-action end>
                                             <!--tabindex=-1 make it not focusable-->
-                                            <a :href="file.download_url" target="_self" style="color:inherit;"
-                                                tabindex="-1">
+                                            <a :href="file.download_url" target="_self" style="color:inherit;" tabindex="-1"
+                                                v-if="!encrypt_file">
                                                 <v-btn icon variant="text">
                                                     <v-icon>mdi-download</v-icon>
                                                 </v-btn>
                                             </a>
-                                            <a :href="file.preview_url" target="_blank" style="color:inherit;"
-                                                tabindex="-1">
+                                            <a :href="file.preview_url" target="_blank" style="color:inherit;" tabindex="-1"
+                                                v-if="!encrypt_file">
                                                 <v-btn icon variant="text">
                                                     <v-icon>mdi-eye</v-icon>
                                                 </v-btn>
                                             </a>
+                                            <v-btn icon variant="text" @click="downloadEncryptedFile(file)"
+                                                v-if="encrypt_file">
+                                                <v-icon>mdi-download</v-icon>
+                                            </v-btn>
                                             <v-btn icon variant="text" @click="deleteFile(file)">
                                                 <v-icon>mdi-delete</v-icon>
                                             </v-btn>
@@ -196,6 +203,7 @@ export default {
             user_property: {} as UserProperty,
             sidebar_list_opened: [],
             encrypt_text_content: false,
+            encrypt_file: false,
             max_interval: 1e10,
             combine_content: "",
             mail_address: ""
@@ -279,6 +287,7 @@ export default {
                         })
                     }
                     this.encrypt_text_content = this.user_property.encrypt_text_content ?? false
+                    this.encrypt_file = this.user_property.encrypt_file ?? false
                     let content = response.data.data.content
                     if (this.user_property.encrypt_text_content) {
                         if (this.user_property.encrypt_text_content_algo === "aes") {
@@ -406,8 +415,42 @@ export default {
             })
             return total_size
         },
+        arrayBufferToWordArray(ab: ArrayBuffer): CryptoJS.lib.WordArray {
+            // https://stackoverflow.com/questions/33914764/how-to-read-a-binary-file-with-filereader-in-order-to-hash-it-with-sha-256-in-cr
+            var i8a = new Uint8Array(ab);
+            var a = [];
+            for (var i = 0; i < i8a.length; i += 4) {
+                a.push(i8a[i] << 24 | i8a[i + 1] << 16 | i8a[i + 2] << 8 | i8a[i + 3]);
+            }
+            return CryptoJS.lib.WordArray.create(a, i8a.length);
+        },
+        wordArrayToArrayBuffer(wordArray: CryptoJS.lib.WordArray): ArrayBuffer {
+            const { words } = wordArray
+            const { sigBytes } = wordArray
+            const u8 = new Uint8Array(sigBytes)
+            for (let i = 0; i < sigBytes; i += 1) {
+                u8[i] = (words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff
+            }
+            return u8
+        },
         async uploadSingleFile(file: File) {
             var formData = new window.FormData()
+            if (this.encrypt_file) {
+                // encrypt file
+                let reader = new FileReader()
+                let file_data = await new Promise<ArrayBuffer>((resolve, reject) => {
+                    reader.onload = () => {
+                        resolve(reader.result as ArrayBuffer)
+                    }
+                    reader.onerror = () => {
+                        reject(reader.error)
+                    }
+                    reader.readAsArrayBuffer(file)
+                })
+                let encrypted_file_data = CryptoJS.AES.encrypt(this.arrayBufferToWordArray(file_data), this.encryptPassword).toString()
+                let encrypted_file = new File([encrypted_file_data], this.encryptFilename(file.name), { type: file.type })
+                file = encrypted_file
+            }
             formData.append("file", file)
             await axios.post(`/note/${this.name}/file/0`, formData, {
                 headers: {
@@ -517,7 +560,11 @@ export default {
                 this.user_property.encrypt_text_content = false
                 this.user_property.encrypt_text_content_algo = ""
             }
-            await this.pushContent()
+            this.pushContent()
+        },
+        async updateEncryptFile() {
+            this.user_property.encrypt_file = this.encrypt_file
+            this.pushContent()
         },
         async setNoteTimeout(selected_timeout: string) {
             await this.createIfNotExist()
@@ -581,14 +628,14 @@ export default {
         async downloadContent() {
             // save as blob
             const blob = new Blob([this.local_content], { type: "text/plain" })
-            const url = window.URL.createObjectURL(blob)
-            const tmpLink = document.createElement("a")
-            tmpLink.href = url
-            tmpLink.download = `${this.name}.txt`
-            document.body.appendChild(tmpLink)
-            tmpLink.click()
-            document.body.removeChild(tmpLink)
-            URL.revokeObjectURL(url)
+            this.saveBlob(blob, `${this.name}.txt`)
+        },
+        saveBlob(blob: Blob, filename: string) {
+            const link = document.createElement('a')
+            link.href = URL.createObjectURL(blob)
+            link.download = filename
+            link.click()
+            URL.revokeObjectURL(link.href)
         },
         // readonly url
         async toggleReadonlyUrl() {
@@ -670,6 +717,26 @@ export default {
             } catch (e: any) {
                 console.log(e)
             }
+        },
+        mayDecryptFilename(filename: string): string {
+            if (!this.encrypt_file) return filename
+            return CryptoJS.AES.decrypt(filename, this.encryptPassword).toString(CryptoJS.enc.Utf8)
+        },
+        encryptFilename(filename: string): string {
+            return CryptoJS.AES.encrypt(filename, this.encryptPassword).toString()
+        },
+        async downloadEncryptedFile(file: FileData) {
+            // https://blog.csdn.net/qq_38916811/article/details/127515455
+            // fetch file from remote url and decrypt
+            const response = await axios.get(file.download_url, {
+                responseType: "arraybuffer"
+            })
+            const enc = new TextDecoder("utf-8");
+            const str = enc.decode(response.data)
+            const decrypted_file_data = this.wordArrayToArrayBuffer(CryptoJS.AES.decrypt(str, this.encryptPassword))
+            // save as blob
+            const blob = new Blob([decrypted_file_data])
+            this.saveBlob(blob, this.mayDecryptFilename(file.filename))
         }
     },
     computed: {

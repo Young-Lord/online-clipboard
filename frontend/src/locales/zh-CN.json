@@ -62,6 +62,7 @@
         "failed_to_fetch_metadata": "获取剪贴板信息失败！",
         "advanced_settings": "更多选项",
         "encrypt_content": "加密内容",
+        "encrypt_file": "加密文件（密码必须不变！）",
         "encrypt_text_content_algo_not_supported": "加密内容失败！",
         "failed_to_parse_user_property": "无法解析辅助数据，加密可能无法正常使用。",
         "report": {
