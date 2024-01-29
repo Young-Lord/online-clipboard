@@ -60,7 +60,7 @@
         "auto_save_interval": "自动保存间隔（秒，留空禁用）",
         "auto_fetch_interval": "自动同步间隔（秒，留空禁用）",
         "failed_to_fetch_metadata": "获取剪贴板信息失败！",
-        "advanced_settings": "高级设置",
+        "advanced_settings": "更多选项",
         "encrypt_content": "加密内容",
         "encrypt_text_content_algo_not_supported": "加密内容失败！",
         "failed_to_parse_user_property": "无法解析辅助数据，加密可能无法正常使用。",
@@ -71,7 +71,12 @@
             "clip_has_been_reported": "",
             "clip_has_been_banned": "剪贴板已被临时封禁。"
         },
-        "prepend_message": "将一句话传入剪贴板，以便与他人即时交流"
+        "prepend_message": "将一句话传入剪贴板，以便与他人即时交流",
+        "mail": {
+            "send_to_mail": "邮件发送",
+            "sent": "已发送！",
+            "need_verify": "此邮件地址未验证，请先在你的收件箱中确认接收邮件。"
+        }
     },
     "about": {
         "author": "作者",

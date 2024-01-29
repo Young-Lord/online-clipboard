@@ -100,6 +100,22 @@ class File(db.Model, DatabaseColumnBase):
         return f"<File {self.filename}> in {self.note.name} ({self.note.id})>"
 
 
+class MailAcceptStatus:
+    ACCEPT = 1
+    DENY = 2
+    PENDING = 3
+    NO_REQUESTED = 4  # 1. no in db; 2. in db but not requested / request timeout
+
+
+class MailAddress(db.Model, DatabaseColumnBase):
+    __tablename__ = "mail_addresses"
+
+    address: Mapped[str] = mapped_column(String, unique=True)
+    status: Mapped[int] = mapped_column(
+        Integer, default=MailAcceptStatus.PENDING
+    )
+
+
 def verify_name(name: str) -> bool:
     if name in DISABLE_WORDS_IN_NAMES:
         return False
@@ -251,7 +267,7 @@ class NoteDatastore(Datastore):
         file: Optional[File] = self.session.query(File).filter_by(id=file_id).first()
         return file
 
-    def report_note(self, note: Note) -> None:  
+    def report_note(self, note: Note) -> None:
         if note.illegal_count >= len(Metadata.illegal_ban_time):
             # max illegal count reached -> delete
             ban_time = -1
@@ -269,5 +285,21 @@ class NoteDatastore(Datastore):
             self.session.add(note)
             self.session.commit()
 
+    def set_mail_subscribe_setting(self, mail_address: str, status: int) -> None:
+        mail = self.get_mail_address(mail_address)
+        if mail is None:
+            mail = MailAddress(address=mail_address)
+        mail.status = status
+        self.session.add(mail)
+        self.session.commit()
+
+    def get_mail_subscribe_setting(self, mail_address: str) -> int:
+        mail = self.get_mail_address(mail_address)
+        if mail is None:
+            return MailAcceptStatus.NO_REQUESTED
+        return mail.status
+    
+    def get_mail_address(self, mail_address: str) -> Optional[MailAddress]:
+        return self.session.query(MailAddress).filter_by(address=mail_address).first()
 
 datastore = NoteDatastore(db)

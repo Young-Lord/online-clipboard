@@ -91,8 +91,15 @@
                                     </v-list-item>
                                     <!--prepend single line message-->
                                     <v-text-field v-model="combine_content" :label="$t('clip.prepend_message')"
-                                        :disabled="user_property.encrypt_text_content === true" outlined dense @keydown.enter.exact="combinePushContent()"
-                                        append-inner-icon="mdi-comment-arrow-right" @click:append-inner="combinePushContent()" v-if="!is_readonly">
+                                        :disabled="user_property.encrypt_text_content === true" outlined dense
+                                        @keydown.enter.exact="combinePushContent()"
+                                        append-inner-icon="mdi-comment-arrow-right"
+                                        @click:append-inner="combinePushContent()" v-if="!is_readonly">
+                                    </v-text-field>
+                                    <!--send by mail-->
+                                    <v-text-field v-model="mail_address" :label="$t('clip.mail.send_to_mail')" outlined dense
+                                        @keydown.enter.exact="sendToMail()" append-inner-icon="mdi-email-fast"
+                                        @click:append-inner="sendToMail()" v-if="allow_mail">
                                     </v-text-field>
                                 </v-list-group>
                             </v-list>
@@ -147,7 +154,7 @@
 </template>
 
 <script lang="ts">
-import { MetaData, FileData, axios, UserProperty } from "@/api"
+import { MetaData, FileData, axios, UserProperty, Response } from "@/api"
 import { useAppStore } from "@/store/app"
 const appStore = useAppStore()
 import { replaceLastPartOfUrl, humanFileSize, assert } from "@/utils"
@@ -191,6 +198,7 @@ export default {
             encrypt_text_content: false,
             max_interval: 1e10,
             combine_content: "",
+            mail_address: ""
         }
     },
     methods: {
@@ -310,7 +318,7 @@ export default {
             }
         },
         async combinePushContent() {
-            if(this.is_readonly || this.combine_content === "" || this.encrypt_text_content) return
+            if (this.is_readonly || this.combine_content === "" || this.encrypt_text_content) return
             let combine_mode = "prepend"
             let response = await axios.put(`/note/${this.name}`, {
                 content: this.combine_content + "\n",
@@ -318,7 +326,7 @@ export default {
             })
             this.clip_version = response.data.data.clip_version
             this.combine_content = ""
-            this.local_content = this.remote_content= response.data.data.content
+            this.local_content = this.remote_content = response.data.data.content
             this.clip_version = this.remote_version = response.data.data.clip_version
         },
         async pushContent(force = false) {
@@ -642,6 +650,26 @@ export default {
             } catch (e: any) {
                 console.log(e)
             }
+        },
+        async sendToMail() {
+            try {
+                let response = await axios.post(`/mailto`, {
+                    address: this.mail_address,
+                    content: this.local_content
+                }) as Response<any>
+                if (response?.data?.error_id === "MAIL_NOT_VERIFIED") {
+                    showDetailWarning({
+                        title: this.$t('clip.Error'),
+                        text: this.$t('clip.mail.need_verify')
+                    })
+                    return
+                }
+                showAutoCloseSuccess({
+                    title: this.$t('clip.mail.sent')
+                })
+            } catch (e: any) {
+                console.log(e)
+            }
         }
     },
     computed: {
@@ -666,6 +694,9 @@ export default {
         readonly_url_check_empty(): string {
             return this.hasReadonlyName ? this.readonly_url : " "
         },
+        allow_mail(): boolean {
+            return this.metadata.allow_mail ?? false
+        }
     },
     mounted() {
         // get password from url in hash part

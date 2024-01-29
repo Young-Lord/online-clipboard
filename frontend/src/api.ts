@@ -43,9 +43,11 @@ export interface FileData {
 
 export interface MetaData {
     allow_chars: string
+    allow_mail: boolean
     default_file_timeout: number
     default_note_timeout: number
     description: string
+    email: string
     file_link_timeout: number
     logo: string
     max_all_file_size: number

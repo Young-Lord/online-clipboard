@@ -79,3 +79,8 @@ class Factory:
         from .resources.base import limiter
 
         limiter.init_app(self.flask)
+
+    def set_mail(self):
+        from .resources.base import mail
+
+        mail.init_app(self.flask)

@@ -4,7 +4,9 @@ import datetime
 import json
 import os
 from pathlib import Path
+import re
 import time
+from flask_mailman import EmailMessage
 from flask_restx import Resource, marshal
 import functools
 from typing import Any, ClassVar, Literal, Optional
@@ -14,9 +16,11 @@ from flask import (
     send_from_directory,
 )
 from flask_restx import Resource, fields
+import jinja2
 from app.config import Config
 from app.models.datastore import (
     File,
+    MailAcceptStatus,
     Note,
     datastore,
     combine_name_and_password,
@@ -24,7 +28,7 @@ from app.models.datastore import (
     verify_name,
     passlib_context,
 )
-from .base import api_restx as api, limiter
+from .base import api_restx as api, limiter, api_bp
 from app.note_const import READONLY_PREFIX, Metadata, ALLOW_CHAR_IN_NAMES
 from app.utils import ensure_dir, return_json, sha256
 from app.models.base import db
@@ -468,3 +472,123 @@ class DownloadFileContentRest(BaseRest):
 @api.route("/file/<int:id>/preview")
 class PreviewFileContentRest(DownloadFileContentRest):
     as_attachment = False
+
+email_templates = jinja2.Environment(loader=jinja2.FileSystemLoader("app/mails"),autoescape=True)
+
+
+@api_bp.route("/mail/<string:address>/settings", methods=["GET"])
+@limiter.limit("10/minute")
+@jwt_required(locations=["query_string"])
+def api_mail_setting(address: str):
+    # validate JWT token
+    if get_jwt_identity() != address:
+        return return_json(status_code=403, message="Permission denied")
+
+    # get mail subscribe setting from querystring
+    if "subscribe" not in request.args:
+        return return_json(status_code=400, message="No subscribe setting provided")
+    arg_subscribe_str = request.args["subscribe"].lower()
+    if arg_subscribe_str not in {"true", "false"}:
+        return return_json(status_code=400, message="Invalid subscribe setting")
+
+    status = (
+        MailAcceptStatus.ACCEPT
+        if arg_subscribe_str == "true"
+        else MailAcceptStatus.DENY
+    )
+    datastore.set_mail_subscribe_setting(address, status)
+    return return_json(status_code=200, message="OK")
+
+
+def create_subscribe_link(address: str, subscribe: bool) -> str:
+    return current_app.config[
+        "API_FULL_URL"
+    ] + "/mail/%s/settings?subscribe=%s&jwt=%s" % (
+        address,
+        "true" if subscribe else "false",
+        create_access_token(
+            identity=address,
+            expires_delta=datetime.timedelta(seconds=Metadata.mail_verify_timeout),
+        ),
+    )
+
+
+def check_email_valid(email: str) -> bool:
+    if not 1 <= len(email) <= 255:
+        # https://stackoverflow.com/questions/386294/what-is-the-maximum-length-of-a-valid-email-address
+        return False
+    return re.fullmatch(r".+@.+\..+", email) is not None
+
+
+@api_bp.route("/mailto", methods=["POST"])
+@limiter.limit(Metadata.limiter_send_mail)
+def api_send_mail():
+    if not Metadata.allow_mail:
+        return return_json(
+            status_code=403,
+            message="Mail not allowed on this server",
+            error_id="MAIL_NOT_ALLOWED",
+        )
+
+    data = request.get_json()
+    address = data.get("address", "")
+    if not check_email_valid(address):
+        return return_json(
+            status_code=400, message="Invalid mail address", error_id="INVALID_ADDRESS"
+        )
+    content = request.get_json().get("content", "")
+    if len(content) > Metadata.mail_max_content or content == "":
+        return return_json(
+            status_code=400, message="Invalid content", error_id="INVALID_CONTENT"
+        )
+
+    mail_address = datastore.get_mail_address(address)
+    if mail_address is not None and mail_address.status == MailAcceptStatus.PENDING:
+        # check verify timeout, make PENDING to NO_REQUESTED
+        if (
+            mail_address.updated_at
+            + datetime.timedelta(seconds=Metadata.mail_verify_timeout)
+            < datetime.datetime.now()
+        ):
+            datastore.set_mail_subscribe_setting(address, MailAcceptStatus.NO_REQUESTED)
+
+    setting = datastore.get_mail_subscribe_setting(address)
+
+    if setting == MailAcceptStatus.NO_REQUESTED:
+        setting = MailAcceptStatus.PENDING
+        msg = EmailMessage(
+            subject="Clip - Confirm your mail address",
+            body=email_templates.get_template("confirm_subscribe.jinja2").render(
+                confirm_link=create_subscribe_link(address, True),
+                unsubscribe_link=create_subscribe_link(address, False),
+            ),
+            to=[address],
+        )
+        msg.content_subtype = "html"
+        msg.send()
+        datastore.set_mail_subscribe_setting(address, setting)
+
+    if setting in {
+        MailAcceptStatus.NO_REQUESTED,
+        MailAcceptStatus.PENDING,
+        MailAcceptStatus.DENY,
+    }:
+        return return_json(
+            status_code=202,
+            message="Mail address must be verified",
+            error_id="MAIL_NOT_VERIFIED",
+        )
+    assert setting == MailAcceptStatus.ACCEPT
+
+    msg = EmailMessage(
+        subject="Clip - Clip exported",
+        body=email_templates.get_template("clip_content.jinja2").render(
+            clip_url=current_app.config["HOMEPAGE_BASEPATH"],
+            clip_content=content,
+            unsubscribe_link=create_subscribe_link(address, False),
+        ),
+        to=[address],
+    )
+    msg.content_subtype = "html"
+    msg.send()
+    return return_json(status_code=200, message="OK")

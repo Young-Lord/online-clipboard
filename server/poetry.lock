@@ -439,6 +439,25 @@ mongodb = ["limits[mongodb]"]
 redis = ["limits[redis]"]
 
 [[package]]
+name = "flask-mailman"
+version = "1.0.0"
+description = "Porting Django's email implementation to your Flask applications."
+optional = false
+python-versions = ">=3.7,<4.0"
+files = [
+    {file = "flask_mailman-1.0.0-py3-none-any.whl", hash = "sha256:2e0e9102b03d09430541d70d4e766c0025b41931a55c562df7c9c6f2bfe4cf48"},
+    {file = "flask_mailman-1.0.0.tar.gz", hash = "sha256:68187f8030794a75e7cec7651a0445d1606b0918bbd1c4705b232842789c3808"},
+]
+
+[package.dependencies]
+flask = ">=1.0"
+
+[package.extras]
+dev = ["bump2version", "pip", "pre-commit", "toml", "tox", "twine", "virtualenv"]
+doc = ["mkdocs", "mkdocs-autorefs", "mkdocs-include-markdown-plugin", "mkdocs-material", "mkdocs-material-extensions", "mkdocstrings"]
+test = ["black", "flake8", "isort", "pytest", "pytest-cov"]
+
+[[package]]
 name = "flask-migrate"
 version = "4.0.5"
 description = "SQLAlchemy database migrations for Flask applications using Alembic."
@@ -665,13 +684,13 @@ files = [
 
 [[package]]
 name = "jinja2"
-version = "3.1.2"
+version = "3.1.3"
 description = "A very fast and expressive template engine."
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "Jinja2-3.1.2-py3-none-any.whl", hash = "sha256:6088930bfe239f0e6710546ab9c19c9ef35e29792895fed6e6e31a023a182a61"},
-    {file = "Jinja2-3.1.2.tar.gz", hash = "sha256:31351a702a408a9e7595a8fc6150fc3f43bb6bf7e319770cbc0db9df9437e852"},
+    {file = "Jinja2-3.1.3-py3-none-any.whl", hash = "sha256:7d6d50dd97d52cbc355597bd845fabfbac3f551e1f99619e39a35ce8c370b5fa"},
+    {file = "Jinja2-3.1.3.tar.gz", hash = "sha256:ac8bd6544d4bb2c9792bf3a159e80bba8fda7f07e81bc3aed565432d5925ba90"},
 ]
 
 [package.dependencies]
@@ -1661,4 +1680,4 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "65e15d9584d3672914cb5d62860711fd86a7b3eaba385fb891712f3b0b5a2aa0"
+content-hash = "13d4d205af2c127e90a179b29098838645509792c86e9a995fa64d8f905fa0aa"

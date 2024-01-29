@@ -34,10 +34,21 @@ class Config:
     API_SUFFIX: str = os.environ["VITE_API_SUFFIX"]
     # _BASE_DOMAIN: str = os.environ["VITE_BASE_DOMAIN"]
     # _BASE_PATH: str = os.environ["VITE_BASE_PATH"]
-    # FRONTEND_URL: str = os.environ["VITE_HOMEPAGE_BASEPATH"]
+    HOMEPAGE_BASEPATH: str = os.environ["VITE_HOMEPAGE_BASEPATH"]
     API_FULL_URL: str = os.environ["VITE_API_ENDPOINT"]
     BIND_HOST = "127.0.0.1"
     BIND_PORT = 5000
+
+    # mail
+    if Metadata.allow_mail:
+        # https://waynerv.github.io/flask-mailman/
+        MAIL_SERVER = os.environ.get("MAIL_SERVER", "localhost")
+        MAIL_PORT = int(os.environ.get("MAIL_PORT", 25))
+        MAIL_USERNAME = os.environ.get("MAIL_USERNAME", None)
+        MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD", None)
+        MAIL_DEFAULT_SENDER = os.environ.get("MAIL_DEFAULT_SENDER", None)
+        MAIL_USE_TLS = os.environ.get("MAIL_USE_TLS", "false").lower() == "true"
+        MAIL_USE_SSL = os.environ.get("MAIL_USE_SSL", "false").lower() == "true"
 
 
 class DevConfig(Config):
