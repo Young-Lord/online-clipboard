@@ -63,7 +63,14 @@
         "advanced_settings": "高级设置",
         "encrypt_content": "加密内容",
         "encrypt_text_content_algo_not_supported": "加密内容失败！",
-        "failed_to_parse_user_property": "无法解析辅助数据，加密可能无法正常使用。"
+        "failed_to_parse_user_property": "无法解析辅助数据，加密可能无法正常使用。",
+        "report": {
+            "report_clip": "举报内容",
+            "report_clip_confirm": "确定举报此剪贴板？",
+            "reported": "已举报！",
+            "clip_has_been_reported": "",
+            "clip_has_been_banned": "剪贴板已被临时封禁。"
+        }
     },
     "about": {
         "author": "作者",

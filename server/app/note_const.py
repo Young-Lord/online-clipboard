@@ -59,6 +59,14 @@ class BaseMetadata:
     limiter_default: list[str] = field(default_factory=lambda: ["100/minute"])
     limiter_file: str = "15/minute"  # delim with `;`
     limiter_note: str = "100/minute"
+    illegal_ban_time: list[int] = field(  # how long should clip been banned for each report
+        default_factory=lambda: [
+            60 * 30,  # 30 minutes
+            60 * 60 * 24,  # 1 day
+            60 * 60 * 24 * 7,  # 7 days
+            -1,  # forever
+        ]
+    )
 
     def __repr__(self):
         return f"<Metadata {self.name}>"

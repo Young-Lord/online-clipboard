@@ -120,6 +120,36 @@ def password_protected_note(f):
 
     return decorated_function
 
+def illegal_note_filter(f):
+    @functools.wraps(f)
+    def decorated_function(*args, **kwargs):
+        if request.method.lower() == "options":
+            return f(*args, **kwargs)
+        name: str = kwargs.get("name", "")
+        if name.startswith(READONLY_PREFIX):
+            note = datastore.get_note_by_readonly_name(
+                readonly_name=name,
+            )
+        else:
+            note = datastore.get_note(
+                name,
+            )
+        if note is None:
+            # allow operate on non-exist note
+            return f(*args, **kwargs)
+        if note.ban_unitl is not None and note.ban_unitl > datetime.datetime.now():
+            return return_json(status_code=451, message="Note is banned")
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+base_decorators = [  # this is fking from bottom to top!
+    password_protected_note,
+    illegal_note_filter,
+    verify_name_decorator,
+    verify_dict_decorator,
+]
+
 
 def note_to_jwt_id(note: Note) -> str:
     return sha256(
@@ -217,14 +247,6 @@ def mashal_readonly_note(note: Note, status_code: int = 200):
     ret["is_readonly"] = True
     return return_json(ret, status_code=status_code)
 
-
-base_decorators = [  # this is fking from bottom to top!
-    password_protected_note,
-    verify_name_decorator,
-    verify_dict_decorator,
-]
-
-
 class BaseRest(Resource):
     decorators = base_decorators
 
@@ -257,7 +279,7 @@ class NoteRest(BaseRest):
             name,
         )
         if note is not None:
-            return return_json(status_code=400, message="Note already exist")
+            return return_json(status_code=400, message="Clip already exist")
         datastore.update_note(name=name)
         note = datastore.get_note(
             name,
@@ -266,7 +288,15 @@ class NoteRest(BaseRest):
         return marshal_note(note, 201)
 
     def put(self, name: str):
+        # update a note
         params = request.get_json()
+        # handle illegal note report
+        if params.get("report", False):
+            note = datastore.get_note(name=name)
+            assert note is not None
+            datastore.report_note(note)
+            return return_json(status_code=200, message="Note reported")
+        # otherwise, handle normal update
         if "new_password" in params:
             params["password"] = params["new_password"]
         allow_props = [

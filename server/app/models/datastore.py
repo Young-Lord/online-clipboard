@@ -45,6 +45,12 @@ class Note(db.Model, DatabaseColumnBase):
     user_property: Mapped[str] = mapped_column(
         String, default="{}", server_default="{}"
     )
+    illegal_count: Mapped[int] = mapped_column(
+        Integer, default=0, server_default=sql.expression.literal(0)
+    )
+    ban_unitl: Mapped[datetime.datetime] = mapped_column(
+        db.DateTime, nullable=True, default=None
+    )
 
     @property
     def readonly_name_if_has(self) -> str:
@@ -243,6 +249,24 @@ class NoteDatastore(Datastore):
     def get_file(self, file_id) -> Optional[File]:
         file: Optional[File] = self.session.query(File).filter_by(id=file_id).first()
         return file
+
+    def report_note(self, note: Note) -> None:  
+        if note.illegal_count >= len(Metadata.illegal_ban_time):
+            # max illegal count reached -> delete
+            ban_time = -1
+        else:
+            ban_time = Metadata.illegal_ban_time[note.illegal_count]
+        if ban_time == -1:
+            self.delete_note(
+                note,
+            )
+        else:
+            note.illegal_count += 1
+            note.ban_unitl = datetime.datetime.now() + datetime.timedelta(
+                seconds=ban_time
+            )
+            self.session.add(note)
+            self.session.commit()
 
 
 datastore = NoteDatastore(db)

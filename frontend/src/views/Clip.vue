@@ -85,6 +85,10 @@
                                     <v-text-field v-model="fetch_interval" :label="$t('clip.auto_fetch_interval')" outlined
                                         dense type="number" @keyup="onUpdateFetchInterval()">
                                     </v-text-field>
+                                    <!--report clip-->
+                                    <v-list-item prepend-icon="mdi-alert-octagon" @click="reportClip()">
+                                        <v-list-item-title>{{ $t('clip.report.report_clip') }}</v-list-item-title>
+                                    </v-list-item>
                                 </v-list-group>
                             </v-list>
                         </v-card>
@@ -232,6 +236,10 @@ export default {
                                     this.goToHome()
                                 }
                             })
+                            return
+                        } else if (e.response?.status === 451) {
+                            showDetailWarning({ title: this.$t('clip.Error'), text: this.$t('clip.report.clip_has_been_banned') })
+                                .then(this.goToHome)
                             return
                         }
                     }
@@ -592,11 +600,30 @@ export default {
             this.fetch_interval = parseInt(this.fetch_interval.toString())
             if (Number.isNaN(this.fetch_interval) || this.fetch_interval < 0) this.fetch_interval = 0
             if (this.fetch_interval > this.max_interval) this.fetch_interval = this.max_interval
-            console.log(this.fetch_interval, typeof this.fetch_interval)
             if (this.fetch_timer !== null) clearInterval(this.fetch_timer)
             this.fetch_timer = null
             if (this.fetch_interval > 0) this.fetch_timer = setInterval(this.onAutoFetch, this.fetch_interval * 1000)
             if (this.fetch_interval === 0) this.fetch_interval = ""
+        },
+        async reportClip() {
+            try {
+                dangerousConfirm({
+                    title: this.$t('clip.report.report_clip_confirm')
+                })
+                    .then(async (result) => {
+                        if (result.isConfirmed) {
+                            let response = await axios.put(`/note/${this.name}`, {
+                                report: true
+                            })
+                            showAutoCloseSuccess({
+                                title: this.$t('clip.report.reported'),
+                                text: this.$t('clip.report.clip_has_been_reported'),
+                            }).then(this.goToHome)
+                        }
+                    })
+            } catch (e: any) {
+                console.log(e)
+            }
         }
     },
     computed: {
@@ -671,5 +698,9 @@ export default {
 
 #sidebar .v-list {
     padding: 0;
+}
+
+#sidebar .v-list-group__items .v-list-item {
+    padding-inline-start: 16px !important;
 }
 </style>
