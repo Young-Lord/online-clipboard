@@ -60,7 +60,7 @@
                                 v-if="!is_readonly">
                             </v-text-field>
                             <!-- readonly url, click to copy-->
-                            <v-text-field
+                            <v-text-field v-if="!is_new"
                                 :label="hasReadonlyName ? $t('clip.readonly_url_click_to_copy') : $t('clip.readonly_url_is_disabled')"
                                 v-model="readonly_url_check_empty" readonly prepend-inner-icon="mdi-link"
                                 @click="hasReadonlyName && copyString(readonly_url)" class="cursor-pointer"
