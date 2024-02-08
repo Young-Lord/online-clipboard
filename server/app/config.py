@@ -28,7 +28,8 @@ class Config:
 
     # store - upload
     UPLOAD_FOLDER = "uploads"
-    MAX_CONTENT_LENGTH = Metadata.max_file_size
+    # ensure file and text size are not too large
+    MAX_CONTENT_LENGTH = max(Metadata.max_file_size, Metadata.max_content_length + 500)
 
     # endpoint
     API_SUFFIX: str = os.environ["VITE_API_SUFFIX"]
