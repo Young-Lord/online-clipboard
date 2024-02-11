@@ -114,7 +114,7 @@
                             <v-file-input
                                 :label="$t('clip.drag_or_click_to_upload_file') + ' ' + $t('clip.file_limits', [humanFileSize(metadata.max_file_size), remote_files.length, metadata.max_file_count, humanFileSize(getTotalSize(remote_files)), humanFileSize(metadata.max_all_file_size)])"
                                 prepend-icon="mdi-file-upload" @change="uploadFile()"
-                                v-if="!is_readonly && !is_new && metadata.max_file_count > 0 && metadata.max_all_file_size > 0"
+                                v-if="!is_readonly && metadata.max_file_count > 0 && metadata.max_all_file_size > 0"
                                 :disabled="uploading || metadata.max_file_count <= remote_files.length || metadata.max_all_file_size <= getTotalSize(remote_files)"
                                 v-model="file_to_upload" multiple>
                             </v-file-input>
