@@ -488,10 +488,10 @@ export default {
             try {
                 await Promise.all(this.file_to_upload.map(this.uploadSingleFile))
                 this.fetchContent(true)
-                showAutoCloseSuccess({
+                /* showAutoCloseSuccess({
                     title: this.$t('clip.file.uploaded'),
                     text: this.$t('clip.file.your_file_has_been_uploaded'),
-                })
+                }) */
             }
             catch (e: any) {
                 console.log(e)
@@ -518,10 +518,10 @@ export default {
             try {
                 let response = await axios.delete(`/note/${this.name}/file/${file.id}`)
                 this.fetchContent(true)
-                showAutoCloseSuccess({
+                /* showAutoCloseSuccess({
                     title: this.$t('clip.file.deleted'),
                     text: this.$t('clip.file.your_file_has_been_deleted'),
-                })
+                }) */
             } catch (e: any) {
                 console.log(e)
                 showDetailWarning({ title: this.$t('clip.Error'), text: this.$t('clip.file.failed_to_delete_file') })
