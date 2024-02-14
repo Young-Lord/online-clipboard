@@ -260,10 +260,12 @@ class BaseRest(Resource):
     def options(self, *args, **kwargs):
         return return_json(status_code=200)
 
+note_limiter = limiter_with_methods(Metadata.limiter_note)
+file_limiter = limiter_with_methods(Metadata.limiter_file)
 
 @api.route("/note/<string:name>")
 class NoteRest(BaseRest):
-    decorators = [limiter_with_methods(Metadata.limiter_note)] + base_decorators
+    decorators = [note_limiter] + base_decorators
 
     def get(self, name: str):
         if name.startswith(READONLY_PREFIX):
@@ -361,7 +363,7 @@ class NoteRest(BaseRest):
 
 @api.route("/note/<string:name>/file/<int:id>")
 class FileRest(BaseRest):
-    decorators = [limiter_with_methods(Metadata.limiter_file)] + base_decorators
+    decorators = [file_limiter] + base_decorators
 
     def get(self, name: str, id: int):
         note = datastore.get_note(
@@ -455,7 +457,7 @@ def get_file(id: int, as_attachment: bool):
 @api.route("/file/<int:id>/download")
 class DownloadFileContentRest(BaseRest):
     decorators = (
-        [limiter_with_methods(Metadata.limiter_file)]
+        [file_limiter]
         + [jwt_required(locations=["query_string"])]
         + [
             i
