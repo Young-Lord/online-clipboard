@@ -84,3 +84,16 @@ Password protect: `sha512(note.password)` through Internet, `pbkdf2_sha256(sha51
 File access: JWT generated with `note.name` and `pbkdf2_sha256(sha512(note.password))` (the hash stored in database as above)
 
 Content encryption: AES-256-CBC/PKCS7 with `sha256(note.password)`, see [CryptoJS behaviour](https://stackoverflow.com/a/64802091)
+
+### IIS
+
+#### URL Rewrite
+
+- Download and install [URL Rewrite](https://www.iis.net/downloads/microsoft/url-rewrite)
+- Regex pattern: `^private-name((/(.+)?)|)$`
+- Rewrite URL: `http://127.0.0.1:5000{R:1}`
+- Append query string: `true`
+
+#### Upload size limit
+
+[How to set URL length and HTTP POST content length limits in IIS - WKB240363](https://support.waters.com/KB_Inf/NuGenesis/WKB240363_How_to_set_URL_length_and_HTTP_POST_content_length_limits_in_IIS)
