@@ -129,13 +129,15 @@
                                     <template v-slot:append>
                                         <v-list-item-action end>
                                             <!--tabindex=-1 make it not focusable-->
-                                            <a :href="file.download_url" target="_self" style="color:inherit;" tabindex="-1"
+                                            <a :href="file.download_url" target="_self"
+                                                style="color: inherit; text-decoration: none;" tabindex="-1"
                                                 v-if="!encrypt_file">
                                                 <v-btn icon variant="text">
                                                     <v-icon>mdi-download</v-icon>
                                                 </v-btn>
                                             </a>
-                                            <a :href="file.preview_url" target="_blank" style="color:inherit;" tabindex="-1"
+                                            <a :href="file.preview_url" target="_blank"
+                                                style="color: inherit; text-decoration: none;" tabindex="-1"
                                                 v-if="!encrypt_file">
                                                 <v-btn icon variant="text">
                                                     <v-icon>mdi-eye</v-icon>
