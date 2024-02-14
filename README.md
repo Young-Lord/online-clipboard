@@ -50,6 +50,13 @@ FLASK_ENV=production poetry run python wsgi.py
 
 ## Note
 
+### Use with curl
+
+```shell
+# Get note
+curl http://example.com/raw/my_note?pwd=my_password
+```
+
 ### Debug
 
 ```shell

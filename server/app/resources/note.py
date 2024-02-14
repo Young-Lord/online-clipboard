@@ -12,6 +12,7 @@ import functools
 from typing import Any, ClassVar, Literal, Optional
 from flask import (
     current_app,
+    make_response,
     request,
     send_from_directory,
 )
@@ -28,9 +29,9 @@ from app.models.datastore import (
     verify_name,
     passlib_context,
 )
-from .base import api_restx as api, limiter, api_bp
+from .base import api_restx as api, limiter, api_bp, api_restx_at_root
 from app.note_const import READONLY_PREFIX, Metadata, ALLOW_CHAR_IN_NAMES
-from app.utils import ensure_dir, return_json, sha256
+from app.utils import ensure_dir, return_json, sha256, sha512
 from app.models.base import db
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import NotFound
@@ -74,23 +75,33 @@ def password_protected_note(f):
     def decorated_function(*args, **kwargs):
         if request.method.lower() == "options":
             return f(*args, **kwargs)
-        password = (
+
+        password: str = ""
+        header_password = (
             request.headers.get("Authorization", "")
             .removeprefix("Bearer")
             .removeprefix(" ")
         )
-        if password != "":
+        if header_password != "":
+            # first, try get password from Authorization header
             try:
-                password = base64.b64decode(password).decode("utf-8")
+                password = base64.b64decode(header_password).decode("utf-8")
             except (binascii.Error, UnicodeDecodeError):
                 return return_json(status_code=400, message="Invalid password provided")
+        else:
+            # then, try get password from query string (first try "password", then try "pwd")
+            plain_password = request.args.get("pwd", "")
+            if plain_password != "":
+                password = sha512(plain_password)
+
         name: str = kwargs.get("name", "")
 
         if (
             name.startswith(READONLY_PREFIX)
             and (note := datastore.get_note_by_readonly_name(name)) is not None
         ):
-            # for encrypted read-only note, we must make sure user has the password
+            # for encrypted read-only note, we must make sure user has the correct password
+            # else we can simply return the note, bypassing the password check
             note_property = note.user_property
             try:
                 prop_dict = json.loads(note_property)
@@ -244,9 +255,9 @@ def mashal_readonly_note(note: Note, status_code: int = 200):
     ret = marshal(note, note_model)
     assert isinstance(ret, dict)
     ret = {
-        k: v
-        if k in ALLOW_PROPS
-        else type(v)()  # create object with default value (0 or empty)
+        k: (
+            v if k in ALLOW_PROPS else type(v)()
+        )  # create object with default value (0 or empty)
         for k, v in ret.items()
     }
     ret = {**ret, **PROP_DEFAULT_VALUES}
@@ -260,8 +271,10 @@ class BaseRest(Resource):
     def options(self, *args, **kwargs):
         return return_json(status_code=200)
 
+
 note_limiter = limiter_with_methods(Metadata.limiter_note)
 file_limiter = limiter_with_methods(Metadata.limiter_file)
+
 
 @api.route("/note/<string:name>")
 class NoteRest(BaseRest):
@@ -359,6 +372,23 @@ class NoteRest(BaseRest):
             datastore.delete_file(file)
         datastore.delete_note(note)
         return return_json(status_code=204, message="Note deleted")
+
+
+@api_restx_at_root.route("/raw/<string:name>")
+class RawNoteRest(BaseRest):
+    decorators = NoteRest.decorators
+
+    def get(self, name: str):
+        note = datastore.get_note(
+            name,
+        )
+        if note is None:
+            return return_json(status_code=404, message="No note found")
+        return make_response(
+            note.content,
+            200,
+            {"Content-Type": "text/plain; charset=utf-8"},
+        )
 
 
 @api.route("/note/<string:name>/file/<int:id>")
@@ -475,7 +505,10 @@ class DownloadFileContentRest(BaseRest):
 class PreviewFileContentRest(DownloadFileContentRest):
     as_attachment = False
 
-email_templates = jinja2.Environment(loader=jinja2.FileSystemLoader("app/mails"),autoescape=True)
+
+email_templates = jinja2.Environment(
+    loader=jinja2.FileSystemLoader("app/mails"), autoescape=True
+)
 
 
 @api_bp.route("/mail/<string:address>/settings", methods=["GET"])

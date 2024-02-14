@@ -21,9 +21,10 @@ def create_app() -> Flask:
 
     with app.app_context():
         from .views import frontend
-        from .views import api
+        from .views import api_bp, api_bp_at_root
 
-    app.register_blueprint(api, url_prefix=app.config["API_SUFFIX"])
+    app.register_blueprint(api_bp, url_prefix=app.config["API_SUFFIX"])
+    app.register_blueprint(api_bp_at_root, url_prefix="/")
     app.register_blueprint(frontend, url_prefix="/")
 
     # if your app is behind a proxy, modify this as https://werkzeug.palletsprojects.com/en/latest/middleware/proxy_fix/#werkzeug.middleware.proxy_fix.ProxyFix

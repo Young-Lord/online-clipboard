@@ -10,6 +10,8 @@ from app.note_const import Metadata
 
 api_bp = Blueprint("api", "api")
 api_restx = Api(api_bp)
+api_bp_at_root = Blueprint("api_at_root", "api_at_root")
+api_restx_at_root = Api(api_bp_at_root)
 file_jwt = JWTManager()
 # this is global JWT, but only used for file download now
 limiter = Limiter(get_remote_address, default_limits=Metadata.limiter_default)  # type: ignore
