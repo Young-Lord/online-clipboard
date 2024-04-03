@@ -14,27 +14,32 @@
             </v-btn>
             <!-- saved status in plaintext -->
             <v-toolbar-title>{{ save_status ? $t(`save_status.${save_status}`) : '' }}</v-toolbar-title>
-            <v-spacer></v-spacer>
-            <!--delete button-->
-            <v-btn icon @click="deleteContent()" v-if="!is_new && !is_readonly">
-                <v-icon>mdi-delete</v-icon>
-            </v-btn>
-            <!-- password button-->
-            <v-btn icon @click="changePassword()" v-if="!is_new && !is_readonly">
-                <v-icon>mdi-lock</v-icon>
-            </v-btn>
-            <!--save button-->
-            <v-btn icon @click="pushContent()" v-if="!is_readonly">
-                <v-icon>mdi-content-save</v-icon>
-            </v-btn>
-            <!-- copy button-->
-            <v-btn icon @click="copyString(local_content)">
-                <v-icon>mdi-content-copy</v-icon>
-            </v-btn>
-            <!-- download button-->
-            <v-btn icon @click="downloadContent()">
-                <v-icon>mdi-download</v-icon>
-            </v-btn>
+            <DefineEditBar>
+                <v-spacer></v-spacer>
+                <!--delete button-->
+                <v-btn icon @click="deleteContent()" v-if="!is_new && !is_readonly">
+                    <v-icon>mdi-delete</v-icon>
+                </v-btn>
+                <!-- password button-->
+                <v-btn icon @click="changePassword()" v-if="!is_new && !is_readonly">
+                    <v-icon>mdi-lock</v-icon>
+                </v-btn>
+                <!--save button-->
+                <v-btn icon @click="pushContent()" v-if="!is_readonly">
+                    <v-icon>mdi-content-save</v-icon>
+                </v-btn>
+                <!-- copy button-->
+                <v-btn icon @click="copyString(local_content)">
+                    <v-icon>mdi-content-copy</v-icon>
+                </v-btn>
+                <!-- download button-->
+                <v-btn icon @click="downloadContent()">
+                    <v-icon>mdi-download</v-icon>
+                </v-btn>
+            </DefineEditBar>
+            <template v-slot:[should_wrap_appbar_to_slot]>
+                <ReuseEditBar></ReuseEditBar>
+            </template>
         </v-app-bar>
 
         <v-main>
@@ -52,7 +57,8 @@
                             <!-- 下拉框，选择过期时间 -->
                             <v-select v-bind:items="timeout_selections.map((key) => { return timeDeltaToString(key) })"
                                 :label="$t('clip.expiration')" @update:model-value="setNoteTimeout"
-                                v-model="selected_timeout" prepend-inner-icon="mdi-clock" v-if="!is_new && !is_readonly">
+                                v-model="selected_timeout" prepend-inner-icon="mdi-clock"
+                                v-if="!is_new && !is_readonly">
                             </v-select>
                             <!-- current url, click to copy-->
                             <v-text-field :label="$t('clip.current_url_click_to_copy')" v-model="current_url" readonly
@@ -77,20 +83,22 @@
                                     <v-checkbox v-model="encrypt_text_content" :label="$t('clip.encrypt_content')"
                                         v-if="!is_readonly" @change="updateEncryptText()">
                                     </v-checkbox>
-                                    <v-checkbox v-model="encrypt_file" :label="$t('clip.encrypt_file')" v-if="!is_readonly"
-                                        :disabled="uploading" @change="updateEncryptFile()">
+                                    <v-checkbox v-model="encrypt_file" :label="$t('clip.encrypt_file')"
+                                        v-if="!is_readonly" :disabled="uploading" @change="updateEncryptFile()">
                                     </v-checkbox>
                                     <!-- save interval -->
-                                    <v-text-field v-model="save_interval" :label="$t('clip.auto_save_interval')" outlined
-                                        dense type="number" @keyup="onUpdateSaveInterval()" v-if="!is_readonly">
+                                    <v-text-field v-model="save_interval" :label="$t('clip.auto_save_interval')"
+                                        outlined dense type="number" @keyup="onUpdateSaveInterval()"
+                                        v-if="!is_readonly">
                                     </v-text-field>
                                     <!-- auto fetch remote content interval -->
-                                    <v-text-field v-model="fetch_interval" :label="$t('clip.auto_fetch_interval')" outlined
-                                        dense type="number" @keyup="onUpdateFetchInterval()">
+                                    <v-text-field v-model="fetch_interval" :label="$t('clip.auto_fetch_interval')"
+                                        outlined dense type="number" @keyup="onUpdateFetchInterval()">
                                     </v-text-field>
                                     <!--report clip-->
                                     <v-list-item prepend-icon="mdi-alert-octagon" @click="reportClip()">
-                                        <v-list-item-title>{{ $t('clip.report.report_clip') }}</v-list-item-title>
+                                        <v-list-item-title>{{ $t('clip.report.report_clip')
+                                            }}</v-list-item-title>
                                     </v-list-item>
                                     <!--prepend single line message-->
                                     <v-text-field v-model="combine_content" :label="$t('clip.prepend_message')"
@@ -111,8 +119,8 @@
                     <v-col cols="12">
                         <v-card id="file-card">
                             <!-- Drag or click to upload file -->
-                            <v-file-input
-                                :label="$t('clip.drag_or_click_to_upload_file') + ' ' + $t('clip.file_limits', [humanFileSize(metadata.max_file_size), remote_files.length, metadata.max_file_count, humanFileSize(getTotalSize(remote_files)), humanFileSize(metadata.max_all_file_size)])"
+                            <v-file-input :label="$t('clip.drag_or_click_to_upload_file')"
+                                :messages="$t('clip.file_limits', [humanFileSize(metadata.max_file_size), remote_files.length, metadata.max_file_count, humanFileSize(getTotalSize(remote_files)), humanFileSize(metadata.max_all_file_size)])"
                                 prepend-icon="mdi-file-upload" @change="uploadFile()"
                                 v-if="!is_readonly && metadata.max_file_count > 0 && metadata.max_all_file_size > 0"
                                 :disabled="uploading || metadata.max_file_count <= remote_files.length || metadata.max_all_file_size <= getTotalSize(remote_files)"
@@ -124,8 +132,9 @@
                                     <v-list-item-title>{{ mayDecryptFilename(file.filename) }}
                                     </v-list-item-title>
                                     <v-list-item-subtitle>{{ humanFileSize(file.size) }} {{
-                                        $t('clip.file.expiration_date_is', [$d(new Date(file.expire_at), 'long')])
-                                    }}</v-list-item-subtitle>
+                $t('clip.file.expiration_date_is', [$d(new Date(file.expire_at),
+                    'long')])
+            }}</v-list-item-subtitle>
                                     <template v-slot:append>
                                         <v-list-item-action end>
                                             <!--tabindex=-1 make it not focusable-->
@@ -173,6 +182,8 @@ import CryptoJS from 'crypto-js'
 import { showDetailWarning, showAutoCloseSuccess, cancelableInput, dangerousConfirm } from "@/plugins/swal"
 import { isAxiosError } from 'axios'
 import { SweetAlertResult } from "sweetalert2"
+import { createReusableTemplate } from '@vueuse/core'
+const [DefineEditBar, ReuseEditBar] = createReusableTemplate()
 
 export default {
     data() {
@@ -765,6 +776,9 @@ export default {
         },
         allow_mail(): boolean {
             return this.metadata.allow_mail ?? false
+        },
+        should_wrap_appbar_to_slot(): string {
+            return this.$vuetify.display.smAndUp ? "append" : "extension"
         }
     },
     mounted() {
@@ -799,6 +813,10 @@ export default {
 
         // first fetch
         this.fetchContent()
+    },
+    components: {
+        DefineEditBar,
+        ReuseEditBar
     }
 }
 </script>

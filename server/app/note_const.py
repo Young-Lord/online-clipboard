@@ -26,6 +26,7 @@ class BaseMetadata:
     owner: str = "Niko"
     email: str = "ly-niko@qq.com"
     version: str = "0.0.18"
+    min_compatible_frontend_version: str = "0.0.18"
     url: str = ""
     logo: str = ""
     repository: str = "https://github.com/Young-Lord/online-clipboard"

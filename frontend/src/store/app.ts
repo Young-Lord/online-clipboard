@@ -13,7 +13,7 @@ export const useAppStore = defineStore("app", {
     actions: {
         async metadata(): Promise<MetaData> {
             if (!this.isMetadataLoaded) {
-                console.debug("Loading metadata from server...")
+                // console.debug("Loading metadata from server...")
                 this._metadata = (await axios.get("/metadata")).data
                     .data as MetaData
                 this.isMetadataLoaded = true
