@@ -14,7 +14,6 @@ def create_app() -> Flask:
     f.set_cors()
     with app.app_context():
         f.set_jwt()
-        # f.set_api()
     f.set_rate_limit()
     f.set_mail()
     f.set_schedule_task()
@@ -24,9 +23,10 @@ def create_app() -> Flask:
         from .views import api_bp, api_bp_at_root
 
     app.register_blueprint(api_bp, url_prefix=app.config["API_SUFFIX"])
-    app.register_blueprint(api_bp_at_root, url_prefix="/")
+    # we must register frontend before api_bp_at_root, because the latter has a / route
     if not app.config["NO_FRONTEND"]:
         app.register_blueprint(frontend, url_prefix="/")
+    app.register_blueprint(api_bp_at_root, url_prefix="/")
 
     if app.config["BEHIND_REVERSE_PROXY"]:
         app.wsgi_app = ProxyFix(app.wsgi_app)

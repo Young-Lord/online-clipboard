@@ -55,18 +55,6 @@ class Factory:
             automatic_options=True,
         )
 
-    def set_api(self):
-        return
-        # already registered as a blueprint
-        from .resources.base import api_restx
-
-        api_restx.init_app(
-            self.flask,
-            version=Metadata.version,
-            title=Metadata.name,
-            description=Metadata.description,
-        )
-
     def set_jwt(self):
         from .resources.base import file_jwt
 

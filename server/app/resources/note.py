@@ -38,6 +38,11 @@ from werkzeug.exceptions import NotFound
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
 
 
+@api_bp.route("/metadata")
+def api_metadata():
+    return return_json(data=Metadata.to_dict())
+
+
 NO_DATA_METHODS = {"get", "options", "delete"}
 LIMITER_METHODS = ["get", "post", "put", "delete"]
 limiter_with_methods = functools.partial(limiter.limit, methods=LIMITER_METHODS)
@@ -314,7 +319,9 @@ class NoteRest(BaseRest):
         orig_params = request.get_json()
         # handle illegal note report
         if orig_params.get("report", False):
-            note = datastore.get_note(name=name) or datastore.get_note_by_readonly_name(readonly_name=name)
+            note = datastore.get_note(name=name) or datastore.get_note_by_readonly_name(
+                readonly_name=name
+            )
             assert note is not None
             datastore.report_note(note)
             return return_json(status_code=200, message="Note reported")
