@@ -16,7 +16,7 @@ Runs on Node.js v18.16.0, Python 3.11.3.
 ```shell
 # Install python dependencies
 pushd server
-poetry install
+poetry install --no-root
 popd
 # Install nodejs dependencies
 pushd frontend
