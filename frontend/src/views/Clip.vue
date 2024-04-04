@@ -74,18 +74,18 @@
                                 @click:append-inner.stop="toggleReadonlyUrl()">
                             </v-text-field>
                             <v-list v-model:opened="sidebar_list_opened" v-if="!is_new">
-                                <v-list-group value="Advanced Settings">
+                                <v-list-group>
                                     <template v-slot:activator="{ props }">
                                         <v-list-item v-bind="props" prepend-icon="mdi-cog"
                                             :title="$t('clip.advanced_settings')"></v-list-item>
                                     </template>
-                                    <!-- checkbox for encrypt text content / file -->
-                                    <v-checkbox v-model="encrypt_text_content" :label="$t('clip.encrypt_content')"
-                                        v-if="!is_readonly" @change="updateEncryptText()">
-                                    </v-checkbox>
-                                    <v-checkbox v-model="encrypt_file" :label="$t('clip.encrypt_file')"
-                                        v-if="!is_readonly" :disabled="uploading" @change="updateEncryptFile()">
-                                    </v-checkbox>
+                                    <!--prepend single line message-->
+                                    <v-text-field v-model="combine_content" :label="$t('clip.prepend_message')"
+                                        :disabled="user_property.encrypt_text_content === true" outlined dense
+                                        @keydown.enter.exact="combinePushContent()"
+                                        append-inner-icon="mdi-comment-arrow-right"
+                                        @click:append-inner="combinePushContent()" v-if="!is_readonly">
+                                    </v-text-field>
                                     <!-- save interval -->
                                     <v-text-field v-model="save_interval" :label="$t('clip.auto_save_interval')"
                                         outlined dense type="number" @keyup="onUpdateSaveInterval()"
@@ -95,23 +95,23 @@
                                     <v-text-field v-model="fetch_interval" :label="$t('clip.auto_fetch_interval')"
                                         outlined dense type="number" @keyup="onUpdateFetchInterval()">
                                     </v-text-field>
-                                    <!--report clip-->
-                                    <v-list-item prepend-icon="mdi-alert-octagon" @click="reportClip()">
-                                        <v-list-item-title>{{ $t('clip.report.report_clip')
-                                            }}</v-list-item-title>
-                                    </v-list-item>
-                                    <!--prepend single line message-->
-                                    <v-text-field v-model="combine_content" :label="$t('clip.prepend_message')"
-                                        :disabled="user_property.encrypt_text_content === true" outlined dense
-                                        @keydown.enter.exact="combinePushContent()"
-                                        append-inner-icon="mdi-comment-arrow-right"
-                                        @click:append-inner="combinePushContent()" v-if="!is_readonly">
-                                    </v-text-field>
+                                    <!-- checkbox for encrypt text content / file -->
+                                    <v-checkbox v-model="encrypt_text_content" :label="$t('clip.encrypt_content')"
+                                        v-if="!is_readonly" @change="updateEncryptText()">
+                                    </v-checkbox>
+                                    <v-checkbox v-model="encrypt_file" :label="$t('clip.encrypt_file')"
+                                        v-if="!is_readonly" :disabled="uploading" @change="updateEncryptFile()">
+                                    </v-checkbox>
                                     <!--send by mail-->
                                     <v-text-field v-model="mail_address" :label="$t('clip.mail.send_to_mail')" outlined
                                         dense @keydown.enter.exact="sendToMail()" append-inner-icon="mdi-email-fast"
                                         @click:append-inner="sendToMail()" v-if="allow_mail">
                                     </v-text-field>
+                                    <!--report clip-->
+                                    <v-list-item prepend-icon="mdi-alert-octagon" @click="reportClip()">
+                                        <v-list-item-title>{{ $t('clip.report.report_clip')
+                                            }}</v-list-item-title>
+                                    </v-list-item>
                                 </v-list-group>
                             </v-list>
                         </v-card>
@@ -132,9 +132,9 @@
                                     <v-list-item-title>{{ mayDecryptFilename(file.filename) }}
                                     </v-list-item-title>
                                     <v-list-item-subtitle>{{ humanFileSize(file.size) }} {{
-                $t('clip.file.expiration_date_is', [$d(new Date(file.expire_at),
-                    'long')])
-            }}</v-list-item-subtitle>
+                                        $t('clip.file.expiration_date_is', [$d(new Date(file.expire_at),
+                                        'long')])
+                                        }}</v-list-item-subtitle>
                                     <template v-slot:append>
                                         <v-list-item-action end>
                                             <!--tabindex=-1 make it not focusable-->
