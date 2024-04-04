@@ -356,6 +356,7 @@ class NoteRest(BaseRest):
                 return return_json(status_code=400, message="Invalid combine_mode")
             params.pop("combine_mode", None)
             params.pop("clip_version", None)
+            params["clip_version"] = note.clip_version
         try:
             datastore.update_note(name=name, **params)
         except ValueError as e:
