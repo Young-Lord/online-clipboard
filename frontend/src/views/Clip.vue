@@ -71,7 +71,7 @@
                                 v-model="readonly_url_check_empty" readonly prepend-inner-icon="mdi-link"
                                 @click="hasReadonlyName && copyString(readonly_url)" class="cursor-pointer"
                                 :append-inner-icon="is_readonly ? undefined : (hasReadonlyName ? 'mdi-delete' : 'mdi-plus-circle-outline')"
-                                @click:append-inner="toggleReadonlyUrl()">
+                                @click:append-inner.stop="toggleReadonlyUrl()">
                             </v-text-field>
                             <v-list v-model:opened="sidebar_list_opened" v-if="!is_new">
                                 <v-list-group value="Advanced Settings">
