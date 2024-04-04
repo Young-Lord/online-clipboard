@@ -35,13 +35,17 @@ class Config:
     )
 
     # endpoint
-    API_SUFFIX: str = os.environ["VITE_API_SUFFIX"]
-    # _BASE_DOMAIN: str = os.environ["VITE_BASE_DOMAIN"]
-    # _BASE_PATH: str = os.environ["VITE_BASE_PATH"]
-    HOMEPAGE_BASEPATH: str = os.environ["VITE_HOMEPAGE_BASEPATH"]
-    API_FULL_URL: str = os.environ["VITE_API_ENDPOINT"]
+    API_SUFFIX = "/api"
+    HOMEPAGE_URL: str = os.environ["VITE_HOMEPAGE_URL"]
+    API_URL: str = os.environ["VITE_API_URL"]
     BIND_HOST = "127.0.0.1"
     BIND_PORT = 5000
+    NO_FRONTEND: bool = (
+        False  # set to True to disable frontend, only API will be available
+    )
+    # set to True if your app is behind a proxy, this helps to get real IP address
+    # see: https://werkzeug.palletsprojects.com/en/latest/middleware/proxy_fix/#werkzeug.middleware.proxy_fix.ProxyFix
+    BEHIND_REVERSE_PROXY: bool = False
 
     # mail
     if Metadata.allow_mail:

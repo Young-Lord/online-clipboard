@@ -188,7 +188,7 @@ def verify_access_token_for_note(note: Note) -> bool:
 
 
 def create_file_link(file: File, suffix: Literal["download", "preview"]) -> str:
-    return current_app.config["API_FULL_URL"] + "/file/%s/%s?jwt=%s" % (
+    return current_app.config["API_URL"] + "/file/%s/%s?jwt=%s" % (
         file.id,
         suffix,
         create_access_token_for_note(file.note),
@@ -544,9 +544,7 @@ def api_mail_setting(address: str):
 
 
 def create_subscribe_link(address: str, subscribe: bool) -> str:
-    return current_app.config[
-        "API_FULL_URL"
-    ] + "/mail/%s/settings?subscribe=%s&jwt=%s" % (
+    return current_app.config["API_URL"] + "/mail/%s/settings?subscribe=%s&jwt=%s" % (
         address,
         "true" if subscribe else "false",
         create_access_token(
@@ -626,7 +624,7 @@ def api_send_mail():
     msg = EmailMessage(
         subject="Clip - Clip exported",
         body=email_templates.get_template("clip_content.jinja2").render(
-            clip_url=current_app.config["HOMEPAGE_BASEPATH"],
+            clip_url=current_app.config["HOMEPAGE_URL"],
             clip_content=content,
             unsubscribe_link=create_subscribe_link(address, False),
         ),

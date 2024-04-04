@@ -1,6 +1,6 @@
 // Utilities
 import { MetaData, axios } from "@/api"
-import { API_ENDPOINT } from "@/config"
+import { API_URL } from "@/config"
 import { defineStore } from "pinia"
 import { AxiosInstance } from "axios"
 
@@ -8,7 +8,7 @@ export const useAppStore = defineStore("app", {
     state: () => ({
         _metadata: {} as MetaData,
         isMetadataLoaded: false,
-        api_endpoint: API_ENDPOINT,
+        api_endpoint: API_URL,
     }),
     actions: {
         async metadata(): Promise<MetaData> {

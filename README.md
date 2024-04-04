@@ -27,7 +27,7 @@ popd
 ## Config
 
 1. Edit `server/app/note_const.py`, `server/app/config.py`.
-2. Copy `.env.development` to `.env.production` and edit it.
+2. Copy `.env.development` to `.env.production` and edit it. Also edit `.env` if needed.
 3. Generate `APP_SECRET` as described in `server/app/config.py` and save it to `.env.production`.
 4. Init database using `flask db upgrade` in `server` directory.
 5. Modify `server/app/__init__.py` and enable `ProxyFix` if you are deploying behind a reverse proxy.

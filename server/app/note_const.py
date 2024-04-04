@@ -31,6 +31,11 @@ class BaseMetadata:
     logo: str = ""
     repository: str = "https://github.com/Young-Lord/online-clipboard"
     max_content_length: int = 1000000
+    max_user_property_length: int = (
+        1000
+        # This is JSON for any data used (almost) in frontend only, such as encryption algorithm.
+        # Server will possibly parse it, so it should be limited strictly.
+    )
     max_name_length: int = 100
     max_password_length: int = 256
     max_file_size: int = 200 * 1024 * 1024  # 200 MiB
