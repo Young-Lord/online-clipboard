@@ -53,8 +53,8 @@ FLASK_ENV=production poetry run python wsgi.py
 ### Use with curl
 
 ```shell
-# Get note
-curl http://example.com/raw/my_note?pwd=my_password
+# Get clip named my_clip
+curl http://example.com/raw/my_clip?pwd=my_password
 ```
 
 ### Debug

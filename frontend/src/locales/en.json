@@ -25,7 +25,7 @@
     "readonly_url_is_disabled": "Readonly URL is disabled",
     "drag_or_click_to_upload_file": "Drag or Click to upload file(s)",
     "file_limits": "max {0} per file, current uploaded: {1} / {2}, storage quota left: {3} / {4}",
-    "invalid_note_name": "Invalid note name.",
+    "invalid_clip_name": "Invalid clip name!",
     "expiration": "Expiration",
     "invalid_timeout": "Invalid timeout!",
     "password_question": "Password?",
@@ -67,7 +67,7 @@
     "failed_to_parse_user_property": "Failed to parse auxiliary information, encryption may not work properly.",
     "report": {
       "report_clip": "Report clip",
-      "report_clip_confirm": "Are you sure to report this clip?",
+      "report_clip_confirm": "Are you sure to report this clip? Clip will be banned or deleted immediately.",
       "reported": "Reported!",
       "clip_has_been_reported": "Clip has been reported.",
       "clip_has_been_banned": "Clip has been temporarily banned."

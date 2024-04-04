@@ -145,8 +145,7 @@
                                                     <v-icon>mdi-download</v-icon>
                                                 </v-btn>
                                             </a>
-                                            <v-btn icon variant="text" @click="downloadEncryptedFile(file)"
-                                                v-else>
+                                            <v-btn icon variant="text" @click="downloadEncryptedFile(file)" v-else>
                                                 <v-icon>mdi-download</v-icon>
                                             </v-btn>
                                             <a :href="file.preview_url" target="_blank"
@@ -259,7 +258,7 @@ export default {
                 } catch (e: any) {
                     if (isAxiosError(e)) {
                         if (e.response?.status === 400) {
-                            showDetailWarning({ title: this.$t('clip.Error'), text: this.$t('clip.invalid_note_name') })
+                            showDetailWarning({ title: this.$t('clip.Error'), text: this.$t('clip.invalid_clip_name') })
                                 .then(this.goToHome)
                             return
                         } else if (e.response?.status === 401) {

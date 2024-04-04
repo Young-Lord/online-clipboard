@@ -54,7 +54,7 @@
             "deleted": "删除成功！"
         },
         "invalid_timeout": "过期时长不正确！",
-        "invalid_note_name": "剪贴板名字格式有误！",
+        "invalid_clip_name": "此剪贴板名字不可使用！",
         "outdated": "剪贴板已在其他客户端更新，刷新网页以更新。",
         "auto_fetch_remote_content": "自动从云端向本地同步更改",
         "auto_save_interval": "自动保存间隔（秒，留空禁用）",
@@ -67,7 +67,7 @@
         "failed_to_parse_user_property": "无法解析辅助数据，加密可能无法正常使用。",
         "report": {
             "report_clip": "举报内容",
-            "report_clip_confirm": "确定举报此剪贴板？",
+            "report_clip_confirm": "确定举报此剪贴板？此剪贴板将被临时封禁或永久删除。",
             "reported": "已举报！",
             "clip_has_been_reported": "",
             "clip_has_been_banned": "剪贴板已被临时封禁。"
