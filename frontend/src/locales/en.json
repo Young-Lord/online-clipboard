@@ -67,7 +67,8 @@
     "failed_to_parse_user_property": "Failed to parse auxiliary information, encryption may not work properly.",
     "report": {
       "report_clip": "Report clip",
-      "report_clip_confirm": "Are you sure to report this clip? Clip will be banned or deleted immediately.",
+      "report_clip_confirm": "Are you sure to report this clip?",
+      "clip_will_be_banned": "Clip will be banned or deleted immediately.",
       "reported": "Reported!",
       "clip_has_been_reported": "Clip has been reported.",
       "clip_has_been_banned": "Clip has been temporarily banned."

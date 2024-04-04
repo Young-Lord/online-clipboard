@@ -67,7 +67,8 @@
         "failed_to_parse_user_property": "无法解析辅助数据，加密可能无法正常使用。",
         "report": {
             "report_clip": "举报内容",
-            "report_clip_confirm": "确定举报此剪贴板？此剪贴板将被临时封禁或永久删除。",
+            "report_clip_confirm": "确定举报此剪贴板？",
+            "clip_will_be_banned": "此剪贴板将被临时封禁或永久删除。",
             "reported": "已举报！",
             "clip_has_been_reported": "",
             "clip_has_been_banned": "剪贴板已被临时封禁。"

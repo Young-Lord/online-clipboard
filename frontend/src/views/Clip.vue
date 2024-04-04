@@ -693,7 +693,8 @@ export default {
         async reportClip() {
             try {
                 dangerousConfirm({
-                    title: this.$t('clip.report.report_clip_confirm')
+                    title: this.$t('clip.report.report_clip_confirm'),
+                    text: this.$t('clip.report.clip_will_be_banned'),
                 })
                     .then(async (result) => {
                         if (result.isConfirmed) {
