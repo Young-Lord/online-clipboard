@@ -70,7 +70,7 @@
                                 :label="hasReadonlyName ? $t('clip.readonly_url_click_to_copy') : $t('clip.readonly_url_is_disabled')"
                                 v-model="readonly_url_check_empty" readonly prepend-inner-icon="mdi-link"
                                 @click="hasReadonlyName && copyString(readonly_url)" class="cursor-pointer"
-                                :append-inner-icon="hasReadonlyName ? 'mdi-delete' : 'mdi-plus-circle-outline'"
+                                :append-inner-icon="is_readonly ? undefined : (hasReadonlyName ? 'mdi-delete' : 'mdi-plus-circle-outline')"
                                 @click:append-inner="toggleReadonlyUrl()">
                             </v-text-field>
                             <v-list v-model:opened="sidebar_list_opened" v-if="!is_new">
@@ -145,6 +145,10 @@
                                                     <v-icon>mdi-download</v-icon>
                                                 </v-btn>
                                             </a>
+                                            <v-btn icon variant="text" @click="downloadEncryptedFile(file)"
+                                                v-else>
+                                                <v-icon>mdi-download</v-icon>
+                                            </v-btn>
                                             <a :href="file.preview_url" target="_blank"
                                                 style="color: inherit; text-decoration: none;" tabindex="-1"
                                                 v-if="!encrypt_file">
@@ -152,11 +156,7 @@
                                                     <v-icon>mdi-eye</v-icon>
                                                 </v-btn>
                                             </a>
-                                            <v-btn icon variant="text" @click="downloadEncryptedFile(file)"
-                                                v-if="encrypt_file">
-                                                <v-icon>mdi-download</v-icon>
-                                            </v-btn>
-                                            <v-btn icon variant="text" @click="deleteFile(file)">
+                                            <v-btn icon variant="text" @click="deleteFile(file)" v-if="!is_readonly">
                                                 <v-icon>mdi-delete</v-icon>
                                             </v-btn>
                                         </v-list-item-action>

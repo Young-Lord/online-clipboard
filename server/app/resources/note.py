@@ -454,6 +454,11 @@ class FileRest(BaseRest):
         return return_json(status_code=201)
 
     def delete(self, name: str, id: int):
+        note = datastore.get_note(
+            name,
+        )
+        if note is None:
+            return return_json(status_code=404, message="No note found")
         file = datastore.get_file(id)
         if file is None:
             return return_json(status_code=404, message="No file found")
