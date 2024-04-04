@@ -314,7 +314,7 @@ class NoteRest(BaseRest):
         orig_params = request.get_json()
         # handle illegal note report
         if orig_params.get("report", False):
-            note = datastore.get_note(name=name)
+            note = datastore.get_note(name=name) or datastore.get_note_by_readonly_name(readonly_name=name)
             assert note is not None
             datastore.report_note(note)
             return return_json(status_code=200, message="Note reported")
