@@ -48,7 +48,7 @@
                     <v-col cols="12" md="8">
                         <!-- Larger Text Input Box -->
                         <v-textarea rows="15" variant="outlined" auto-grow v-model="local_content"
-                            @input="setEditingStatus()" @keydown.ctrl.s.exact="pushContentIfChanged()"
+                            @input="setEditingStatusOnEdit()" @keydown.ctrl.s.exact="pushContentIfChanged()"
                             @keydown.ctrl.s.exact.prevent @focusout="pushContentIfChanged()" :disabled="uploading">
                         </v-textarea>
                     </v-col>
@@ -132,9 +132,9 @@
                                     <v-list-item-title>{{ mayDecryptFilename(file.filename) }}
                                     </v-list-item-title>
                                     <v-list-item-subtitle>{{ humanFileSize(file.size) }} {{
-                                        $t('clip.file.expiration_date_is', [$d(new Date(file.expire_at),
-                                        'long')])
-                                        }}</v-list-item-subtitle>
+                $t('clip.file.expiration_date_is', [$d(new Date(file.expire_at),
+                    'long')])
+            }}</v-list-item-subtitle>
                                     <template v-slot:append>
                                         <v-list-item-action end>
                                             <!--tabindex=-1 make it not focusable-->
@@ -181,8 +181,22 @@ import CryptoJS from 'crypto-js'
 import { showDetailWarning, showAutoCloseSuccess, cancelableInput, dangerousConfirm } from "@/plugins/swal"
 import { isAxiosError } from 'axios'
 import { SweetAlertResult } from "sweetalert2"
+import { onBeforeRouteLeave } from "vue-router"
 import { createReusableTemplate } from '@vueuse/core'
 const [DefineEditBar, ReuseEditBar] = createReusableTemplate()
+
+enum SaveStatus {
+    // Current status displayed on top left. The values are used to get i18n string.
+    empty = "",
+    new = "new",
+    error = "error",
+    saving = "saving",
+    saved = "saved",
+    editing = "editing",
+    local_outdated = "local_outdated",
+    conflict_resolved = "conflict_resolved"
+}
+const UnsavedSaveStatus = new Set([SaveStatus.error, SaveStatus.saving, SaveStatus.editing, SaveStatus.local_outdated])
 
 export default {
     data() {
@@ -193,7 +207,7 @@ export default {
             local_content: "",
             remote_content: "",
             last_saved: Date.now(),
-            save_status: "",
+            save_status: SaveStatus.empty,
             is_new: false,
             metadata: {} as MetaData,
             password: "",
@@ -205,7 +219,6 @@ export default {
             uploading: false,
             file_to_upload: [] as File[],
             remote_files: [] as FileData[],
-            is_local_outdated: false,
             save_interval: 3 as number | string,
             fetch_min_idle_time: 1,
             fetch_interval: 0 as number | string,
@@ -228,10 +241,25 @@ export default {
         goToHome() {
             this.$router.push({ name: "Home" })
         },
-        async setEditingStatus() {
+        beforeUnloadHandler(event: BeforeUnloadEvent) {
+            event.preventDefault()
+            event.returnValue = true
+        },
+        setUnloadWarning(enable: boolean) {
+            const event_name = "beforeunload"
+            if (enable) window.addEventListener(event_name, this.beforeUnloadHandler)
+            else window.removeEventListener(event_name, this.beforeUnloadHandler)
+        },
+        setSaveStatus(save_status: SaveStatus) {
+            if (this.save_status === save_status) return
+            this.save_status = save_status
+            if (UnsavedSaveStatus.has(save_status)) this.setUnloadWarning(true)
+            else this.setUnloadWarning(false)
+        },
+        async setEditingStatusOnEdit() {
             this.last_edit_time = Date.now()
             if (this.is_readonly) return
-            this.save_status = "editing"
+            this.setSaveStatus(SaveStatus.editing)
         },
         // create / fetch / push / delete
         async requestPassword(): Promise<SweetAlertResult<any>> {
@@ -281,7 +309,7 @@ export default {
                 }
                 if (response.status === 204) {
                     this.is_new = true
-                    this.save_status = "new"
+                    this.setSaveStatus(SaveStatus.new)
                     this.local_content = ""
                     this.remote_content = ""
                     this.remote_version = this.clip_version = 1
@@ -324,9 +352,8 @@ export default {
                     this.readonly_name = response.data.data.readonly_name
                     this.is_readonly = response.data.data.is_readonly
                     this.remote_files = response.data.data.files
-                    this.is_local_outdated = false
-                    if (this.save_status === "local_outdated") {
-                        this.save_status = "conflict_resolved"
+                    if (this.save_status === SaveStatus.local_outdated) {
+                        this.setSaveStatus(SaveStatus.conflict_resolved)
                     }
                 }
             } catch (e: any) {
@@ -352,11 +379,11 @@ export default {
         },
         async pushContent(force = false) {
             if (this.is_readonly) return
-            if (this.save_status === "saving") return
+            if (this.save_status === SaveStatus.saving) return
             if (!force && this.is_local_outdated) return
             if (force) this.clip_version = this.remote_version
             this.last_saved = Date.now()
-            this.save_status = "saving"
+            this.setSaveStatus(SaveStatus.saving)
             await this.createIfNotExist()
             let content = this.local_content
             if (this.encrypt_text_content) {
@@ -381,18 +408,17 @@ export default {
                 })
                 this.clip_version = response.data.data.clip_version
                 this.fetchContent(true)
-                this.save_status = "saved"
+                this.setSaveStatus(SaveStatus.saved)
             } catch (e: any) {
                 if (isAxiosError(e)) {
                     if (e.response?.status === 409) {
                         this.remote_version = e.response.data.data.clip_version
-                        this.is_local_outdated = true
-                        this.save_status = "local_outdated"
+                        this.setSaveStatus(SaveStatus.local_outdated)
                         return
                     }
                 }
                 console.log(e)
-                this.save_status = "error"
+                this.setSaveStatus(SaveStatus.error)
             }
         },
         async deleteContent() {
@@ -779,6 +805,9 @@ export default {
         },
         should_wrap_appbar_to_slot(): string {
             return this.$vuetify.display.smAndUp ? "append" : "extension"
+        },
+        is_local_outdated(): boolean {
+            return this.save_status === SaveStatus.local_outdated
         }
     },
     mounted() {
@@ -787,6 +816,9 @@ export default {
         if (window.location.hash) {
             this.password = window.location.hash.slice(1)  // remove #
         }
+
+        // disable unload warning on leave
+        onBeforeRouteLeave((to, from, next) => { this.setUnloadWarning(false); next() })
 
         // add auth header
         axios.interceptors.request.use((config) => {
