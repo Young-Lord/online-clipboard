@@ -1,3 +1,6 @@
+# performance evaluation file
+/stats.html
+
 .DS_Store
 node_modules
 /dist
