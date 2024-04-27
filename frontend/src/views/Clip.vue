@@ -14,7 +14,7 @@
             </v-btn>
             <!-- saved status in plaintext -->
             <v-toolbar-title>{{ save_status ? $t(`save_status.${save_status}`) : '' }}</v-toolbar-title>
-            <DefineEditBar>
+            <template v-slot:[should_wrap_appbar_to_slot]>
                 <v-spacer></v-spacer>
                 <!--delete button-->
                 <v-btn icon @click="deleteContent()" v-if="!is_new && !is_readonly">
@@ -36,9 +36,6 @@
                 <v-btn icon @click="downloadContent()">
                     <v-icon>mdi-download</v-icon>
                 </v-btn>
-            </DefineEditBar>
-            <template v-slot:[should_wrap_appbar_to_slot]>
-                <ReuseEditBar></ReuseEditBar>
             </template>
         </v-app-bar>
 
@@ -132,9 +129,9 @@
                                     <v-list-item-title>{{ mayDecryptFilename(file.filename) }}
                                     </v-list-item-title>
                                     <v-list-item-subtitle>{{ humanFileSize(file.size) }} {{
-                $t('clip.file.expiration_date_is', [$d(new Date(file.expire_at),
-                    'long')])
-            }}</v-list-item-subtitle>
+                                        $t('clip.file.expiration_date_is', [$d(new Date(file.expire_at),
+                                        'long')])
+                                        }}</v-list-item-subtitle>
                                     <template v-slot:append>
                                         <v-list-item-action end>
                                             <!--tabindex=-1 make it not focusable-->
@@ -182,8 +179,6 @@ import { showDetailWarning, showAutoCloseSuccess, cancelableInput, dangerousConf
 import { isAxiosError } from 'axios'
 import { SweetAlertResult } from "sweetalert2"
 import { onBeforeRouteLeave } from "vue-router"
-import { createReusableTemplate } from '@vueuse/core'
-const [DefineEditBar, ReuseEditBar] = createReusableTemplate()
 
 enum SaveStatus {
     // Current status displayed on top left. The values are used to get i18n string.
@@ -845,10 +840,6 @@ export default {
 
         // first fetch
         this.fetchContent()
-    },
-    components: {
-        DefineEditBar,
-        ReuseEditBar
     }
 }
 </script>
