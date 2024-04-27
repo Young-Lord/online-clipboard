@@ -129,9 +129,9 @@
                                     <v-list-item-title>{{ mayDecryptFilename(file.filename) }}
                                     </v-list-item-title>
                                     <v-list-item-subtitle>{{ humanFileSize(file.size) }} {{
-                                        $t('clip.file.expiration_date_is', [$d(new Date(file.expire_at),
-                                        'long')])
-                                        }}</v-list-item-subtitle>
+                $t('clip.file.expiration_date_is', [$d(new Date(file.expire_at),
+                    'long')])
+            }}</v-list-item-subtitle>
                                     <template v-slot:append>
                                         <v-list-item-action end>
                                             <!--tabindex=-1 make it not focusable-->
@@ -174,7 +174,11 @@ const appStore = useAppStore()
 import { replaceLastPartOfUrl, humanFileSize, assert } from "@/utils"
 import { Buffer } from 'buffer'
 import { timeDeltaToString } from "@/plugins/i18n"
-import CryptoJS from 'crypto-js'
+import AES from 'crypto-js/aes'
+import SHA256 from 'crypto-js/sha256'
+import SHA512 from 'crypto-js/sha512'
+import utf8 from 'crypto-js/enc-utf8'
+import WordArray from 'crypto-js/lib-typedarrays'
 import { showDetailWarning, showAutoCloseSuccess, cancelableInput, dangerousConfirm } from "@/plugins/swal"
 import { isAxiosError } from 'axios'
 import { SweetAlertResult } from "sweetalert2"
@@ -326,7 +330,7 @@ export default {
                     let content = response.data.data.content
                     if (this.user_property.encrypt_text_content) {
                         if (this.user_property.encrypt_text_content_algo === "aes") {
-                            content = CryptoJS.AES.decrypt(content, this.encryptPassword).toString(CryptoJS.enc.Utf8)
+                            content = AES.decrypt(content, this.encryptPassword).toString(utf8)
                         }
                         else {
                             showDetailWarning({
@@ -383,7 +387,7 @@ export default {
             let content = this.local_content
             if (this.encrypt_text_content) {
                 if (this.user_property.encrypt_text_content_algo === "aes") {
-                    content = CryptoJS.AES.encrypt(content, this.encryptPassword).toString()
+                    content = AES.encrypt(content, this.encryptPassword).toString()
                 }
                 else {
                     showDetailWarning(
@@ -448,16 +452,16 @@ export default {
             })
             return total_size
         },
-        arrayBufferToWordArray(ab: ArrayBuffer): CryptoJS.lib.WordArray {
+        arrayBufferToWordArray(ab: ArrayBuffer): WordArray {
             // https://stackoverflow.com/questions/33914764/how-to-read-a-binary-file-with-filereader-in-order-to-hash-it-with-sha-256-in-cr
             var i8a = new Uint8Array(ab);
             var a = [];
             for (var i = 0; i < i8a.length; i += 4) {
                 a.push(i8a[i] << 24 | i8a[i + 1] << 16 | i8a[i + 2] << 8 | i8a[i + 3]);
             }
-            return CryptoJS.lib.WordArray.create(a, i8a.length);
+            return WordArray.create(a, i8a.length);
         },
-        wordArrayToArrayBuffer(wordArray: CryptoJS.lib.WordArray): ArrayBuffer {
+        wordArrayToArrayBuffer(wordArray: WordArray): ArrayBuffer {
             const { words } = wordArray
             const { sigBytes } = wordArray
             const u8 = new Uint8Array(sigBytes)
@@ -480,7 +484,7 @@ export default {
                     }
                     reader.readAsArrayBuffer(file)
                 })
-                let encrypted_file_data = CryptoJS.AES.encrypt(this.arrayBufferToWordArray(file_data), this.encryptPassword).toString()
+                let encrypted_file_data = AES.encrypt(this.arrayBufferToWordArray(file_data), this.encryptPassword).toString()
                 let encrypted_file = new File([encrypted_file_data], this.encryptFilename(file.name), { type: file.type })
                 file = encrypted_file
             }
@@ -573,7 +577,7 @@ export default {
             if (password === undefined) return
             try {
                 await axios.put(`/note/${this.name}`, {
-                    new_password: password === "" ? "" : CryptoJS.SHA512(password).toString(),
+                    new_password: password === "" ? "" : SHA512(password).toString(),
                 })
                 this.password = password
                 await this.updateEncryptText()
@@ -754,10 +758,10 @@ export default {
         },
         mayDecryptFilename(filename: string): string {
             if (!this.encrypt_file) return filename
-            return CryptoJS.AES.decrypt(filename, this.encryptPassword).toString(CryptoJS.enc.Utf8)
+            return AES.decrypt(filename, this.encryptPassword).toString(utf8)
         },
         encryptFilename(filename: string): string {
-            return CryptoJS.AES.encrypt(filename, this.encryptPassword).toString()
+            return AES.encrypt(filename, this.encryptPassword).toString()
         },
         async downloadEncryptedFile(file: FileData) {
             // https://blog.csdn.net/qq_38916811/article/details/127515455
@@ -767,7 +771,7 @@ export default {
             })
             const enc = new TextDecoder("utf-8");
             const str = enc.decode(response.data)
-            const decrypted_file_data = this.wordArrayToArrayBuffer(CryptoJS.AES.decrypt(str, this.encryptPassword))
+            const decrypted_file_data = this.wordArrayToArrayBuffer(AES.decrypt(str, this.encryptPassword))
             // save as blob
             const blob = new Blob([decrypted_file_data])
             this.saveBlob(blob, this.mayDecryptFilename(file.filename))
@@ -778,7 +782,7 @@ export default {
             return this.$route.params.name as string
         },
         encryptPassword(): string {
-            return CryptoJS.SHA256(this.password).toString()
+            return SHA256(this.password).toString()
         },
         timeout_selections(): number[] {
             return this.metadata.timeout_selections || []
@@ -817,7 +821,7 @@ export default {
 
         // add auth header
         axios.interceptors.request.use((config) => {
-            config.headers["Authorization"] = `Bearer ${Buffer.from(CryptoJS.SHA512(this.password).toString(), 'utf8').toString('base64')}`
+            config.headers["Authorization"] = `Bearer ${Buffer.from(SHA512(this.password).toString(), 'utf8').toString('base64')}`
             return config
         })
 
