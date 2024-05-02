@@ -46,7 +46,7 @@
                         <!-- Larger Text Input Box -->
                         <v-textarea rows="15" variant="outlined" auto-grow v-model="local_content"
                             @input="setEditingStatusOnEdit()" @keydown.ctrl.s.exact="pushContentIfChanged()"
-                            @keydown.ctrl.s.exact.prevent @focusout="pushContentIfChanged()" :disabled="uploading">
+                            @keydown.ctrl.s.exact.prevent @focusout="pushContentIfChanged()" @paste="onPaste">
                         </v-textarea>
                     </v-col>
                     <v-col cols="12" md="4">
@@ -469,6 +469,12 @@ export default {
                 u8[i] = (words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff
             }
             return u8
+        },
+        onPaste(event: ClipboardEvent) {
+            const items = event.clipboardData?.files;
+            if (!items || items.length === 0) return;
+            this.file_to_upload = Array.from(items);
+            this.uploadFile()
         },
         async uploadSingleFile(file: File) {
             var formData = new window.FormData()
