@@ -1,12 +1,8 @@
-import original_axios from "axios"
+import original_axios, { isAxiosError } from "axios"
 import { useAppStore } from "./store/app"
 const appStore = useAppStore()
-
-export const axios = original_axios.create({
-    withCredentials: true,
-    baseURL: appStore.api_endpoint,
-})
-axios.defaults.headers.common["Content-Type"] = "application/json"
+import { $t } from "./plugins/i18n"
+import { showDetailWarning } from "./plugins/swal"
 
 // https://xiets.gitee.io/json-to-any-web/
 // [A-Z][a-z] -> _\L$0
@@ -70,3 +66,27 @@ export interface UserProperty {
     encrypt_text_content_algo: string | undefined
     encrypt_file: boolean | undefined
 }
+
+export const axios = original_axios.create({
+    withCredentials: true,
+    baseURL: appStore.api_endpoint,
+})
+axios.defaults.headers.common["Content-Type"] = "application/json"
+
+axios.interceptors.response.use(
+    function (response) {
+        return response
+    },
+    function (error) {
+        if (isAxiosError(error)) {
+            if (error.response?.status === 429) {
+                showDetailWarning({
+                    title: $t("clip.Error"),
+                    text: $t("error.rate_limit"),
+                })
+                return
+            }
+            return Promise.reject(error)
+        }
+    }
+)

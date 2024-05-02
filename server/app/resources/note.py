@@ -32,7 +32,6 @@ from app.models.datastore import (
 from .base import api_restx as api, limiter, api_bp, api_restx_at_root
 from app.note_const import READONLY_PREFIX, Metadata, ALLOW_CHAR_IN_NAMES
 from app.utils import ensure_dir, return_json, sha256, sha512
-from app.models.base import db
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import NotFound
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
@@ -43,15 +42,14 @@ def api_metadata():
     return return_json(data=Metadata.to_dict())
 
 
-NO_DATA_METHODS = {"get", "options", "delete"}
-LIMITER_METHODS = ["get", "post", "put", "delete"]
-limiter_with_methods = functools.partial(limiter.limit, methods=LIMITER_METHODS)
+NO_DATA_METHODS = {"GET", "OPTIONS", "DELETE"}
 
+empty_handler = lambda :return_json(status_code=200)
 
 def verify_dict_decorator(f):
     @functools.wraps(f)
     def decorated_function(*args, **kwargs):
-        if request.method.lower() in NO_DATA_METHODS:
+        if request.method in NO_DATA_METHODS:
             return f(*args, **kwargs)
         if not (not request.is_json and request.form is not None):
             data: dict = (
@@ -78,8 +76,8 @@ def verify_name_decorator(f):
 def password_protected_note(f):
     @functools.wraps(f)
     def decorated_function(*args, **kwargs):
-        if request.method.lower() == "options":
-            return f(*args, **kwargs)
+        if request.method == "OPTIONS":
+            return empty_handler()
 
         password: str = ""
         header_password = (
@@ -144,8 +142,9 @@ def password_protected_note(f):
 def illegal_note_filter(f):
     @functools.wraps(f)
     def decorated_function(*args, **kwargs):
-        if request.method.lower() == "options":
-            return f(*args, **kwargs)
+        if request.method == "OPTIONS":
+            return empty_handler()
+        
         name: str = kwargs.get("name", "")
         if name.startswith(READONLY_PREFIX):
             note = datastore.get_note_by_readonly_name(
@@ -274,11 +273,11 @@ class BaseRest(Resource):
     decorators = base_decorators
 
     def options(self, *args, **kwargs):
-        return return_json(status_code=200)
+        return empty_handler()
 
 
-note_limiter = limiter_with_methods(Metadata.limiter_note)
-file_limiter = limiter_with_methods(Metadata.limiter_file)
+note_limiter = limiter.limit(Metadata.limiter_note)
+file_limiter = limiter.limit(Metadata.limiter_file)
 
 
 @api.route("/note/<string:name>")

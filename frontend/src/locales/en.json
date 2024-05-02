@@ -100,5 +100,8 @@
     "weekday": "long",
     "hour": "numeric",
     "minute": "numeric"
+  },
+  "error": {
+    "rate_limit": "You've hit the rate limit. Please wait a moment before trying again."
   }
 }

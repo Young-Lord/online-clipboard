@@ -1,5 +1,5 @@
 from typing import Any
-from flask import Blueprint
+from flask import Blueprint, request
 from flask_jwt_extended import JWTManager
 from flask_limiter.util import get_remote_address
 from flask_limiter import Limiter
@@ -23,8 +23,15 @@ api_restx_at_root.init_app(api_bp_at_root, **FLASK_REST_KWARGS)
 # this is global JWT, but only used for file download now
 file_jwt = JWTManager()
 
+
 # this raises 429 error when rate limit in `app/note_const.py` exceeded
-limiter = Limiter(get_remote_address, default_limits=Metadata.limiter_default)  # type: ignore
+def RATELIMIT_DEFAULTS_EXEMPT_WHEN() -> bool:
+    if request.method == "OPTIONS":
+        return True
+    return False
+
+
+limiter = Limiter(get_remote_address, default_limits=Metadata.limiter_default, default_limits_exempt_when=RATELIMIT_DEFAULTS_EXEMPT_WHEN)  # type: ignore
 
 # this is for sending mail, see https://flask-mailman.readthedocs.io/en/latest/
 # and configure SMTP settings in `.env.production` file
