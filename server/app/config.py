@@ -18,6 +18,7 @@ class Config:
     CORS_ORIGINS: list[str] = os.environ.get(
         "CORS_ORIGINS", ""
     ).split()  # separate consecutive whitespace
+    CORS_MAX_AGE = 7200  # cache CORS result for at most 2 hours
 
     # rate limit
     RATELIMIT_STORAGE_URI = "memory://"
