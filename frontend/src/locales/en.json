@@ -77,7 +77,11 @@
     "mail": {
       "send_to_mail": "Send to mail",
       "sent": "Sent!",
-      "need_verify": "This email address is not verified. Please check your inbox and verify it."
+      "MAIL_NOT_ALLOWED": "Mail is disable on this instance.",
+      "MAIL_NOT_VERIFIED": "This email address is not verified. Please check your inbox and verify it.",
+      "INVALID_ADDRESS": "The email address is not correct. Check again.",
+      "INVALID_CONTENT": "This clip cannot be sent.",
+      "SEND_EMAIL_FAILED": "Failed to send mail for unknown reason."
     }
   },
   "about": {

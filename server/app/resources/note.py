@@ -30,11 +30,27 @@ from app.models.datastore import (
     passlib_context,
 )
 from .base import api_restx as api, limiter, api_bp, api_restx_at_root
-from app.note_const import READONLY_PREFIX, Metadata, ALLOW_CHAR_IN_NAMES
+from app.note_const import Metadata, ALLOW_CHAR_IN_NAMES, is_readonly_name
 from app.utils import ensure_dir, return_json, sha256, sha512
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import NotFound
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
+from typing import TYPE_CHECKING
+
+
+if TYPE_CHECKING:
+    # https://stackoverflow.com/a/62501800
+    from flask.ctx import _AppCtxGlobals
+
+    class MyGlobals(_AppCtxGlobals):
+        note: Optional[Note]
+        data: dict
+        is_readonly: bool
+        file: Optional[File]
+
+    g = MyGlobals()
+else:
+    from flask import g
 
 
 @api_bp.route("/metadata")
@@ -42,9 +58,10 @@ def api_metadata():
     return return_json(data=Metadata.to_dict())
 
 
+empty_handler = lambda: return_json(status_code=200)
+
 NO_DATA_METHODS = {"GET", "OPTIONS", "DELETE"}
 
-empty_handler = lambda :return_json(status_code=200)
 
 def verify_dict_decorator(f):
     @functools.wraps(f)
@@ -52,22 +69,47 @@ def verify_dict_decorator(f):
         if request.method in NO_DATA_METHODS:
             return f(*args, **kwargs)
         if not (not request.is_json and request.form is not None):
-            data: dict = (
-                request.get_json()
-            )  # this can raise HTTP 415 UNSUPPORTED MEDIA TYPE
+            data = request.get_json()  # this can raise HTTP 415 UNSUPPORTED MEDIA TYPE
             if not isinstance(data, dict):
                 return return_json(status_code=400, message="Invalid data")
+            g.data = data
         return f(*args, **kwargs)
 
     return decorated_function
 
 
 def verify_name_decorator(f):
+    """
+    Check if name is valid, init `g.note` and `g.is_readonly`
+    """
+
     @functools.wraps(f)
     def decorated_function(*args, **kwargs):
         name: str = kwargs.get("name", "")
-        if not verify_name(name) and not name.startswith(READONLY_PREFIX):
+        if verify_name(name):
+            g.is_readonly = False
+            g.note = datastore.get_note(name)
+        elif is_readonly_name(name):
+            g.is_readonly = True
+            g.note = datastore.get_note_by_readonly_name(name)
+        else:
             return return_json(status_code=400, message="Invalid name")
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+
+def verify_file_id_decorator(f):
+
+    @functools.wraps(f)
+    def decorated_function(*args, **kwargs):
+        file = datastore.get_file(kwargs.get("id"))
+        if file is None:
+            return return_json(status_code=404, message="No file found")
+        note = file.note
+        assert note is not None
+        g.file = file
+        g.note = note
         return f(*args, **kwargs)
 
     return decorated_function
@@ -97,12 +139,9 @@ def password_protected_note(f):
             if plain_password != "":
                 password = sha512(plain_password)
 
-        name: str = kwargs.get("name", "")
+        note = g.note
 
-        if (
-            name.startswith(READONLY_PREFIX)
-            and (note := datastore.get_note_by_readonly_name(name)) is not None
-        ):
+        if g.is_readonly and note is not None:
             # for encrypted read-only note, we must make sure user has the correct password
             # else we can simply return the note, bypassing the password check
             note_property = note.user_property
@@ -110,20 +149,17 @@ def password_protected_note(f):
                 prop_dict = json.loads(note_property)
             except json.JSONDecodeError:
                 prop_dict = {}
-            # check if encrypted
+            # check if encrypted; if not using the default text encryption, then allow passwordless access
             if not prop_dict.get("encrypt_text_content", False):
                 return f(*args, **kwargs)
             if not (prop_dict.get("encrypt_text_content_algo", "") == "aes"):
                 return f(*args, **kwargs)
-        else:
-            note = datastore.get_note(
-                name,
-            )
 
         if note is None:
             # allow operate on non-exist note
             return f(*args, **kwargs)
             # return return_json(status_code=404, message="No note found")
+
         if note.password:
             valid, new_hash = passlib_context.verify_and_update(
                 combine_name_and_password(note.name, password), note.password
@@ -134,6 +170,7 @@ def password_protected_note(f):
                 note.password = new_hash
                 datastore.session.add(note)
                 datastore.session.commit()
+
         return f(*args, **kwargs)
 
     return decorated_function
@@ -144,16 +181,7 @@ def illegal_note_filter(f):
     def decorated_function(*args, **kwargs):
         if request.method == "OPTIONS":
             return empty_handler()
-        
-        name: str = kwargs.get("name", "")
-        if name.startswith(READONLY_PREFIX):
-            note = datastore.get_note_by_readonly_name(
-                readonly_name=name,
-            )
-        else:
-            note = datastore.get_note(
-                name,
-            )
+        note = g.note
         if note is None:
             # allow operate on non-exist note
             return f(*args, **kwargs)
@@ -285,48 +313,38 @@ class NoteRest(BaseRest):
     decorators = [note_limiter] + base_decorators
 
     def get(self, name: str):
-        if name.startswith(READONLY_PREFIX):
-            note = datastore.get_note_by_readonly_name(
-                readonly_name=name,
-            )
-            if note is None:
-                return return_json(status_code=400, message="No note found")
-            return mashal_readonly_note(note)
-        note = datastore.get_note(
-            name,
-        )
-        if note is None:
-            return return_json(status_code=204, message="No note found")
-        return marshal_note(note)
+        if g.note is None:
+            if g.is_readonly:
+                return return_json(status_code=404, message="No note found")
+            else:
+                return return_json(status_code=204, message="No note found")
+        if g.is_readonly:
+            return mashal_readonly_note(g.note)
+        else:
+            return marshal_note(g.note)
 
     def post(self, name: str):
         # create a new note
-        note = datastore.get_note(
-            name,
-        )
-        if note is not None:
+        if g.note is not None:
             return return_json(status_code=400, message="Clip already exist")
-        datastore.update_note(name=name)
-        note = datastore.get_note(
-            name,
-        )
-        assert note is not None
+        note = datastore.update_note(name=name)
         return marshal_note(note, 201)
 
     def put(self, name: str):
+        note = g.note
+        if note is None:
+            return return_json(status_code=404, message="No note found")
         # update a note
-        orig_params = request.get_json()
+        raw_params = g.data
         # handle illegal note report
-        if orig_params.get("report", False):
-            note = datastore.get_note(name=name) or datastore.get_note_by_readonly_name(
-                readonly_name=name
-            )
-            assert note is not None
+        if raw_params.get("report", False):
             datastore.report_note(note)
             return return_json(status_code=200, message="Note reported")
+        if g.is_readonly:
+            return return_json(status_code=404, message="No note found")
         # otherwise, handle normal update
-        if "new_password" in orig_params:
-            orig_params["password"] = orig_params["new_password"]
+        if "new_password" in raw_params:
+            raw_params["password"] = raw_params["new_password"]
         allow_props = [
             "content",
             "password",
@@ -335,7 +353,7 @@ class NoteRest(BaseRest):
             "user_property",
             "enable_readonly",
         ]
-        params = {k: v for k, v in orig_params.items() if k in allow_props}
+        params = {k: v for k, v in raw_params.items() if k in allow_props}
         if len(params) == 0:
             return return_json(status_code=400, message="No property to update")
         content = params.get("content", "")
@@ -348,15 +366,10 @@ class NoteRest(BaseRest):
         password = params.get("password", "")
         if len(password) > Metadata.max_password_length:
             return return_json(status_code=400, message="Password too long")
-        note = datastore.get_note(
-            name,
-        )
-        if note is None:
-            return return_json(status_code=404, message="No note found")
-        if "combine_mode" in orig_params:
-            if orig_params["combine_mode"] == "prepend":
+        if "combine_mode" in raw_params:
+            if raw_params["combine_mode"] == "prepend":
                 params["content"] = content + note.content
-            elif orig_params["combine_mode"] == "append":
+            elif raw_params["combine_mode"] == "append":
                 params["content"] = note.content + content
             else:
                 return return_json(status_code=400, message="Invalid combine_mode")
@@ -373,14 +386,11 @@ class NoteRest(BaseRest):
         return marshal_note(note)
 
     def delete(self, name: str):
-        note = datastore.get_note(
-            name,
-        )
-        if note is None:
+        if g.note is None or g.is_readonly:
             return return_json(status_code=404, message="No note found")
-        for file in note.files:
+        for file in g.note.files:
             datastore.delete_file(file)
-        datastore.delete_note(note)
+        datastore.delete_note(g.note)
         return return_json(status_code=204, message="Note deleted")
 
 
@@ -389,13 +399,10 @@ class RawNoteRest(BaseRest):
     decorators = NoteRest.decorators
 
     def get(self, name: str):
-        note = datastore.get_note(
-            name,
-        )
-        if note is None:
+        if g.note is None or g.is_readonly:
             return return_json(status_code=404, message="No note found")
         return make_response(
-            note.content,
+            g.note.content,
             200,
             {"Content-Type": "text/plain; charset=utf-8"},
         )
@@ -406,10 +413,7 @@ class FileRest(BaseRest):
     decorators = [file_limiter] + base_decorators
 
     def get(self, name: str, id: int):
-        note = datastore.get_note(
-            name,
-        )
-        if note is None:
+        if g.note is None or g.is_readonly:
             return return_json(status_code=404, message="No note found")
         file = datastore.get_file(id)
         if file is None:
@@ -420,11 +424,9 @@ class FileRest(BaseRest):
         )
 
     def post(self, name: str, id: int):
-        note = datastore.get_note(
-            name,
-        )
-        if note is None:
+        if g.note is None or g.is_readonly:
             return return_json(status_code=404, message="No note found")
+        note = g.note
         if len(note.files) >= Metadata.max_file_count:
             return return_json(
                 status_code=400,
@@ -464,10 +466,7 @@ class FileRest(BaseRest):
         return return_json(status_code=201)
 
     def delete(self, name: str, id: int):
-        note = datastore.get_note(
-            name,
-        )
-        if note is None:
+        if g.note is None or g.is_readonly:
             return return_json(status_code=404, message="No note found")
         file = datastore.get_file(id)
         if file is None:
@@ -509,6 +508,7 @@ class DownloadFileContentRest(BaseRest):
             for i in base_decorators
             if i not in {password_protected_note, verify_name_decorator}
         ]
+        + [verify_file_id_decorator]
     )
     as_attachment: ClassVar[bool] = True
 
@@ -578,13 +578,13 @@ def api_send_mail():
             error_id="MAIL_NOT_ALLOWED",
         )
 
-    data = request.get_json()
-    address = data.get("address", "")
+    data: dict = request.get_json()
+    address: str = data.get("address", "")
     if not check_email_valid(address):
         return return_json(
             status_code=400, message="Invalid mail address", error_id="INVALID_ADDRESS"
         )
-    content = request.get_json().get("content", "")
+    content: str = data.get("content", "")
     if len(content) > Metadata.mail_max_content or content == "":
         return return_json(
             status_code=400, message="Invalid content", error_id="INVALID_CONTENT"
@@ -613,7 +613,14 @@ def api_send_mail():
             to=[address],
         )
         msg.content_subtype = "html"
-        msg.send()
+        try:
+            msg.send()
+        except:
+            return return_json(
+                status_code=500,
+                message="Fail to send email",
+                error_id="SEND_EMAIL_FAILED",
+            )
         datastore.set_mail_subscribe_setting(address, setting)
 
     if setting in {
@@ -638,5 +645,10 @@ def api_send_mail():
         to=[address],
     )
     msg.content_subtype = "html"
-    msg.send()
+    try:
+        msg.send()
+    except:
+        return return_json(
+            status_code=500, message="Fail to send email", error_id="SEND_EMAIL_FAILED"
+        )
     return return_json(status_code=200, message="OK")

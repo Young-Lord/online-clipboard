@@ -1,6 +1,7 @@
 from dataclasses import asdict, dataclass, field
 import string
 from typing import Any, Final
+from uuid import uuid4
 
 ALLOW_CHAR_IN_NAMES: Final[str] = string.ascii_letters + string.digits + "-_"
 DISABLE_WORDS_IN_NAMES: Final[set[str]] = {
@@ -13,6 +14,14 @@ DISABLE_WORDS_IN_NAMES: Final[set[str]] = {
     "about",
 }
 READONLY_PREFIX: Final[str] = "ro*"
+
+
+def is_readonly_name(name: str) -> bool:
+    return name.startswith(READONLY_PREFIX)
+
+
+def make_readonly_name() -> str:
+    return READONLY_PREFIX + uuid4().hex
 
 
 # https://passlib.readthedocs.io/en/stable/narr/quickstart.html#choosing-a-hash

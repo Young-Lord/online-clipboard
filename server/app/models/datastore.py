@@ -5,12 +5,11 @@ from typing import Optional
 import uuid
 from sqlalchemy import Boolean, Integer, String, ForeignKey, func, sql
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from app.note_const import PASSWORD_SCHEMES
+from app.note_const import PASSWORD_SCHEMES, make_readonly_name
 from passlib.context import CryptContext
 from app.note_const import (
     ALLOW_CHAR_IN_NAMES,
     DISABLE_WORDS_IN_NAMES,
-    READONLY_PREFIX,
     Metadata,
 )
 from app.utils import sha512
@@ -119,11 +118,9 @@ class MailAddress(db.Model, DatabaseColumnBase):
 def verify_name(name: str) -> bool:
     if name in DISABLE_WORDS_IN_NAMES:
         return False
-    if len(name) <= 1:
+    if not 2 <= len(name) <= 50:
         return False
     if not all([c in ALLOW_CHAR_IN_NAMES for c in name]):
-        return False
-    if len(name) > 50:
         return False
     return True
 
@@ -174,7 +171,7 @@ class NoteDatastore(Datastore):
 
     def get_unique_readonly_name(self) -> str:
         while True:
-            readonly_name = READONLY_PREFIX + uuid.uuid4().hex
+            readonly_name = make_readonly_name()
             if self.get_note_by_readonly_name(readonly_name) is None:
                 return readonly_name
 
@@ -187,7 +184,7 @@ class NoteDatastore(Datastore):
         timeout_seconds: Optional[int] = None,
         user_property: Optional[str] = None,
         enable_readonly: Optional[bool] = None,
-    ) -> None:
+    ) -> Note:
         note: Optional[Note] = self.get_note(name)
         if note is None:
             note = Note(
@@ -227,6 +224,7 @@ class NoteDatastore(Datastore):
                 note.has_readonly_name = False
         self.session.add(note)
         self.session.commit()
+        return note
 
     def delete_note(
         self,

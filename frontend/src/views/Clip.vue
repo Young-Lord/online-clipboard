@@ -114,7 +114,7 @@
                         </v-card>
                     </v-col>
                     <v-col cols="12">
-                        <v-card id="file-card">
+                        <v-card id="file-card" v-if="!is_readonly || remote_files.length">
                             <!-- Drag or click to upload file -->
                             <v-file-input :label="$t('clip.drag_or_click_to_upload_file')"
                                 :messages="$t('clip.file_limits', [humanFileSize(metadata.max_file_size), remote_files.length, metadata.max_file_count, humanFileSize(getTotalSize(remote_files)), humanFileSize(metadata.max_all_file_size)])"
@@ -747,18 +747,18 @@ export default {
                 let response = await axios.post(`/mailto`, {
                     address: this.mail_address,
                     content: this.local_content
-                }) as Response<any>
-                if (response?.data?.error_id === "MAIL_NOT_VERIFIED") {
-                    showDetailWarning({
-                        title: this.$t('clip.Error'),
-                        text: this.$t('clip.mail.need_verify')
-                    })
-                    return
-                }
-                showAutoCloseSuccess({
+                })
+                await showAutoCloseSuccess({
                     title: this.$t('clip.mail.sent')
                 })
             } catch (e: any) {
+                if (isAxiosError(e)) {
+                    showDetailWarning({
+                        title: this.$t('clip.Error'),
+                        text: this.$t('clip.mail.' + e.response?.data?.error_id)
+                    })
+                    return
+                }
                 console.log(e)
             }
         },

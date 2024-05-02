@@ -77,7 +77,11 @@
         "mail": {
             "send_to_mail": "邮件发送",
             "sent": "已发送！",
-            "need_verify": "此邮件地址未验证，请先在您的收件箱中确认接收邮件。"
+            "MAIL_NOT_ALLOWED": "本后端不支持发送邮件。",
+            "MAIL_NOT_VERIFIED": "此邮件地址未验证，请先在您的收件箱中确认接收邮件。",
+            "INVALID_ADDRESS": "邮件地址格式有误。",
+            "INVALID_CONTENT": "此内容无法通过邮件发送。",
+            "SEND_EMAIL_FAILED": "因未知原因，发送邮件失败。"
         }
     },
     "about": {
