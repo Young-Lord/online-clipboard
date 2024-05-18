@@ -1,5 +1,5 @@
 <template>
-    <v-app>
+    <v-app @drop="onAttachFile" @dragover.prevent>
         <v-app-bar app>
             <v-btn icon @click="goToHome()">
                 <v-icon>mdi-home</v-icon>
@@ -46,7 +46,7 @@
                         <!-- Larger Text Input Box -->
                         <v-textarea rows="15" variant="outlined" auto-grow v-model="local_content"
                             @input="setEditingStatusOnEdit()" @keydown.ctrl.s.exact="pushContentIfChanged()"
-                            @keydown.ctrl.s.exact.prevent @focusout="pushContentIfChanged()" @paste="onPaste">
+                            @keydown.ctrl.s.exact.prevent @focusout="pushContentIfChanged()" @paste="onAttachFile">
                         </v-textarea>
                     </v-col>
                     <v-col cols="12" md="4">
@@ -129,9 +129,9 @@
                                     <v-list-item-title>{{ mayDecryptFilename(file.filename) }}
                                     </v-list-item-title>
                                     <v-list-item-subtitle>{{ humanFileSize(file.size) }} {{
-                $t('clip.file.expiration_date_is', [$d(new Date(file.expire_at),
-                    'long')])
-            }}</v-list-item-subtitle>
+        $t('clip.file.expiration_date_is', [$d(new Date(file.expire_at),
+            'long')])
+    }}</v-list-item-subtitle>
                                     <template v-slot:append>
                                         <v-list-item-action end>
                                             <!--tabindex=-1 make it not focusable-->
@@ -470,9 +470,19 @@ export default {
             }
             return u8
         },
-        onPaste(event: ClipboardEvent) {
-            const items = event.clipboardData?.files;
-            if (!items || items.length === 0) return;
+        onAttachFile(event: ClipboardEvent | DragEvent) {
+            if (this.is_readonly || this.uploading) return
+            let items: FileList | undefined = undefined
+            if (event instanceof DragEvent) {
+                // file drag & drop
+                items = event.dataTransfer?.files;
+            }
+            else {
+                // clipboard
+                items = event.clipboardData?.files;
+            }
+            if (items === undefined || items.length === 0) return;
+            event.preventDefault()
             this.file_to_upload = Array.from(items);
             this.uploadFile()
         },
