@@ -8,7 +8,7 @@ import VueI18nPlugin from "@intlify/unplugin-vue-i18n/vite"
 // Utilities
 import { createLogger, defineConfig, loadEnv } from "vite"
 import { fileURLToPath, URL } from "node:url"
-import { visualizer } from "rollup-plugin-visualizer"
+// import { visualizer } from "rollup-plugin-visualizer"
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }) => {
@@ -44,12 +44,13 @@ export default defineConfig(({ command, mode }) => {
             VueI18nPlugin({
                 include: ["src/locales/*.json"],
             }),
-            visualizer({
-                open: false, // open browser to display stats.html on build complete
-                filename: "stats.html",
-                gzipSize: true,
-                brotliSize: true,
-            }),
+            // Visualize file sizes in build output
+            // visualizer({
+            //     open: false, // open browser to display stats.html on build complete
+            //     filename: "stats.html",
+            //     gzipSize: true,
+            //     brotliSize: true,
+            // }),
         ],
         define: { "process.env": {} },
         resolve: {
