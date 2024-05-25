@@ -13,15 +13,25 @@
                 <v-icon>mdi-upload</v-icon>
             </v-btn>
             <!-- saved status in plaintext -->
-            <v-toolbar-title>{{ save_status ? $t(`save_status.${save_status}`) : '' }}</v-toolbar-title>
+            <v-toolbar-title>{{
+                save_status ? $t(`save_status.${save_status}`) : ""
+            }}</v-toolbar-title>
             <template v-slot:[should_wrap_appbar_to_slot]>
                 <v-spacer></v-spacer>
                 <!--delete button-->
-                <v-btn icon @click="deleteContent()" v-if="!is_new && !is_readonly">
+                <v-btn
+                    icon
+                    @click="deleteContent()"
+                    v-if="!is_new && !is_readonly"
+                >
                     <v-icon>mdi-delete</v-icon>
                 </v-btn>
                 <!-- password button-->
-                <v-btn icon @click="changePassword()" v-if="!is_new && !is_readonly">
+                <v-btn
+                    icon
+                    @click="changePassword()"
+                    v-if="!is_new && !is_readonly"
+                >
                     <v-icon>mdi-lock</v-icon>
                 </v-btn>
                 <!--save button-->
@@ -44,115 +54,275 @@
                 <v-row rows="12">
                     <v-col cols="12" md="8">
                         <!-- Larger Text Input Box -->
-                        <v-textarea rows="15" variant="outlined" auto-grow v-model="local_content"
-                            @input="setEditingStatusOnEdit()" @keydown.ctrl.s.exact="pushContentIfChanged()"
-                            @keydown.ctrl.s.exact.prevent @focusout="pushContentIfChanged()" @paste="onAttachFile">
+                        <v-textarea
+                            rows="15"
+                            variant="outlined"
+                            auto-grow
+                            v-model="local_content"
+                            @input="setEditingStatusOnEdit()"
+                            @keydown.ctrl.s.exact="pushContentIfChanged()"
+                            @keydown.ctrl.s.exact.prevent
+                            @focusout="pushContentIfChanged()"
+                            @paste="onAttachFile"
+                        >
                         </v-textarea>
                     </v-col>
                     <v-col cols="12" md="4">
                         <v-card id="sidebar">
                             <!-- 下拉框，选择过期时间 -->
-                            <v-select v-bind:items="timeout_selections.map((key) => { return timeDeltaToString(key) })"
-                                :label="$t('clip.expiration')" @update:model-value="setNoteTimeout"
-                                v-model="selected_timeout" prepend-inner-icon="mdi-clock"
-                                v-if="!is_new && !is_readonly">
+                            <v-select
+                                v-bind:items="
+                                    timeout_selections.map((key) => {
+                                        return timeDeltaToString(key)
+                                    })
+                                "
+                                :label="$t('clip.expiration')"
+                                @update:model-value="setNoteTimeout"
+                                v-model="selected_timeout"
+                                prepend-inner-icon="mdi-clock"
+                                v-if="!is_new && !is_readonly"
+                            >
                             </v-select>
                             <!-- current url, click to copy-->
-                            <v-text-field :label="$t('clip.current_url_click_to_copy')" v-model="current_url" readonly
-                                prepend-inner-icon="mdi-link" @click="copyString(current_url)" class="cursor-pointer"
-                                v-if="!is_readonly">
+                            <v-text-field
+                                :label="$t('clip.current_url_click_to_copy')"
+                                v-model="current_url"
+                                readonly
+                                prepend-inner-icon="mdi-link"
+                                @click="copyString(current_url)"
+                                class="cursor-pointer"
+                                v-if="!is_readonly"
+                            >
                             </v-text-field>
                             <!-- readonly url, click to copy-->
-                            <v-text-field v-if="!is_new"
-                                :label="hasReadonlyName ? $t('clip.readonly_url_click_to_copy') : $t('clip.readonly_url_is_disabled')"
-                                v-model="readonly_url_check_empty" readonly prepend-inner-icon="mdi-link"
-                                @click="hasReadonlyName && copyString(readonly_url)" class="cursor-pointer"
-                                :append-inner-icon="is_readonly ? undefined : (hasReadonlyName ? 'mdi-delete' : 'mdi-plus-circle-outline')"
-                                @click:append-inner.stop="toggleReadonlyUrl()">
+                            <v-text-field
+                                v-if="!is_new"
+                                :label="
+                                    hasReadonlyName
+                                        ? $t('clip.readonly_url_click_to_copy')
+                                        : $t('clip.readonly_url_is_disabled')
+                                "
+                                v-model="readonly_url_check_empty"
+                                readonly
+                                prepend-inner-icon="mdi-link"
+                                @click="
+                                    hasReadonlyName && copyString(readonly_url)
+                                "
+                                class="cursor-pointer"
+                                :append-inner-icon="
+                                    is_readonly
+                                        ? undefined
+                                        : hasReadonlyName
+                                        ? 'mdi-delete'
+                                        : 'mdi-plus-circle-outline'
+                                "
+                                @click:append-inner.stop="toggleReadonlyUrl()"
+                            >
                             </v-text-field>
-                            <v-list v-model:opened="sidebar_list_opened" v-if="!is_new">
+                            <v-list
+                                v-model:opened="sidebar_list_opened"
+                                v-if="!is_new"
+                            >
                                 <v-list-group>
                                     <template v-slot:activator="{ props }">
-                                        <v-list-item v-bind="props" prepend-icon="mdi-cog"
-                                            :title="$t('clip.advanced_settings')"></v-list-item>
+                                        <v-list-item
+                                            v-bind="props"
+                                            prepend-icon="mdi-cog"
+                                            :title="
+                                                $t('clip.advanced_settings')
+                                            "
+                                        ></v-list-item>
                                     </template>
                                     <!--prepend single line message-->
-                                    <v-text-field v-model="combine_content" :label="$t('clip.prepend_message')"
-                                        :disabled="user_property.encrypt_text_content === true" outlined dense
-                                        @keydown.enter.exact="combinePushContent()"
+                                    <v-text-field
+                                        v-model="combine_content"
+                                        :label="$t('clip.prepend_message')"
+                                        :disabled="
+                                            user_property.encrypt_text_content ===
+                                            true
+                                        "
+                                        outlined
+                                        dense
+                                        @keydown.enter.exact="
+                                            combinePushContent()
+                                        "
                                         append-inner-icon="mdi-comment-arrow-right"
-                                        @click:append-inner="combinePushContent()" v-if="!is_readonly">
+                                        @click:append-inner="
+                                            combinePushContent()
+                                        "
+                                        v-if="!is_readonly"
+                                    >
                                     </v-text-field>
                                     <!-- save interval -->
-                                    <v-text-field v-model="save_interval" :label="$t('clip.auto_save_interval')"
-                                        outlined dense type="number" @keyup="onUpdateSaveInterval()"
-                                        v-if="!is_readonly">
+                                    <v-text-field
+                                        v-model="save_interval"
+                                        :label="$t('clip.auto_save_interval')"
+                                        outlined
+                                        dense
+                                        type="number"
+                                        @keyup="onUpdateSaveInterval()"
+                                        v-if="!is_readonly"
+                                    >
                                     </v-text-field>
                                     <!-- auto fetch remote content interval -->
-                                    <v-text-field v-model="fetch_interval" :label="$t('clip.auto_fetch_interval')"
-                                        outlined dense type="number" @keyup="onUpdateFetchInterval()">
+                                    <v-text-field
+                                        v-model="fetch_interval"
+                                        :label="$t('clip.auto_fetch_interval')"
+                                        outlined
+                                        dense
+                                        type="number"
+                                        @keyup="onUpdateFetchInterval()"
+                                    >
                                     </v-text-field>
                                     <!-- checkbox for encrypt text content / file -->
-                                    <v-checkbox v-model="encrypt_text_content" :label="$t('clip.encrypt_content')"
-                                        v-if="!is_readonly" @change="updateEncryptText()">
+                                    <v-checkbox
+                                        v-model="encrypt_text_content"
+                                        :label="$t('clip.encrypt_content')"
+                                        v-if="!is_readonly"
+                                        @change="updateEncryptText()"
+                                    >
                                     </v-checkbox>
-                                    <v-checkbox v-model="encrypt_file" :label="$t('clip.encrypt_file')"
-                                        v-if="!is_readonly" :disabled="uploading" @change="updateEncryptFile()">
+                                    <v-checkbox
+                                        v-model="encrypt_file"
+                                        :label="$t('clip.encrypt_file')"
+                                        v-if="!is_readonly"
+                                        :disabled="uploading"
+                                        @change="updateEncryptFile()"
+                                    >
                                     </v-checkbox>
                                     <!--send by mail-->
-                                    <v-text-field v-model="mail_address" :label="$t('clip.mail.send_to_mail')" outlined
-                                        dense @keydown.enter.exact="sendToMail()" append-inner-icon="mdi-email-fast"
-                                        @click:append-inner="sendToMail()" v-if="allow_mail">
+                                    <v-text-field
+                                        v-model="mail_address"
+                                        :label="$t('clip.mail.send_to_mail')"
+                                        outlined
+                                        dense
+                                        @keydown.enter.exact="sendToMail()"
+                                        append-inner-icon="mdi-email-fast"
+                                        @click:append-inner="sendToMail()"
+                                        v-if="allow_mail"
+                                    >
                                     </v-text-field>
                                     <!--report clip-->
-                                    <v-list-item prepend-icon="mdi-alert-octagon" @click="reportClip()">
-                                        <v-list-item-title>{{ $t('clip.report.report_clip')
-                                            }}</v-list-item-title>
+                                    <v-list-item
+                                        prepend-icon="mdi-alert-octagon"
+                                        @click="reportClip()"
+                                    >
+                                        <v-list-item-title>{{
+                                            $t("clip.report.report_clip")
+                                        }}</v-list-item-title>
                                     </v-list-item>
                                 </v-list-group>
                             </v-list>
                         </v-card>
                     </v-col>
                     <v-col cols="12">
-                        <v-card id="file-card" v-if="!is_readonly || remote_files.length">
+                        <v-card
+                            id="file-card"
+                            v-if="!is_readonly || remote_files.length"
+                        >
                             <!-- Drag or click to upload file -->
-                            <v-file-input :label="$t('clip.drag_or_click_to_upload_file')"
-                                :messages="$t('clip.file_limits', [humanFileSize(metadata.max_file_size), remote_files.length, metadata.max_file_count, humanFileSize(getTotalSize(remote_files)), humanFileSize(metadata.max_all_file_size)])"
-                                prepend-icon="mdi-file-upload" @change="uploadFile()"
-                                v-if="!is_readonly && metadata.max_file_count > 0 && metadata.max_all_file_size > 0"
-                                :disabled="uploading || metadata.max_file_count <= remote_files.length || metadata.max_all_file_size <= getTotalSize(remote_files)"
-                                v-model="file_to_upload" multiple>
+                            <v-file-input
+                                :label="$t('clip.drag_or_click_to_upload_file')"
+                                :messages="
+                                    $t('clip.file_limits', [
+                                        humanFileSize(metadata.max_file_size),
+                                        remote_files.length,
+                                        metadata.max_file_count,
+                                        humanFileSize(
+                                            getTotalSize(remote_files)
+                                        ),
+                                        humanFileSize(
+                                            metadata.max_all_file_size
+                                        ),
+                                    ])
+                                "
+                                prepend-icon="mdi-file-upload"
+                                @change="uploadFile()"
+                                v-if="
+                                    !is_readonly &&
+                                    metadata.max_file_count > 0 &&
+                                    metadata.max_all_file_size > 0
+                                "
+                                :disabled="
+                                    uploading ||
+                                    metadata.max_file_count <=
+                                        remote_files.length ||
+                                    metadata.max_all_file_size <=
+                                        getTotalSize(remote_files)
+                                "
+                                v-model="file_to_upload"
+                                multiple
+                            >
                             </v-file-input>
                             <!--all files, with download and delete button-->
                             <v-list v-if="!is_new">
-                                <v-list-item v-for="file in remote_files" :key="file.id">
-                                    <v-list-item-title>{{ mayDecryptFilename(file.filename) }}
+                                <v-list-item
+                                    v-for="file in remote_files"
+                                    :key="file.id"
+                                >
+                                    <v-list-item-title
+                                        >{{ mayDecryptFilename(file.filename) }}
                                     </v-list-item-title>
-                                    <v-list-item-subtitle>{{ humanFileSize(file.size) }} {{
-        $t('clip.file.expiration_date_is', [$d(new Date(file.expire_at),
-            'long')])
-    }}</v-list-item-subtitle>
+                                    <v-list-item-subtitle
+                                        >{{ humanFileSize(file.size) }}
+                                        {{
+                                            $t("clip.file.expiration_date_is", [
+                                                $d(
+                                                    new Date(file.expire_at),
+                                                    "long"
+                                                ),
+                                            ])
+                                        }}</v-list-item-subtitle
+                                    >
                                     <template v-slot:append>
                                         <v-list-item-action end>
                                             <!--tabindex=-1 make it not focusable-->
-                                            <a :href="file.download_url" target="_self"
-                                                style="color: inherit; text-decoration: none;" tabindex="-1"
-                                                v-if="!encrypt_file">
+                                            <a
+                                                :href="file.download_url"
+                                                target="_self"
+                                                style="
+                                                    color: inherit;
+                                                    text-decoration: none;
+                                                "
+                                                tabindex="-1"
+                                                v-if="!encrypt_file"
+                                            >
                                                 <v-btn icon variant="text">
-                                                    <v-icon>mdi-download</v-icon>
+                                                    <v-icon
+                                                        >mdi-download</v-icon
+                                                    >
                                                 </v-btn>
                                             </a>
-                                            <v-btn icon variant="text" @click="downloadEncryptedFile(file)" v-else>
+                                            <v-btn
+                                                icon
+                                                variant="text"
+                                                @click="
+                                                    downloadEncryptedFile(file)
+                                                "
+                                                v-else
+                                            >
                                                 <v-icon>mdi-download</v-icon>
                                             </v-btn>
-                                            <a :href="file.preview_url" target="_blank"
-                                                style="color: inherit; text-decoration: none;" tabindex="-1"
-                                                v-if="!encrypt_file">
+                                            <a
+                                                :href="file.preview_url"
+                                                target="_blank"
+                                                style="
+                                                    color: inherit;
+                                                    text-decoration: none;
+                                                "
+                                                tabindex="-1"
+                                                v-if="!encrypt_file"
+                                            >
                                                 <v-btn icon variant="text">
                                                     <v-icon>mdi-eye</v-icon>
                                                 </v-btn>
                                             </a>
-                                            <v-btn icon variant="text" @click="deleteFile(file)" v-if="!is_readonly">
+                                            <v-btn
+                                                icon
+                                                variant="text"
+                                                @click="deleteFile(file)"
+                                                v-if="!is_readonly"
+                                            >
                                                 <v-icon>mdi-delete</v-icon>
                                             </v-btn>
                                         </v-list-item-action>
@@ -172,15 +342,20 @@ import { MetaData, FileData, axios, UserProperty, Response } from "@/api"
 import { useAppStore } from "@/store/app"
 const appStore = useAppStore()
 import { replaceLastPartOfUrl, humanFileSize, assert } from "@/utils"
-import { Buffer } from 'buffer'
+import { Buffer } from "buffer"
 import { timeDeltaToString } from "@/plugins/i18n"
-import AES from 'crypto-js/aes'
-import SHA256 from 'crypto-js/sha256'
-import SHA512 from 'crypto-js/sha512'
-import utf8 from 'crypto-js/enc-utf8'
-import WordArray from 'crypto-js/lib-typedarrays'
-import { showDetailWarning, showAutoCloseSuccess, cancelableInput, dangerousConfirm } from "@/plugins/swal"
-import { isAxiosError } from 'axios'
+import AES from "crypto-js/aes"
+import SHA256 from "crypto-js/sha256"
+import SHA512 from "crypto-js/sha512"
+import utf8 from "crypto-js/enc-utf8"
+import WordArray from "crypto-js/lib-typedarrays"
+import {
+    showDetailWarning,
+    showAutoCloseSuccess,
+    cancelableInput,
+    dangerousConfirm,
+} from "@/plugins/swal"
+import { isAxiosError } from "axios"
 import { SweetAlertResult } from "sweetalert2"
 import { onBeforeRouteLeave } from "vue-router"
 
@@ -193,9 +368,14 @@ enum SaveStatus {
     saved = "saved",
     editing = "editing",
     local_outdated = "local_outdated",
-    conflict_resolved = "conflict_resolved"
+    conflict_resolved = "conflict_resolved",
 }
-const UnsavedSaveStatus = new Set([SaveStatus.error, SaveStatus.saving, SaveStatus.editing, SaveStatus.local_outdated])
+const UnsavedSaveStatus = new Set([
+    SaveStatus.error,
+    SaveStatus.saving,
+    SaveStatus.editing,
+    SaveStatus.local_outdated,
+])
 
 export default {
     data() {
@@ -230,7 +410,7 @@ export default {
             encrypt_file: false,
             max_interval: 1e10,
             combine_content: "",
-            mail_address: ""
+            mail_address: "",
         }
     },
     methods: {
@@ -246,8 +426,10 @@ export default {
         },
         setUnloadWarning(enable: boolean) {
             const event_name = "beforeunload"
-            if (enable) window.addEventListener(event_name, this.beforeUnloadHandler)
-            else window.removeEventListener(event_name, this.beforeUnloadHandler)
+            if (enable)
+                window.addEventListener(event_name, this.beforeUnloadHandler)
+            else
+                window.removeEventListener(event_name, this.beforeUnloadHandler)
         },
         setSaveStatus(save_status: SaveStatus) {
             if (this.save_status === save_status) return
@@ -263,7 +445,7 @@ export default {
         // create / fetch / push / delete
         async requestPassword(): Promise<SweetAlertResult<any>> {
             return cancelableInput({
-                title: this.$t('clip.password_question'),
+                title: this.$t("clip.password_question"),
                 input: "password",
             })
         },
@@ -285,8 +467,10 @@ export default {
                 } catch (e: any) {
                     if (isAxiosError(e)) {
                         if (e.response?.status === 400) {
-                            showDetailWarning({ title: this.$t('clip.Error'), text: this.$t('clip.invalid_clip_name') })
-                                .then(this.goToHome)
+                            showDetailWarning({
+                                title: this.$t("clip.Error"),
+                                text: this.$t("clip.invalid_clip_name"),
+                            }).then(this.goToHome)
                             return
                         } else if (e.response?.status === 401) {
                             this.requestPassword().then((result) => {
@@ -299,8 +483,12 @@ export default {
                             })
                             return
                         } else if (e.response?.status === 451) {
-                            showDetailWarning({ title: this.$t('clip.Error'), text: this.$t('clip.report.clip_has_been_banned') })
-                                .then(this.goToHome)
+                            showDetailWarning({
+                                title: this.$t("clip.Error"),
+                                text: this.$t(
+                                    "clip.report.clip_has_been_banned"
+                                ),
+                            }).then(this.goToHome)
                             return
                         }
                     }
@@ -315,37 +503,52 @@ export default {
                     return
                 } else {
                     try {
-                        this.user_property = JSON.parse(response.data.data.user_property) as UserProperty
-                    }
-                    catch {
+                        this.user_property = JSON.parse(
+                            response.data.data.user_property
+                        ) as UserProperty
+                    } catch {
                         this.user_property = {} as UserProperty
                         console.log(response.data.data.user_property)
                         showDetailWarning({
-                            title: this.$t('clip.Error'),
-                            text: this.$t('clip.failed_to_parse_user_property')
+                            title: this.$t("clip.Error"),
+                            text: this.$t("clip.failed_to_parse_user_property"),
                         })
                     }
-                    this.encrypt_text_content = this.user_property.encrypt_text_content ?? false
+                    this.encrypt_text_content =
+                        this.user_property.encrypt_text_content ?? false
                     this.encrypt_file = this.user_property.encrypt_file ?? false
                     let content = response.data.data.content
                     if (this.user_property.encrypt_text_content) {
-                        if (this.user_property.encrypt_text_content_algo === "aes") {
-                            content = AES.decrypt(content, this.encryptPassword).toString(utf8)
-                        }
-                        else {
+                        if (
+                            this.user_property.encrypt_text_content_algo ===
+                            "aes"
+                        ) {
+                            content = AES.decrypt(
+                                content,
+                                this.encryptPassword
+                            ).toString(utf8)
+                        } else {
                             showDetailWarning({
-                                title: this.$t('clip.Error'),
-                                text: this.$t('clip.encrypt_text_content_algo_not_supported')
+                                title: this.$t("clip.Error"),
+                                text: this.$t(
+                                    "clip.encrypt_text_content_algo_not_supported"
+                                ),
                             })
                         }
                     }
                     this.remote_version = response.data.data.clip_version ?? 1
-                    if (!no_update_content && ((this.remote_version > this.clip_version) || (this.first_fetched === false))) {
+                    if (
+                        !no_update_content &&
+                        (this.remote_version > this.clip_version ||
+                            this.first_fetched === false)
+                    ) {
                         this.local_content = content
                     }
                     this.first_fetched = true
                     this.current_timeout = response.data.data.timeout_seconds
-                    this.selected_timeout = timeDeltaToString(this.current_timeout)
+                    this.selected_timeout = timeDeltaToString(
+                        this.current_timeout
+                    )
                     this.remote_content = content
                     this.clip_version = this.remote_version
                     this.readonly_name = response.data.data.readonly_name
@@ -365,7 +568,12 @@ export default {
             }
         },
         async combinePushContent() {
-            if (this.is_readonly || this.combine_content === "" || this.encrypt_text_content) return
+            if (
+                this.is_readonly ||
+                this.combine_content === "" ||
+                this.encrypt_text_content
+            )
+                return
             let combine_mode = "prepend"
             let response = await axios.put(`/note/${this.name}`, {
                 content: this.combine_content + "\n",
@@ -373,8 +581,10 @@ export default {
             })
             this.clip_version = response.data.data.clip_version
             this.combine_content = ""
-            this.local_content = this.remote_content = response.data.data.content
-            this.clip_version = this.remote_version = response.data.data.clip_version
+            this.local_content = this.remote_content =
+                response.data.data.content
+            this.clip_version = this.remote_version =
+                response.data.data.clip_version
         },
         async pushContent(force = false) {
             if (this.is_readonly) return
@@ -387,15 +597,17 @@ export default {
             let content = this.local_content
             if (this.encrypt_text_content) {
                 if (this.user_property.encrypt_text_content_algo === "aes") {
-                    content = AES.encrypt(content, this.encryptPassword).toString()
-                }
-                else {
-                    showDetailWarning(
-                        {
-                            title: this.$t('clip.Error'),
-                            text: this.$t('clip.encrypt_text_content_algo_not_supported')
-                        }
-                    )
+                    content = AES.encrypt(
+                        content,
+                        this.encryptPassword
+                    ).toString()
+                } else {
+                    showDetailWarning({
+                        title: this.$t("clip.Error"),
+                        text: this.$t(
+                            "clip.encrypt_text_content_algo_not_supported"
+                        ),
+                    })
                     return
                 }
             }
@@ -422,25 +634,25 @@ export default {
         },
         async deleteContent() {
             dangerousConfirm({
-                title: this.$t('clip.delete.are_you_sure'),
-                text: this.$t('clip.delete.you_wont_be_able_to_revert_this'),
-                confirmButtonText: this.$t('clip.delete.yes_delete_it'),
-            })
-                .then(async (result) => {
-                    if (result.isConfirmed) {
-                        try {
-                            let response = await axios.delete(`/note/${this.name}`)
-                            showAutoCloseSuccess({
-                                title: this.$t('clip.delete.deleted'),
-                                text: this.$t('clip.delete.your_clip_has_been_deleted'),
-                                timer: undefined
-                            })
-                                .then(this.goToHome)
-                        } catch (e: any) {
-                            console.log(e)
-                        }
+                title: this.$t("clip.delete.are_you_sure"),
+                text: this.$t("clip.delete.you_wont_be_able_to_revert_this"),
+                confirmButtonText: this.$t("clip.delete.yes_delete_it"),
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        let response = await axios.delete(`/note/${this.name}`)
+                        showAutoCloseSuccess({
+                            title: this.$t("clip.delete.deleted"),
+                            text: this.$t(
+                                "clip.delete.your_clip_has_been_deleted"
+                            ),
+                            timer: undefined,
+                        }).then(this.goToHome)
+                    } catch (e: any) {
+                        console.log(e)
                     }
-                })
+                }
+            })
         },
         // file
         getTotalSize(...file_arrays: (File[] | FileData[])[]): number {
@@ -454,12 +666,17 @@ export default {
         },
         arrayBufferToWordArray(ab: ArrayBuffer): WordArray {
             // https://stackoverflow.com/questions/33914764/how-to-read-a-binary-file-with-filereader-in-order-to-hash-it-with-sha-256-in-cr
-            var i8a = new Uint8Array(ab);
-            var a = [];
+            var i8a = new Uint8Array(ab)
+            var a = []
             for (var i = 0; i < i8a.length; i += 4) {
-                a.push(i8a[i] << 24 | i8a[i + 1] << 16 | i8a[i + 2] << 8 | i8a[i + 3]);
+                a.push(
+                    (i8a[i] << 24) |
+                        (i8a[i + 1] << 16) |
+                        (i8a[i + 2] << 8) |
+                        i8a[i + 3]
+                )
             }
-            return WordArray.create(a, i8a.length);
+            return WordArray.create(a, i8a.length)
         },
         wordArrayToArrayBuffer(wordArray: WordArray): ArrayBuffer {
             const { words } = wordArray
@@ -475,15 +692,14 @@ export default {
             let items: FileList | undefined = undefined
             if (event instanceof DragEvent) {
                 // file drag & drop
-                items = event.dataTransfer?.files;
-            }
-            else {
+                items = event.dataTransfer?.files
+            } else {
                 // clipboard
-                items = event.clipboardData?.files;
+                items = event.clipboardData?.files
             }
-            if (items === undefined || items.length === 0) return;
+            if (items === undefined || items.length === 0) return
             event.preventDefault()
-            this.file_to_upload = Array.from(items);
+            this.file_to_upload = Array.from(items)
             this.uploadFile()
         },
         async uploadSingleFile(file: File) {
@@ -491,17 +707,26 @@ export default {
             if (this.encrypt_file) {
                 // encrypt file
                 let reader = new FileReader()
-                let file_data = await new Promise<ArrayBuffer>((resolve, reject) => {
-                    reader.onload = () => {
-                        resolve(reader.result as ArrayBuffer)
+                let file_data = await new Promise<ArrayBuffer>(
+                    (resolve, reject) => {
+                        reader.onload = () => {
+                            resolve(reader.result as ArrayBuffer)
+                        }
+                        reader.onerror = () => {
+                            reject(reader.error)
+                        }
+                        reader.readAsArrayBuffer(file)
                     }
-                    reader.onerror = () => {
-                        reject(reader.error)
-                    }
-                    reader.readAsArrayBuffer(file)
-                })
-                let encrypted_file_data = AES.encrypt(this.arrayBufferToWordArray(file_data), this.encryptPassword).toString()
-                let encrypted_file = new File([encrypted_file_data], this.encryptFilename(file.name), { type: file.type })
+                )
+                let encrypted_file_data = AES.encrypt(
+                    this.arrayBufferToWordArray(file_data),
+                    this.encryptPassword
+                ).toString()
+                let encrypted_file = new File(
+                    [encrypted_file_data],
+                    this.encryptFilename(file.name),
+                    { type: file.type }
+                )
                 file = encrypted_file
             }
             formData.append("file", file)
@@ -516,50 +741,74 @@ export default {
             if (this.file_to_upload.length === 0) return
             this.uploading = true
             let error_string = null
-            let file_count = this.file_to_upload.length + this.remote_files.length
-            if (this.metadata.max_file_count && file_count > this.metadata.max_file_count) {
-                error_string = this.$t('clip.file.error.TOTAL_FILES_COUNT_LIMIT_HIT')
+            let file_count =
+                this.file_to_upload.length + this.remote_files.length
+            if (
+                this.metadata.max_file_count &&
+                file_count > this.metadata.max_file_count
+            ) {
+                error_string = this.$t(
+                    "clip.file.error.TOTAL_FILES_COUNT_LIMIT_HIT"
+                )
             }
             this.file_to_upload.forEach((file) => {
-                if (this.metadata.max_file_size && file.size > this.metadata.max_file_size) {
-                    error_string = this.$t('clip.file.error.SINGLE_FILE_SIZE_LIMIT_HIT')
+                if (
+                    this.metadata.max_file_size &&
+                    file.size > this.metadata.max_file_size
+                ) {
+                    error_string = this.$t(
+                        "clip.file.error.SINGLE_FILE_SIZE_LIMIT_HIT"
+                    )
                 }
             })
-            let total_size = this.getTotalSize(this.file_to_upload, this.remote_files)
+            let total_size = this.getTotalSize(
+                this.file_to_upload,
+                this.remote_files
+            )
 
-            if (this.metadata.max_all_file_size && total_size > this.metadata.max_all_file_size) {
-                error_string = this.$t('clip.file.error.TOTAL_FILES_SIZE_LIMIT_HIT')
+            if (
+                this.metadata.max_all_file_size &&
+                total_size > this.metadata.max_all_file_size
+            ) {
+                error_string = this.$t(
+                    "clip.file.error.TOTAL_FILES_SIZE_LIMIT_HIT"
+                )
             }
             if (error_string !== null) {
                 showDetailWarning({
-                    title: this.$t('clip.Error'), text: error_string
+                    title: this.$t("clip.Error"),
+                    text: error_string,
                 })
                 this.file_to_upload = []
                 this.uploading = false
                 return
             }
             try {
-                await Promise.all(this.file_to_upload.map(this.uploadSingleFile))
+                await Promise.all(
+                    this.file_to_upload.map(this.uploadSingleFile)
+                )
                 this.fetchContent(true)
                 /* showAutoCloseSuccess({
                     title: this.$t('clip.file.uploaded'),
                     text: this.$t('clip.file.your_file_has_been_uploaded'),
                 }) */
-            }
-            catch (e: any) {
+            } catch (e: any) {
                 console.log(e)
-                error_string = this.$t('clip.file.failed_to_upload_file')
+                error_string = this.$t("clip.file.failed_to_upload_file")
                 if (isAxiosError(e)) {
-                    if (e.response?.status === 400 && e.response?.data?.error_id !== null) {
-                        error_string = this.$t('clip.file.error.' + e.response.data.error_id)
+                    if (
+                        e.response?.status === 400 &&
+                        e.response?.data?.error_id !== null
+                    ) {
+                        error_string = this.$t(
+                            "clip.file.error." + e.response.data.error_id
+                        )
                     }
                 }
-                showDetailWarning(
-                    {
-                        title: this.$t('clip.Error'),
-                        text: error_string
-                    }
-                )
+                showDetailWarning({
+                    title: this.$t("clip.Error"),
+                    text: error_string,
+                })
             } finally {
                 this.file_to_upload = []
                 this.uploading = false
@@ -569,7 +818,9 @@ export default {
         async deleteFile(file: FileData) {
             this.uploading = true
             try {
-                let response = await axios.delete(`/note/${this.name}/file/${file.id}`)
+                let response = await axios.delete(
+                    `/note/${this.name}/file/${file.id}`
+                )
                 this.fetchContent(true)
                 /* showAutoCloseSuccess({
                     title: this.$t('clip.file.deleted'),
@@ -577,7 +828,10 @@ export default {
                 }) */
             } catch (e: any) {
                 console.log(e)
-                showDetailWarning({ title: this.$t('clip.Error'), text: this.$t('clip.file.failed_to_delete_file') })
+                showDetailWarning({
+                    title: this.$t("clip.Error"),
+                    text: this.$t("clip.file.failed_to_delete_file"),
+                })
             } finally {
                 this.uploading = false
             }
@@ -586,19 +840,20 @@ export default {
         async changePassword() {
             let password = (
                 await cancelableInput({
-                    title: this.$t('clip.new_password_question'),
+                    title: this.$t("clip.new_password_question"),
                     input: "password",
                 })
             ).value
             if (password === undefined) return
             try {
                 await axios.put(`/note/${this.name}`, {
-                    new_password: password === "" ? "" : SHA512(password).toString(),
+                    new_password:
+                        password === "" ? "" : SHA512(password).toString(),
                 })
                 this.password = password
                 await this.updateEncryptText()
                 showAutoCloseSuccess({
-                    title: this.$t('clip.password_changed'),
+                    title: this.$t("clip.password_changed"),
                 })
             } catch (e: any) {
                 console.log(e)
@@ -608,8 +863,7 @@ export default {
             if (this.encrypt_text_content) {
                 this.user_property.encrypt_text_content = true
                 this.user_property.encrypt_text_content_algo = "aes"
-            }
-            else {
+            } else {
                 this.user_property.encrypt_text_content = false
                 this.user_property.encrypt_text_content_algo = ""
             }
@@ -629,9 +883,11 @@ export default {
                     }
                 })
 
-
                 let invalid_timeout_toast = () => {
-                    showDetailWarning({ title: this.$t('clip.Error'), text: this.$t('clip.invalid_timeout') })
+                    showDetailWarning({
+                        title: this.$t("clip.Error"),
+                        text: this.$t("clip.invalid_timeout"),
+                    })
                 }
 
                 if (new_timeout === undefined) {
@@ -662,13 +918,13 @@ export default {
             if (navigator?.clipboard?.writeText === undefined) {
                 // http fallback
                 // https://blog.csdn.net/qq_58340302/article/details/124480086
-                let textArea = document.createElement('textarea')
+                let textArea = document.createElement("textarea")
                 textArea.value = content
                 document.body.appendChild(textArea)
                 textArea.focus()
                 textArea.select()
                 return new Promise((res, rej) => {
-                    document.execCommand('copy') ? res(null) : rej()
+                    document.execCommand("copy") ? res(null) : rej()
                     textArea.remove()
                 })
             }
@@ -684,7 +940,7 @@ export default {
             this.saveBlob(blob, `${this.name}.txt`)
         },
         saveBlob(blob: Blob, filename: string) {
-            const link = document.createElement('a')
+            const link = document.createElement("a")
             link.href = URL.createObjectURL(blob)
             link.download = filename
             link.click()
@@ -694,7 +950,7 @@ export default {
         async toggleReadonlyUrl() {
             try {
                 let response = await axios.put(`/note/${this.name}`, {
-                    enable_readonly: !this.hasReadonlyName
+                    enable_readonly: !this.hasReadonlyName,
                 })
                 this.fetchContent()
             } catch (e: any) {
@@ -715,39 +971,50 @@ export default {
         },
         onUpdateSaveInterval() {
             this.save_interval = parseInt(this.save_interval.toString())
-            if (Number.isNaN(this.save_interval) || this.save_interval < 0) this.save_interval = 0
-            if (this.save_interval > this.max_interval) this.save_interval = this.max_interval
+            if (Number.isNaN(this.save_interval) || this.save_interval < 0)
+                this.save_interval = 0
+            if (this.save_interval > this.max_interval)
+                this.save_interval = this.max_interval
             if (this.save_timer !== null) clearInterval(this.save_timer)
             this.save_timer = null
-            if (this.save_interval > 0) this.save_timer = setInterval(this.onAutoSave, this.save_interval * 1000)
+            if (this.save_interval > 0)
+                this.save_timer = setInterval(
+                    this.onAutoSave,
+                    this.save_interval * 1000
+                )
             if (this.save_interval === 0) this.save_interval = ""
         },
         onUpdateFetchInterval() {
             this.fetch_interval = parseInt(this.fetch_interval.toString())
-            if (Number.isNaN(this.fetch_interval) || this.fetch_interval < 0) this.fetch_interval = 0
-            if (this.fetch_interval > this.max_interval) this.fetch_interval = this.max_interval
+            if (Number.isNaN(this.fetch_interval) || this.fetch_interval < 0)
+                this.fetch_interval = 0
+            if (this.fetch_interval > this.max_interval)
+                this.fetch_interval = this.max_interval
             if (this.fetch_timer !== null) clearInterval(this.fetch_timer)
             this.fetch_timer = null
-            if (this.fetch_interval > 0) this.fetch_timer = setInterval(this.onAutoFetch, this.fetch_interval * 1000)
+            if (this.fetch_interval > 0)
+                this.fetch_timer = setInterval(
+                    this.onAutoFetch,
+                    this.fetch_interval * 1000
+                )
             if (this.fetch_interval === 0) this.fetch_interval = ""
         },
         async reportClip() {
             try {
                 dangerousConfirm({
-                    title: this.$t('clip.report.report_clip_confirm'),
-                    text: this.$t('clip.report.clip_will_be_banned'),
+                    title: this.$t("clip.report.report_clip_confirm"),
+                    text: this.$t("clip.report.clip_will_be_banned"),
+                }).then(async (result) => {
+                    if (result.isConfirmed) {
+                        let response = await axios.put(`/note/${this.name}`, {
+                            report: true,
+                        })
+                        showAutoCloseSuccess({
+                            title: this.$t("clip.report.reported"),
+                            text: this.$t("clip.report.clip_has_been_reported"),
+                        }).then(this.goToHome)
+                    }
                 })
-                    .then(async (result) => {
-                        if (result.isConfirmed) {
-                            let response = await axios.put(`/note/${this.name}`, {
-                                report: true
-                            })
-                            showAutoCloseSuccess({
-                                title: this.$t('clip.report.reported'),
-                                text: this.$t('clip.report.clip_has_been_reported'),
-                            }).then(this.goToHome)
-                        }
-                    })
             } catch (e: any) {
                 console.log(e)
             }
@@ -756,16 +1023,18 @@ export default {
             try {
                 let response = await axios.post(`/mailto`, {
                     address: this.mail_address,
-                    content: this.local_content
+                    content: this.local_content,
                 })
                 await showAutoCloseSuccess({
-                    title: this.$t('clip.mail.sent')
+                    title: this.$t("clip.mail.sent"),
                 })
             } catch (e: any) {
                 if (isAxiosError(e)) {
                     showDetailWarning({
-                        title: this.$t('clip.Error'),
-                        text: this.$t('clip.mail.' + e.response?.data?.error_id)
+                        title: this.$t("clip.Error"),
+                        text: this.$t(
+                            "clip.mail." + e.response?.data?.error_id
+                        ),
                     })
                     return
                 }
@@ -783,15 +1052,17 @@ export default {
             // https://blog.csdn.net/qq_38916811/article/details/127515455
             // fetch file from remote url and decrypt
             const response = await axios.get(file.download_url, {
-                responseType: "arraybuffer"
+                responseType: "arraybuffer",
             })
-            const enc = new TextDecoder("utf-8");
+            const enc = new TextDecoder("utf-8")
             const str = enc.decode(response.data)
-            const decrypted_file_data = this.wordArrayToArrayBuffer(AES.decrypt(str, this.encryptPassword))
+            const decrypted_file_data = this.wordArrayToArrayBuffer(
+                AES.decrypt(str, this.encryptPassword)
+            )
             // save as blob
             const blob = new Blob([decrypted_file_data])
             this.saveBlob(blob, this.mayDecryptFilename(file.filename))
-        }
+        },
     },
     computed: {
         name(): string {
@@ -823,36 +1094,43 @@ export default {
         },
         is_local_outdated(): boolean {
             return this.save_status === SaveStatus.local_outdated
-        }
+        },
     },
     mounted() {
         // get password from url in hash part
         // example: https://example.com/name#password
         if (window.location.hash) {
-            this.password = window.location.hash.slice(1)  // remove #
+            this.password = window.location.hash.slice(1) // remove #
         }
 
         // disable unload warning on leave
-        onBeforeRouteLeave((to, from, next) => { this.setUnloadWarning(false); next() })
+        onBeforeRouteLeave((to, from, next) => {
+            this.setUnloadWarning(false)
+            next()
+        })
 
         // add auth header
         axios.interceptors.request.use((config) => {
-            config.headers["Authorization"] = `Bearer ${Buffer.from(SHA512(this.password).toString(), 'utf8').toString('base64')}`
+            config.headers["Authorization"] = `Bearer ${Buffer.from(
+                SHA512(this.password).toString(),
+                "utf8"
+            ).toString("base64")}`
             return config
         })
 
         // fetch metadata
-        appStore.metadata().then((metadata) => {
-            this.metadata = metadata as MetaData
-        }).catch((e) => {
-            console.log(e)
-            showDetailWarning(
-                {
-                    title: this.$t('clip.Error'),
-                    text: this.$t('clip.failed_to_fetch_metadata')
-                }
-            ).then(this.goToHome)
-        })
+        appStore
+            .metadata()
+            .then((metadata) => {
+                this.metadata = metadata as MetaData
+            })
+            .catch((e) => {
+                console.log(e)
+                showDetailWarning({
+                    title: this.$t("clip.Error"),
+                    text: this.$t("clip.failed_to_fetch_metadata"),
+                }).then(this.goToHome)
+            })
 
         // register auto save & fetch
         this.onUpdateSaveInterval()
@@ -860,7 +1138,7 @@ export default {
 
         // first fetch
         this.fetchContent()
-    }
+    },
 }
 </script>
 
