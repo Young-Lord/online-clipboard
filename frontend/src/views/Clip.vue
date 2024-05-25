@@ -256,7 +256,7 @@
                             >
                             </v-file-input>
                             <!--all files, with download and delete button-->
-                            <v-list v-if="!is_new">
+                            <v-list>
                                 <v-list-item
                                     v-for="file in remote_files"
                                     :key="file.id"
