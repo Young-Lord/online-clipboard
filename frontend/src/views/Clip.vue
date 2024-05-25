@@ -16,6 +16,7 @@
             <v-toolbar-title>{{
                 save_status ? $t(`save_status.${save_status}`) : ""
             }}</v-toolbar-title>
+            <!--Vue issue: https://github.com/vuejs/core/issues/5312-->
             <template v-slot:[should_wrap_appbar_to_slot]>
                 <v-spacer></v-spacer>
                 <!--delete button-->
@@ -401,8 +402,8 @@ export default {
             save_interval: 3 as number | string,
             fetch_min_idle_time: 1,
             fetch_interval: 0 as number | string,
-            save_timer: null as number | null,
-            fetch_timer: null as number | null,
+            save_timer: null as ReturnType<typeof setTimeout> | null,
+            fetch_timer: null as ReturnType<typeof setTimeout> | null,
             last_edit_time: Date.now(),
             user_property: {} as UserProperty,
             sidebar_list_opened: [],
@@ -1148,7 +1149,7 @@ export default {
     cursor: pointer;
 }
 
-/*remove useless padding in sidebar*/
+/* remove useless padding in sidebar */
 #sidebar .v-input__details {
     display: none;
 }
