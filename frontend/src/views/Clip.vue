@@ -1161,4 +1161,10 @@ export default {
 #sidebar .v-list-group__items .v-list-item {
     padding-inline-start: 16px !important;
 }
+
+/* add better padding in file card */
+#file-card div.v-input__prepend {
+    margin-inline-start: 16px !important;
+    margin-inline-end: 16px !important;
+}
 </style>
