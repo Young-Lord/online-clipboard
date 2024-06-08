@@ -29,6 +29,7 @@ from app.models.datastore import (
     verify_name,
     passlib_context,
 )
+from app.logic.content_filter import ClipTextContentFilter, MailContentFilter
 from .base import api_restx as api, limiter, api_bp, api_restx_at_root
 from app.note_const import Metadata, ALLOW_CHAR_IN_NAMES, is_readonly_name
 from app.utils import ensure_dir, return_json, sha256, sha512
@@ -327,6 +328,8 @@ class NoteRest(BaseRest):
         # create a new note
         if g.note is not None:
             return return_json(status_code=400, message="Clip already exist")
+        if not ClipTextContentFilter(clip_name=name).is_valid():
+            return return_json(status_code=451, message="Illegal name")
         note = datastore.update_note(name=name)
         return marshal_note(note, 201)
 
@@ -376,6 +379,8 @@ class NoteRest(BaseRest):
             params.pop("combine_mode", None)
             params.pop("clip_version", None)
             params["clip_version"] = note.clip_version
+        if not ClipTextContentFilter(content=params.get("content", "")).is_valid():
+            return return_json(status_code=451, message="Illegal content")
         try:
             datastore.update_note(name=name, **params)
         except ValueError as e:
@@ -589,6 +594,9 @@ def api_send_mail():
         return return_json(
             status_code=400, message="Invalid content", error_id="INVALID_CONTENT"
         )
+
+    if not MailContentFilter(mail_address=address, content=content).is_valid():
+        return return_json(status_code=451, message="Illegal content")
 
     mail_address = datastore.get_mail_address(address)
     if mail_address is not None and mail_address.status == MailAcceptStatus.PENDING:
