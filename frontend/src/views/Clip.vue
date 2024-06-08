@@ -918,8 +918,12 @@ export default {
             if (!content) return
             if (navigator?.clipboard?.writeText === undefined) {
                 // http fallback
-                // https://blog.csdn.net/qq_58340302/article/details/124480086
+                // https://stackoverflow.com/questions/400212/how-do-i-copy-to-the-clipboard-in-javascript
                 let textArea = document.createElement("textarea")
+                // Avoid scrolling to bottom
+                textArea.style.top = "0"
+                textArea.style.left = "0"
+                textArea.style.position = "fixed"
                 textArea.value = content
                 document.body.appendChild(textArea)
                 textArea.focus()
