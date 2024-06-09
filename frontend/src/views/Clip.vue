@@ -339,7 +339,14 @@
 </template>
 
 <script lang="ts">
-import { MetaData, FileData, axios, UserProperty, Response } from "@/api"
+import {
+    MetaData,
+    FileData,
+    axios,
+    UserProperty,
+    Response,
+    ClipData,
+} from "@/api"
 import { useAppStore } from "@/store/app"
 const appStore = useAppStore()
 import { replaceLastPartOfUrl, humanFileSize, assert } from "@/utils"
@@ -356,7 +363,7 @@ import {
     cancelableInput,
     dangerousConfirm,
 } from "@/plugins/swal"
-import { isAxiosError } from "axios"
+import { AxiosResponse, isAxiosError } from "axios"
 import { SweetAlertResult } from "sweetalert2"
 import { onBeforeRouteLeave } from "vue-router"
 
@@ -464,7 +471,9 @@ export default {
             try {
                 let response
                 try {
-                    response = await axios.get(`/note/${this.name}`)
+                    response = await axios.get<Response<ClipData>>(
+                        `/note/${this.name}`
+                    )
                 } catch (e: any) {
                     if (isAxiosError(e)) {
                         if (e.response?.status === 400) {

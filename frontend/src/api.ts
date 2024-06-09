@@ -18,7 +18,7 @@ export interface ClipData {
     clip_version: number
     content: string
     file_count: number
-    files: File[]
+    files: FileData[]
     is_readonly: boolean
     name: string
     readonly_name: string
