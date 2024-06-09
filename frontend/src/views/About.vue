@@ -51,24 +51,12 @@ export default {
         }
     },
     methods: {
-        async getMetadata() {
-            try {
-                this.metadata = await appStore.metadata()
-            } catch (e) {
-                this.metadata = {} as MetaData
-                console.log(e)
-            }
-        },
-        updateEndpoint() {
-            appStore.updateEndpoint(axios, this.api_endpoint)
-            this.getMetadata()
+        async updateEndpoint() {
+            await appStore.updateEndpoint(axios, this.api_endpoint)
         },
         goToHome() {
             this.$router.push({ name: "Home" })
         },
-    },
-    beforeMount() {
-        this.getMetadata()
     },
 }
 </script>

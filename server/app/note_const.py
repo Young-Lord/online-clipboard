@@ -1,7 +1,10 @@
 from dataclasses import asdict, dataclass, field
+import json
 import string
 from typing import Any, Final
 from uuid import uuid4
+
+from app.utils import sha512
 
 ALLOW_CHAR_IN_NAMES: Final[str] = string.ascii_letters + string.digits + "-_"
 DISABLE_WORDS_IN_NAMES: Final[set[str]] = {
@@ -12,6 +15,12 @@ DISABLE_WORDS_IN_NAMES: Final[set[str]] = {
     "logout",
     "register",
     "about",
+    "email",
+    "mail",
+    "default",
+    "config",
+    "setting",
+    "settings",
 }
 READONLY_PREFIX: Final[str] = "ro*"
 
@@ -95,6 +104,7 @@ class BaseMetadata:
     allow_mail: bool = True
     mail_max_content: int = max_content_length
     mail_verify_timeout: int = 60 * 60 * 24 * 180  # 180 days
+    metadata_hash: str = ""
 
     def __repr__(self):
         return f"<Metadata {self.name}>"
@@ -104,3 +114,6 @@ class BaseMetadata:
 
 
 Metadata = BaseMetadata()
+Metadata.metadata_hash = sha512(
+    json.dumps(Metadata.to_dict(), sort_keys=True, ensure_ascii=False)
+)

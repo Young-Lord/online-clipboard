@@ -60,6 +60,7 @@ class Factory:
             # many thanks to https://github.com/corydolphin/flask-cors/issues/292#issuecomment-883929183
             if request.method == 'options' or request.method == 'OPTIONS':
                 return Response()
+            # To create a slow-speed server: time.sleep(6)
 
     def set_jwt(self):
         from .resources.base import file_jwt

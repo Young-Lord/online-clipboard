@@ -396,7 +396,7 @@ export default {
             last_saved: Date.now(),
             save_status: SaveStatus.empty,
             is_new: false,
-            metadata: {} as MetaData,
+            metadata: appStore.metadata,
             password: "",
             current_timeout: -1,
             selected_timeout: "",

@@ -1,8 +1,7 @@
 import original_axios, { isAxiosError } from "axios"
-import { useAppStore } from "./store/app"
-const appStore = useAppStore()
 import { $t } from "./plugins/i18n"
 import { showDetailWarning } from "./plugins/swal"
+import { API_URL } from "./config"
 
 // https://xiets.gitee.io/json-to-any-web/
 // [A-Z][a-z] -> _\L$0
@@ -59,6 +58,7 @@ export interface MetaData {
     timeout_selections: number[]
     url: string
     version: string
+    metadata_hash: string
 }
 
 export interface UserProperty {
@@ -69,7 +69,7 @@ export interface UserProperty {
 
 export const axios = original_axios.create({
     withCredentials: true,
-    baseURL: appStore.api_endpoint,
+    baseURL: API_URL,
 })
 axios.defaults.headers.common["Content-Type"] = "application/json"
 
