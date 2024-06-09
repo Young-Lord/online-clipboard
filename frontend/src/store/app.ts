@@ -32,6 +32,7 @@ export const useAppStore = defineStore("app", {
         },
         async updateEndpoint(axios: AxiosInstance, endpoint: string) {
             this.api_endpoint = endpoint
+            this.is_metadata_fetched = false
             await this.initMetadata()
             axios.defaults.baseURL = endpoint
         },

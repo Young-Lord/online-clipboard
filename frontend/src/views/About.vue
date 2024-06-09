@@ -28,7 +28,7 @@
                 <v-expansion-panels>
                     <v-expansion-panel :title="$t('about.metadata')">
                         <v-expansion-panel-text>
-                            <pre><code>{{ JSON.stringify(metadata, null, 4) }}</code></pre>
+                            <pre><code>{{ JSON.stringify(appStore.metadata, null, 4) }}</code></pre>
                         </v-expansion-panel-text>
                     </v-expansion-panel>
                 </v-expansion-panels>
@@ -47,7 +47,6 @@ export default {
         return {
             appStore: appStore,
             api_endpoint: appStore.api_endpoint,
-            metadata: {} as MetaData,
         }
     },
     methods: {
