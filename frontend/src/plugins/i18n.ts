@@ -14,6 +14,7 @@ if (!(userLanguage in messages)) {
     )
     selectedLanguage = fallbackLanguage
 }
+export const language = selectedLanguage
 
 const i18n = createI18n({
     legacy: false,

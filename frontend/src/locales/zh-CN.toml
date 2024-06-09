@@ -1,0 +1,19 @@
+# Use TOML for lines with line break.
+[mail.template]
+clip_content_title = "Clip 邮件导出 - {name}"
+clip_content = """\
+<p>您刚从 <a href="{clip_url}">{name}</a> 导出了您的 Clip 内容。<br />
+如果您觉得这封邮件不该发给您，<a href="{unsubscribe_link}">点击这里</a>永久拒收。</p>
+<p>以下为导出的 Clip 内容：</p>
+<p></p>
+<pre>{clip_content}</pre>
+<p></p>
+<p>{name}</p>\
+"""
+confirm_subscribe_title = "验证邮箱地址 - {name}"
+confirm_subscribe = """\
+<p>您刚才申请导出了您的 Clip 内容。若要允许后续的导出，请点击下方链接验证你的邮箱地址：</p>
+<p><a href="{confirm_link}">点此链接</a></p>
+<p>如果您觉得这封邮件不该发给您，我们对给您带来的骚扰很抱歉，您可以<a href="{unsubscribe_link}">点此永久拒收</a>。</p>
+<p>{name}</p>\
+"""

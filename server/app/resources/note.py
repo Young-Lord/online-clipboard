@@ -20,7 +20,6 @@ from flask import (
     send_from_directory,
 )
 from flask_restx import Resource, fields
-import jinja2
 from app.config import Config
 from app.models.datastore import (
     File,
@@ -36,6 +35,7 @@ from app.logic.content_filter import ClipTextContentFilter, MailContentFilter
 from .base import api_restx as api, limiter, api_bp, api_restx_at_root
 from app.note_const import Metadata, ALLOW_CHAR_IN_NAMES, is_readonly_name
 from app.utils import ensure_dir, return_json, sha256, sha512
+from app.logic.i18n import _t
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import NotFound
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
@@ -520,11 +520,6 @@ class PreviewFileContentRest(DownloadFileContentRest):
     as_attachment = False
 
 
-email_templates = jinja2.Environment(
-    loader=jinja2.FileSystemLoader("app/mails"), autoescape=True
-)
-
-
 @api_bp.route("/mail/<string:address>/settings", methods=["GET"])
 @limiter.limit("20/minute")
 @jwt_required(locations=["headers"])
@@ -643,10 +638,15 @@ def try_send_verification_mail(address: str) -> Response:
     if not can_verify:
         return return_json(status_code=200, message="OK")
     ret = send_mail(
-        subject="Clip - Confirm your mail address",
-        body=email_templates.get_template("confirm_subscribe.jinja2").render(
+        subject=_t(
+            g.language, "mail.template.confirm_subscribe_title", name=Metadata.name
+        ),
+        body=_t(
+            g.language,
+            "mail.template.confirm_subscribe",
             confirm_link=create_subscribe_post_link(address, True, frontend=True),
             unsubscribe_link=create_subscribe_post_link(address, False, frontend=True),
+            name=Metadata.name,
         ),
         address=address,
     )
@@ -668,7 +668,9 @@ def verify_email_decorator(f):
                 message="Mail not allowed on this server",
                 error_id="MAIL_NOT_ALLOWED",
             )
+
         data = request.get_json()
+
         address: str = data["address"]
         if not check_email_address(address):
             return return_json(
@@ -676,8 +678,9 @@ def verify_email_decorator(f):
                 message="Invalid mail address",
                 error_id="INVALID_ADDRESS",
             )
-        g.data=data
         g.address = address
+        g.language = data.get("language", "en")
+        g.data = data
         return f(*args, **kwargs)
 
     return decorated_function
@@ -696,6 +699,7 @@ def api_try_send_verification_mail():
 def api_try_send_mail():
     address: str = g.address
     content: str = g.data.get("content", "")
+    assert isinstance(content, str)
     if not content:
         return return_json(
             status_code=400, message="No content to send", error_id="NO_CONTENT"
@@ -716,11 +720,14 @@ def api_try_send_mail():
         )
 
     return send_mail(
-        subject="Clip - Clip exported",
-        body=email_templates.get_template("clip_content.jinja2").render(
+        subject=_t(g.language, "mail.template.clip_content_title", name=Metadata.name),
+        body=_t(
+            g.language,
+            "mail.template.clip_content",
             clip_url=current_app.config["HOMEPAGE_URL"],
             clip_content=content,
             unsubscribe_link=create_subscribe_post_link(address, False, frontend=True),
+            name=Metadata.name,
         ),
         address=address,
     )

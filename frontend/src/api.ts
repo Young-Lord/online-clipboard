@@ -1,5 +1,5 @@
 import original_axios, { isAxiosError } from "axios"
-import { $t } from "./plugins/i18n"
+import { $t, language } from "./plugins/i18n"
 import { showDetailWarning } from "./plugins/swal"
 import { API_URL } from "./config"
 
@@ -90,6 +90,15 @@ export const axios = original_axios.create({
     baseURL: API_URL,
 })
 axios.defaults.headers.common["Content-Type"] = "application/json"
+
+axios.interceptors.request.use(
+    function (config) {
+        if (config.url === "/mailto" || config.url?.startsWith("/mailto/")) {
+            config.data = { language: language, ...config.data }
+        }
+        return config
+    }
+)
 
 axios.interceptors.response.use(
     function (response) {
