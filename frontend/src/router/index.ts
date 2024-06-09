@@ -13,9 +13,14 @@ const routes = [
         component: () => import("@/views/About.vue"),
     },
     {
-        path: "/:name",
         name: "Clip",
+        path: "/:name",
         component: () => import("@/views/Clip.vue"),
+    },
+    {
+        name: "Mail Setting",
+        path: "/mail/:address?",
+        component: () => import("@/views/MailSetting.vue"),
     },
 ]
 

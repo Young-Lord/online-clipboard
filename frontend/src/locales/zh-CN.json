@@ -31,7 +31,7 @@
         "password_changed": "密码已更改！",
         "ok": "确定",
         "cancel": "取消",
-        "Error": "出现错误！",
+        "error": "出现错误！",
         "file": {
             "deleted": "文件已删除！",
             "your_file_has_been_deleted": "",
@@ -78,10 +78,11 @@
             "send_to_mail": "邮件发送",
             "sent": "已发送！",
             "MAIL_NOT_ALLOWED": "本后端不支持发送邮件。",
-            "MAIL_NOT_VERIFIED": "此邮件地址未验证，请先在您的收件箱中确认接收邮件。",
+            "MAIL_NOT_VERIFIED": "此邮件地址未验证，请先在您的收件箱中允许接收邮件。",
             "INVALID_ADDRESS": "邮件地址格式有误。",
             "INVALID_CONTENT": "此内容无法通过邮件发送。",
-            "SEND_EMAIL_FAILED": "因未知原因，发送邮件失败。"
+            "SEND_EMAIL_FAILED": "因未知原因，发送邮件失败。",
+            "NO_CONTENT": "没有内容可发送。"
         }
     },
     "about": {
@@ -92,6 +93,26 @@
     },
     "loading...": "加载中…",
     "failed.": "加载失败。",
+    "setting": {
+        "mail": {
+            "status": "当前邮件接收状态：{0}",
+            "your_mail": "邮箱地址",
+            "deny": "拒绝接收",
+            "accept": "同意接收",
+            "pending": "已发送验证邮件，等待确认",
+            "no_requested": "未请求验证邮件",
+            "unknown": "未知状态",
+            "resend_request_title": "重新发送验证邮件",
+            "do_request": "发送验证邮件",
+            "not_received_hint": "如果您未收到验证邮件，请检查垃圾箱或联系站长 ( {0} )。",
+            "deny_button": "拒绝接收",
+            "accept_button": "同意接收",
+            "reset_button": "重置邮件接收设置",
+            "update_success": "邮件接收设置已更新！",
+            "update_failed": "邮件接收设置更新失败！",
+            "resend_request_success": "验证邮件已重新发送！"
+        }
+    },
     "error": {
         "rate_limit": "您已达到请求频率限制，请稍作停顿后重试。"
     }

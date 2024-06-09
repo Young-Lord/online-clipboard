@@ -478,7 +478,7 @@ export default {
                     if (isAxiosError(e)) {
                         if (e.response?.status === 400) {
                             showDetailWarning({
-                                title: this.$t("clip.Error"),
+                                title: this.$t("clip.error"),
                                 text: this.$t("clip.invalid_clip_name"),
                             }).then(this.goToHome)
                             return
@@ -494,7 +494,7 @@ export default {
                             return
                         } else if (e.response?.status === 451) {
                             showDetailWarning({
-                                title: this.$t("clip.Error"),
+                                title: this.$t("clip.error"),
                                 text: this.$t(
                                     "clip.report.clip_has_been_banned"
                                 ),
@@ -520,7 +520,7 @@ export default {
                         this.user_property = {} as UserProperty
                         console.log(response.data.data.user_property)
                         showDetailWarning({
-                            title: this.$t("clip.Error"),
+                            title: this.$t("clip.error"),
                             text: this.$t("clip.failed_to_parse_user_property"),
                         })
                     }
@@ -539,7 +539,7 @@ export default {
                             ).toString(utf8)
                         } else {
                             showDetailWarning({
-                                title: this.$t("clip.Error"),
+                                title: this.$t("clip.error"),
                                 text: this.$t(
                                     "clip.encrypt_text_content_algo_not_supported"
                                 ),
@@ -613,7 +613,7 @@ export default {
                     ).toString()
                 } else {
                     showDetailWarning({
-                        title: this.$t("clip.Error"),
+                        title: this.$t("clip.error"),
                         text: this.$t(
                             "clip.encrypt_text_content_algo_not_supported"
                         ),
@@ -786,7 +786,7 @@ export default {
             }
             if (error_string !== null) {
                 showDetailWarning({
-                    title: this.$t("clip.Error"),
+                    title: this.$t("clip.error"),
                     text: error_string,
                 })
                 this.file_to_upload = []
@@ -816,7 +816,7 @@ export default {
                     }
                 }
                 showDetailWarning({
-                    title: this.$t("clip.Error"),
+                    title: this.$t("clip.error"),
                     text: error_string,
                 })
             } finally {
@@ -839,7 +839,7 @@ export default {
             } catch (e: any) {
                 console.log(e)
                 showDetailWarning({
-                    title: this.$t("clip.Error"),
+                    title: this.$t("clip.error"),
                     text: this.$t("clip.file.failed_to_delete_file"),
                 })
             } finally {
@@ -895,7 +895,7 @@ export default {
 
                 let invalid_timeout_toast = () => {
                     showDetailWarning({
-                        title: this.$t("clip.Error"),
+                        title: this.$t("clip.error"),
                         text: this.$t("clip.invalid_timeout"),
                     })
                 }
@@ -1039,13 +1039,21 @@ export default {
                     address: this.mail_address,
                     content: this.local_content,
                 })
-                await showAutoCloseSuccess({
-                    title: this.$t("clip.mail.sent"),
-                })
+                if (response.status === 202) {
+                    await showDetailWarning({
+                        title: this.$t("clip.error"),
+                        text: this.$t("clip.mail.MAIL_NOT_VERIFIED"),
+                    })
+                    return
+                } else {
+                    await showAutoCloseSuccess({
+                        title: this.$t("clip.mail.sent"),
+                    })
+                }
             } catch (e: any) {
                 if (isAxiosError(e)) {
                     showDetailWarning({
-                        title: this.$t("clip.Error"),
+                        title: this.$t("clip.error"),
                         text: this.$t(
                             "clip.mail." + e.response?.data?.error_id
                         ),
@@ -1118,33 +1126,21 @@ export default {
         }
 
         // disable unload warning on leave
-        onBeforeRouteLeave((to, from, next) => {
+        onBeforeRouteLeave(() => {
             this.setUnloadWarning(false)
-            next()
         })
 
         // add auth header
-        axios.interceptors.request.use((config) => {
+        const auth_interceptor = axios.interceptors.request.use((config) => {
             config.headers["Authorization"] = `Bearer ${Buffer.from(
                 SHA512(this.password).toString(),
                 "utf8"
             ).toString("base64")}`
             return config
         })
-
-        // fetch metadata
-        appStore
-            .metadata()
-            .then((metadata) => {
-                this.metadata = metadata as MetaData
-            })
-            .catch((e) => {
-                console.log(e)
-                showDetailWarning({
-                    title: this.$t("clip.Error"),
-                    text: this.$t("clip.failed_to_fetch_metadata"),
-                }).then(this.goToHome)
-            })
+        onBeforeRouteLeave(() => {
+            axios.interceptors.request.eject(auth_interceptor)
+        })
 
         // register auto save & fetch
         this.onUpdateSaveInterval()

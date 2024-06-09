@@ -33,7 +33,7 @@
     "password_changed": "Password changed!",
     "ok": "OK",
     "cancel": "Cancel",
-    "Error": "Error",
+    "error": "Error",
     "file": {
       "failed_to_upload_file": "Failed to upload file.",
       "deleted": "Deleted!",
@@ -78,10 +78,11 @@
       "send_to_mail": "Send to mail",
       "sent": "Sent!",
       "MAIL_NOT_ALLOWED": "Mail is disable on this instance.",
-      "MAIL_NOT_VERIFIED": "This email address is not verified. Please check your inbox and verify it.",
-      "INVALID_ADDRESS": "The email address is not correct. Check again.",
+      "MAIL_NOT_VERIFIED": "This mail address is not verified. Please check your inbox and verify it.",
+      "INVALID_ADDRESS": "The mail address is not correct. Check again.",
       "INVALID_CONTENT": "This clip cannot be sent.",
-      "SEND_EMAIL_FAILED": "Failed to send mail for unknown reason."
+      "SEND_EMAIL_FAILED": "Failed to send mail for unknown reason.",
+      "NO_CONTENT": "No content to send."
     }
   },
   "about": {
@@ -92,6 +93,26 @@
   },
   "loading...": "loading...",
   "failed.": "failed",
+  "setting": {
+    "mail": {
+      "status": "Current mail sending preference: {0}",
+      "your_mail": "Mail address",
+      "deny": "deny mail sending",
+      "accept": "accept mail sending",
+      "pending": "confirm mail sent, waiting for verification",
+      "no_requested": "no mail sending requested",
+      "unknown": "unknown status",
+      "resend_request_title": "Resend mail verification request",
+      "do_request": "send mail verification request",
+      "not_received_hint": "If you haven't received the mail, please check your spam folder or contact support at {0}.",
+      "deny_button": "Deny",
+      "accept_button": "Accept",
+      "reset_button": "Reset",
+      "update_success": "Mail preference updated!",
+      "update_failed": "Failed to update mail preference.",
+      "resend_request_success": "Mail verification request sent!"
+    }
+  },
   "short": {
     "year": "numeric",
     "month": "short",

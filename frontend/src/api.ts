@@ -67,6 +67,24 @@ export interface UserProperty {
     encrypt_file: boolean | undefined
 }
 
+export enum MailSubscriptionStatus {
+    ACCEPT = 1,
+    DENY = 2,
+    PENDING = 3,
+    NO_REQUESTED = 4,
+}
+
+export enum MailSubscriptionSetting {
+    ACCEPT = "true",
+    DENY = "false",
+    RESET = "reset",
+    DELETE = "delete",
+}
+
+export interface MailSubscriptionData {
+    subscribe: MailSubscriptionStatus
+}
+
 export const axios = original_axios.create({
     withCredentials: true,
     baseURL: API_URL,
@@ -81,7 +99,7 @@ axios.interceptors.response.use(
         if (isAxiosError(error)) {
             if (error.response?.status === 429) {
                 showDetailWarning({
-                    title: $t("clip.Error"),
+                    title: $t("clip.error"),
                     text: $t("error.rate_limit"),
                 })
                 return

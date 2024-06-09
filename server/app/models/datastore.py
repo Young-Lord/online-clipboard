@@ -110,9 +110,7 @@ class MailAddress(db.Model, DatabaseColumnBase):
     __tablename__ = "mail_addresses"
 
     address: Mapped[str] = mapped_column(String, unique=True)
-    status: Mapped[int] = mapped_column(
-        Integer, default=MailAcceptStatus.PENDING
-    )
+    status: Mapped[int] = mapped_column(Integer, default=MailAcceptStatus.PENDING)
 
 
 def verify_name(name: str) -> bool:
@@ -296,8 +294,49 @@ class NoteDatastore(Datastore):
         if mail is None:
             return MailAcceptStatus.NO_REQUESTED
         return mail.status
-    
+
+    def can_send_verification_normal_mail(
+        self, mail_address: str
+    ) -> tuple[bool, bool]:
+        """
+        Determine if a mail can be sent to the address.
+        Returns a tuple of two booleans:
+        1. Whether a verification mail can be sent.
+        2. Whether the address is already verified, i.e. can receive normal mails exported from Clip.
+        """
+        mail = self.get_mail_address(mail_address)
+        if mail is None:
+            # can send verification mail only
+            return (True, False)
+
+        if mail.status == MailAcceptStatus.PENDING:
+            # check verify timeout, make PENDING to NO_REQUESTED
+            if (
+                mail.updated_at
+                + datetime.timedelta(seconds=Metadata.mail_verify_timeout)
+                < datetime.datetime.now()
+            ):
+                datastore.set_mail_subscribe_setting(
+                    mail_address, MailAcceptStatus.NO_REQUESTED
+                )
+                # can send verification mail only, as previous timeout
+                return (True, False)
+            else:
+                # can't send any mail
+                return (False, False)
+        return (
+            mail.status in {MailAcceptStatus.ACCEPT, MailAcceptStatus.NO_REQUESTED},
+            mail.status == MailAcceptStatus.ACCEPT,
+        )
+
+    def delete_mail_address(self, mail_address: str) -> None:
+        mail = self.get_mail_address(mail_address)
+        if mail is not None:
+            self.session.delete(mail)
+            self.session.commit()
+
     def get_mail_address(self, mail_address: str) -> Optional[MailAddress]:
         return self.session.query(MailAddress).filter_by(address=mail_address).first()
+
 
 datastore = NoteDatastore(db)
