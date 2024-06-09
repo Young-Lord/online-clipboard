@@ -26,8 +26,6 @@ file_jwt = JWTManager()
 
 # this raises 429 error when rate limit in `app/note_const.py` exceeded
 def RATELIMIT_DEFAULTS_EXEMPT_WHEN() -> bool:
-    if request.method == "OPTIONS":
-        return True
     return False
 
 

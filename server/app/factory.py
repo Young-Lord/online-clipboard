@@ -1,7 +1,7 @@
 import logging
 import sys
 from logging.handlers import RotatingFileHandler
-from flask import Flask
+from flask import Flask, Response, request
 
 from .schedule_task import RemoveExpiredThings
 from .note_const import Metadata
@@ -54,6 +54,12 @@ class Factory:
             supports_credentials=True,
             automatic_options=True,
         )
+        @self.flask.before_request
+        def bypass_cors_requests():
+            # fuck away non-200 CORS requests
+            # many thanks to https://github.com/corydolphin/flask-cors/issues/292#issuecomment-883929183
+            if request.method == 'options' or request.method == 'OPTIONS':
+                return Response()
 
     def set_jwt(self):
         from .resources.base import file_jwt

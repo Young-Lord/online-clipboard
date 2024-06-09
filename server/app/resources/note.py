@@ -61,7 +61,7 @@ def api_metadata():
 
 empty_handler = lambda: return_json(status_code=200)
 
-NO_DATA_METHODS = {"GET", "OPTIONS", "DELETE"}
+NO_DATA_METHODS = {"GET", "DELETE"}
 
 
 def verify_dict_decorator(f):
@@ -119,9 +119,6 @@ def verify_file_id_decorator(f):
 def password_protected_note(f):
     @functools.wraps(f)
     def decorated_function(*args, **kwargs):
-        if request.method == "OPTIONS":
-            return empty_handler()
-
         password: str = ""
         header_password = (
             request.headers.get("Authorization", "")
@@ -180,8 +177,6 @@ def password_protected_note(f):
 def illegal_note_filter(f):
     @functools.wraps(f)
     def decorated_function(*args, **kwargs):
-        if request.method == "OPTIONS":
-            return empty_handler()
         note = g.note
         if note is None:
             # allow operate on non-exist note
@@ -300,9 +295,6 @@ def mashal_readonly_note(note: Note, status_code: int = 200):
 
 class BaseRest(Resource):
     decorators = base_decorators
-
-    def options(self, *args, **kwargs):
-        return empty_handler()
 
 
 note_limiter = limiter.limit(Metadata.limiter_note)
