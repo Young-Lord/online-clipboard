@@ -4,12 +4,14 @@ import { API_URL } from "@/config"
 import { defineStore } from "pinia"
 import { AxiosInstance } from "axios"
 import { assert } from "@/utils"
+import { nanoid } from "nanoid/non-secure"
 
 export const useAppStore = defineStore("app", {
     state: () => ({
         _metadata: null as MetaData | null,
         api_endpoint: API_URL,
         is_metadata_fetched: false,
+        client_id: nanoid(),
     }),
     actions: {
         async basicInit() {

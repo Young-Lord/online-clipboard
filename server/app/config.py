@@ -1,10 +1,5 @@
 import os
-from dotenv import load_dotenv
-from app.note_const import Metadata
-
-FLASK_ENV = os.environ.get("FLASK_ENV", "development")
-load_dotenv(f"../.env.{FLASK_ENV}", override=True)
-load_dotenv(f"../.env", override=True)
+from app.note_const import Metadata, FLASK_ENV
 
 
 class Config:
@@ -41,6 +36,7 @@ class Config:
     API_URL: str = os.environ["VITE_API_URL"]
     BIND_HOST = "127.0.0.1"
     BIND_PORT = 5000
+    WEBSOCKET_PATH_FOR_SERVER = os.environ["WEBSOCKET_PATH_FOR_SERVER"]
     NO_FRONTEND: bool = (
         False  # set to True to disable frontend, only API will be available
     )

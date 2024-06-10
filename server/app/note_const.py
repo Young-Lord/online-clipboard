@@ -1,10 +1,16 @@
 from dataclasses import asdict, dataclass, field
 import json
+import os
 import string
 from typing import Any, Final
 from uuid import uuid4
 
 from app.utils import sha512
+from dotenv import load_dotenv
+
+FLASK_ENV = os.environ.get("FLASK_ENV", "development")
+load_dotenv(f"../.env.{FLASK_ENV}", override=True)
+load_dotenv(f"../.env", override=True)
 
 ALLOW_CHAR_IN_NAMES: Final[str] = string.ascii_letters + string.digits + "-_"
 DISABLE_WORDS_IN_NAMES: Final[set[str]] = {
@@ -105,6 +111,8 @@ class BaseMetadata:
     mail_max_content: int = max_content_length
     mail_verify_timeout: int = 60 * 60 * 24 * 180  # 180 days
     metadata_hash: str = ""
+    websocket_endpoint: str = os.environ["WEBSOCKET_ENDPOINT"]
+    websocket_path: str = os.environ["WEBSOCKET_PATH"]
 
     def __repr__(self):
         return f"<Metadata {self.name}>"

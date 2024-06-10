@@ -83,6 +83,9 @@
             "INVALID_CONTENT": "此内容无法通过邮件发送。",
             "SEND_EMAIL_FAILED": "因未知原因，发送邮件失败。",
             "NO_CONTENT": "没有内容可发送。"
+        },
+        "websocket": {
+            "instant_sync": "即时同步（多人同时编辑）"
         }
     },
     "about": {

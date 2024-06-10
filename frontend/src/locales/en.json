@@ -83,6 +83,9 @@
       "INVALID_CONTENT": "This clip cannot be sent.",
       "SEND_EMAIL_FAILED": "Failed to send mail for unknown reason.",
       "NO_CONTENT": "No content to send."
+    },
+    "websocket": {
+      "instant_sync": "Instant sync (collaborative editing)"
     }
   },
   "about": {

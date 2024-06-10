@@ -59,6 +59,14 @@ export interface MetaData {
     url: string
     version: string
     metadata_hash: string
+    websocket_endpoint: string
+    websocket_path: string
+}
+export interface WebSocketBaseData {
+    name: string
+    authorization: string
+    client_id: string
+    data: object
 }
 
 export interface UserProperty {
@@ -91,14 +99,12 @@ export const axios = original_axios.create({
 })
 axios.defaults.headers.common["Content-Type"] = "application/json"
 
-axios.interceptors.request.use(
-    function (config) {
-        if (config.url === "/mailto" || config.url?.startsWith("/mailto/")) {
-            config.data = { language: language, ...config.data }
-        }
-        return config
+axios.interceptors.request.use(function (config) {
+    if (config.url === "/mailto" || config.url?.startsWith("/mailto/")) {
+        config.data = { language: language, ...config.data }
     }
-)
+    return config
+})
 
 axios.interceptors.response.use(
     function (response) {

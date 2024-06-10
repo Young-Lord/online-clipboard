@@ -54,11 +54,12 @@ class Factory:
             supports_credentials=True,
             automatic_options=True,
         )
+
         @self.flask.before_request
         def bypass_cors_requests():
             # fuck away non-200 CORS requests
             # many thanks to https://github.com/corydolphin/flask-cors/issues/292#issuecomment-883929183
-            if request.method == 'options' or request.method == 'OPTIONS':
+            if request.method == "options" or request.method == "OPTIONS":
                 return Response()
             # To create a slow-speed server: time.sleep(6)
 
@@ -79,3 +80,9 @@ class Factory:
         from .resources.base import mail
 
         mail.init_app(self.flask)
+
+    def set_socketio(self):
+        with self.flask.app_context():
+            from .resources.websocket import socketio
+
+            socketio.init_app(self.flask)

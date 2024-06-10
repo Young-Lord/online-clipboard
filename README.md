@@ -46,6 +46,7 @@ Then, you can run the server.
 ```shell
 cd server
 FLASK_ENV=production poetry run python wsgi.py
+# PowerShell: $env:FLASK_ENV='production'; poetry run python wsgi.py
 ```
 
 ## Note
@@ -65,7 +66,7 @@ cd frontend
 yarn dev
 # backend
 cd server
-poetry run flask run --debug
+poetry run python wsgi.py --debug
 ```
 
 ### Backend database initailization
@@ -87,13 +88,51 @@ Content encryption: AES-256-CBC/PKCS7 with `sha256(note.password)`, see [CryptoJ
 
 ### IIS
 
+Example rule:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?> 
+<configuration>
+    <system.webServer>
+        <rewrite>
+            <rules>
+                <clear />
+                <rule name="clip" stopProcessing="true">
+                    <match url="^clip-basepath((/(.+)?)|)$" />
+                    <conditions logicalGrouping="MatchAll" trackAllCaptures="false">
+                        <add input="{CACHE_URL}" pattern="^(.+)?://.+$" />
+                    </conditions>
+                    <action type="Rewrite" url="{C:1}://127.0.0.1:5000{R:1}" />
+                    <serverVariables>
+                        <set name="HTTP_SEC_WEBSOCKET_EXTENSIONS" value="" />
+                    </serverVariables>
+                </rule>
+            </rules>
+        </rewrite>
+        <security>
+            <requestFiltering>
+                <requestLimits maxAllowedContentLength="209715200" />
+            </requestFiltering>
+        </security>
+    </system.webServer>
+</configuration>
+```
+
 #### URL Rewrite
 
 - Download and install [URL Rewrite](https://www.iis.net/downloads/microsoft/url-rewrite)
-- Regex pattern: `^private-name((/(.+)?)|)$`
-- Rewrite URL: `http://127.0.0.1:5000{R:1}`
+- Regex pattern: `^clip-basepath((/(.+)?)|)$`
+- Conditions -> Condition Input: `{CACHE_URL}`
+- Conditions -> Pattern: `^(.+)?://.+$`
+- Server variable -> name: `HTTP_SEC_WEBSOCKET_EXTENSIONS`; value: (set to empty by editing `web.config`);
+- Rewrite URL: `{C:1}://127.0.0.1:5000{R:1}`
 - Append query string: `true`
 
 #### Upload size limit
 
 [How to set URL length and HTTP POST content length limits in IIS - WKB240363](https://support.waters.com/KB_Inf/NuGenesis/WKB240363_How_to_set_URL_length_and_HTTP_POST_content_length_limits_in_IIS)
+
+#### WebSocket Server
+
+- [使用IIS做HTTP和WebSocket服务的反向代理](https://web.archive.org/web/20190406124734/https://imxieyi.com/2017/11/17/%E4%BD%BF%E7%94%A8iis%E5%81%9Ahttp%E5%92%8Cwebsocket%E6%9C%8D%E5%8A%A1%E7%9A%84%E5%8F%8D%E5%90%91%E4%BB%A3%E7%90%86/)
+- [Websocket based website behind a reverse proxy in IIS - Server Fault](https://serverfault.com/a/1038787)

@@ -66,6 +66,9 @@
                             @keydown.ctrl.s.exact.prevent
                             @focusout="pushContentIfChanged()"
                             @paste="onAttachFile"
+                            @compositionstart="setComposing(true)"
+                            @compositionend="setComposing(false)"
+                            ref="editor"
                         >
                         </v-textarea>
                     </v-col>
@@ -213,6 +216,15 @@
                                             $t("clip.report.report_clip")
                                         }}</v-list-item-title>
                                     </v-list-item>
+                                    <!--Instant sync (WebSocket)-->
+                                    <v-checkbox
+                                        v-model="instant_sync"
+                                        :label="
+                                            $t('clip.websocket.instant_sync')
+                                        "
+                                        @change="onInstantSyncChange()"
+                                        v-if="!is_readonly"
+                                    ></v-checkbox>
                                 </v-list-group>
                             </v-list>
                         </v-card>
@@ -347,6 +359,7 @@ import {
     UserProperty,
     Response,
     ClipData,
+    WebSocketBaseData,
 } from "@/api"
 import { useAppStore } from "@/store/app"
 const appStore = useAppStore()
@@ -364,9 +377,11 @@ import {
     cancelableInput,
     dangerousConfirm,
 } from "@/plugins/swal"
-import { AxiosResponse, isAxiosError } from "axios"
+import { isAxiosError } from "axios"
 import { SweetAlertResult } from "sweetalert2"
 import { onBeforeRouteLeave } from "vue-router"
+import { io } from "socket.io-client"
+import diff_match_patch, { patch_obj } from "@/tools/diff_match_patch"
 
 enum SaveStatus {
     // Current status displayed on top left. The values are used to get i18n string.
@@ -385,6 +400,9 @@ const UnsavedSaveStatus = new Set([
     SaveStatus.editing,
     SaveStatus.local_outdated,
 ])
+
+const default_save_interval = 3
+const websocket_save_interval = 1
 
 export default {
     data() {
@@ -407,7 +425,7 @@ export default {
             uploading: false,
             file_to_upload: [] as File[],
             remote_files: [] as FileData[],
-            save_interval: 3 as number | string,
+            save_interval: default_save_interval as number | string,
             fetch_min_idle_time: 1,
             fetch_interval: 0 as number | string,
             save_timer: null as ReturnType<typeof setTimeout> | null,
@@ -420,6 +438,11 @@ export default {
             max_interval: 1e10,
             combine_content: "",
             mail_address: "",
+            instant_sync: false,
+            autosave_while_instant_sync: false,
+            instant_sync_socket: null as ReturnType<typeof io> | null,
+            is_ime_composing: false,
+            instant_sync_patches_queue: [] as patch_obj[][],
         }
     },
     methods: {
@@ -581,7 +604,14 @@ export default {
         },
         async pushContentIfChanged() {
             if (this.local_content != this.remote_content) {
-                this.pushContent()
+                if (this.instant_sync) {
+                    this.doInstantSync()
+                    if (this.autosave_while_instant_sync) {
+                        this.pushContent()
+                    }
+                } else {
+                    this.pushContent()
+                }
             }
         },
         async combinePushContent() {
@@ -603,6 +633,17 @@ export default {
             this.clip_version = this.remote_version =
                 response.data.data.clip_version
         },
+        doInstantSync() {
+            assert(this.instant_sync_socket !== null)
+            this.instant_sync_socket.emit("diff", {
+                ...this.websocket_base_data,
+                data: diff_match_patch.patch_make(
+                    this.remote_content,
+                    this.local_content
+                ),
+            })
+            this.remote_content = this.local_content
+        },
         async pushContent(force = false) {
             if (this.is_readonly) return
             if (this.save_status === SaveStatus.saving) return
@@ -615,10 +656,10 @@ export default {
             if (this.encrypt_text_content) {
                 if (this.user_property.encrypt_text_content_algo === "aes") {
                     if (content !== "")
-                    content = AES.encrypt(
-                        content,
-                        this.encryptPassword
-                    ).toString()
+                        content = AES.encrypt(
+                            content,
+                            this.encryptPassword
+                        ).toString()
                 } else {
                     showDetailWarning({
                         title: this.$t("clip.error"),
@@ -721,7 +762,7 @@ export default {
             this.uploadFile()
         },
         async uploadSingleFile(file: File) {
-            var formData = new window.FormData()
+            var formData = new FormData()
             if (this.encrypt_file) {
                 // encrypt file
                 let reader = new FileReader()
@@ -1083,7 +1124,7 @@ export default {
         },
         encryptFilename(filename: string): string {
             if (filename !== "")
-            return AES.encrypt(filename, this.encryptPassword).toString()
+                return AES.encrypt(filename, this.encryptPassword).toString()
             else return ""
         },
         async downloadEncryptedFile(file: FileData) {
@@ -1100,6 +1141,114 @@ export default {
             // save as blob
             const blob = new Blob([decrypted_file_data])
             this.saveBlob(blob, this.mayDecryptFilename(file.filename))
+        },
+        calculateCursorPositionAfterMergeDiff(
+            cursor_position: number,
+            diff: patch_obj[]
+        ): number {
+            let new_cursor_position = cursor_position
+            diff.forEach((d) => {
+                // if start of the diff is before the cursor
+                if (d.start1 < cursor_position) {
+                    // move the cursor by the length of the diff
+                    new_cursor_position += d.length2 - d.length1
+                }
+            })
+            return new_cursor_position
+        },
+        connectWebSocket() {
+            this.autosave_while_instant_sync = true
+            this.instant_sync_socket = io(
+                appStore.metadata.websocket_endpoint + "/instant_sync",
+                { path: appStore.metadata.websocket_path }
+            )
+
+            this.instant_sync_socket.on("connect", () => {
+                this.autosave_while_instant_sync = false
+                if (this.instant_sync_socket !== null)
+                    this.instant_sync_socket.emit(
+                        "join",
+                        this.websocket_base_data
+                    )
+            })
+
+            this.instant_sync_socket.on(
+                "enable_save",
+                (data: WebSocketBaseData) => {
+                    this.autosave_while_instant_sync = true
+                }
+            )
+
+            this.instant_sync_socket.on("diff", (data: WebSocketBaseData) => {
+                if (data.client_id === this.websocket_base_data.client_id)
+                    return
+                const patches = data.data as patch_obj[]
+                this.handleInstantSyncPatchesQueue(patches)
+            })
+        },
+        disconnectWebSocket() {
+            if (this.instant_sync_socket !== null) {
+                this.instant_sync_socket.disconnect()
+                this.instant_sync_socket = null
+                this.autosave_while_instant_sync = false
+            }
+        },
+        onInstantSyncChange() {
+            if (this.instant_sync) {
+                this.save_interval = websocket_save_interval
+                this.connectWebSocket()
+            } else {
+                this.save_interval = default_save_interval
+                this.disconnectWebSocket()
+            }
+        },
+        setComposing(status: boolean) {
+            this.is_ime_composing = status
+            this.handleInstantSyncPatchesQueue()
+        },
+        handleInstantSyncPatchesQueue(
+            patches: patch_obj[] | undefined = undefined
+        ) {
+            if (patches !== undefined) {
+                this.instant_sync_patches_queue.push(patches)
+            }
+            if (!this.is_ime_composing) {
+                this.instant_sync_patches_queue.forEach((patches) => {
+                    this.handleInstantSyncPatches(patches)
+                })
+                this.instant_sync_patches_queue = []
+            }
+        },
+        handleInstantSyncPatches(patches: patch_obj[]) {
+            const [result, successes] = diff_match_patch.patch_apply(
+                patches,
+                this.local_content
+            ) as [string, boolean[]]
+            if (successes.every((v) => v === true)) {
+                // cursor position
+                // @ts-ignore
+                const bodyTextArea = this.$refs.editor.$el.querySelector(
+                    "textarea"
+                ) as HTMLTextAreaElement
+                const selectionStart =
+                    this.calculateCursorPositionAfterMergeDiff(
+                        bodyTextArea.selectionStart,
+                        patches
+                    )
+                const selectionEnd = this.calculateCursorPositionAfterMergeDiff(
+                    bodyTextArea.selectionEnd,
+                    patches
+                )
+                this.remote_content = this.local_content = result
+                setTimeout(() => {
+                    // Set selection with 1ms delay, ref: https://stackoverflow.com/a/52333799
+                    bodyTextArea.selectionStart = selectionStart
+                    bodyTextArea.selectionEnd = selectionEnd
+                })
+                if (this.autosave_while_instant_sync) {
+                    this.pushContent()
+                }
+            }
         },
     },
     computed: {
@@ -1133,6 +1282,20 @@ export default {
         is_local_outdated(): boolean {
             return this.save_status === SaveStatus.local_outdated
         },
+        server_authoirzation_password(): string {
+            return Buffer.from(
+                SHA512(this.password).toString(),
+                "utf8"
+            ).toString("base64")
+        },
+        websocket_base_data(): WebSocketBaseData {
+            return {
+                name: this.name,
+                client_id: appStore.client_id,
+                authorization: this.server_authoirzation_password,
+                data: {},
+            }
+        },
     },
     mounted() {
         // get password from url in hash part
@@ -1144,14 +1307,14 @@ export default {
         // disable unload warning on leave
         onBeforeRouteLeave(() => {
             this.setUnloadWarning(false)
+            this.disconnectWebSocket()
         })
 
         // add auth header
         const auth_interceptor = axios.interceptors.request.use((config) => {
-            config.headers["Authorization"] = `Bearer ${Buffer.from(
-                SHA512(this.password).toString(),
-                "utf8"
-            ).toString("base64")}`
+            config.headers[
+                "Authorization"
+            ] = `Bearer ${this.server_authoirzation_password}`
             return config
         })
         onBeforeRouteLeave(() => {
