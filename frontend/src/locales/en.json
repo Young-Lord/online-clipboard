@@ -127,6 +127,7 @@
     "minute": "numeric"
   },
   "error": {
-    "rate_limit": "You've hit the rate limit. Please wait a moment before trying again."
+    "rate_limit": "You've hit the rate limit. Please wait a moment before trying again.",
+    "decrypt_error": " [DECRYPT ERROR]"
   }
 }

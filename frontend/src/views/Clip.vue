@@ -534,10 +534,16 @@ export default {
                             this.user_property.encrypt_text_content_algo ===
                             "aes"
                         ) {
-                            content = AES.decrypt(
+                            const decrypt = AES.decrypt(
                                 content,
                                 this.encryptPassword
                             ).toString(utf8)
+                            if (content !== "" && decrypt === "") {
+                                content =
+                                    content + this.$t("error.decrypt_error")
+                            } else {
+                                content = decrypt
+                            }
                         } else {
                             showDetailWarning({
                                 title: this.$t("clip.error"),
@@ -608,6 +614,7 @@ export default {
             let content = this.local_content
             if (this.encrypt_text_content) {
                 if (this.user_property.encrypt_text_content_algo === "aes") {
+                    if (content !== "")
                     content = AES.encrypt(
                         content,
                         this.encryptPassword
@@ -1066,10 +1073,18 @@ export default {
         },
         mayDecryptFilename(filename: string): string {
             if (!this.encrypt_file) return filename
-            return AES.decrypt(filename, this.encryptPassword).toString(utf8)
+            const decrypt = AES.decrypt(
+                filename,
+                this.encryptPassword
+            ).toString(utf8)
+            if (filename !== "" && decrypt === "")
+                return filename + this.$t("error.decrypt_error")
+            else return decrypt
         },
         encryptFilename(filename: string): string {
+            if (filename !== "")
             return AES.encrypt(filename, this.encryptPassword).toString()
+            else return ""
         },
         async downloadEncryptedFile(file: FileData) {
             // https://blog.csdn.net/qq_38916811/article/details/127515455
