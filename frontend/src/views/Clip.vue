@@ -17,6 +17,7 @@
                 save_status ? $t(`save_status.${save_status}`) : ""
             }}</v-toolbar-title>
             <!--Vue issue: https://github.com/vuejs/core/issues/5312-->
+            <!-- @vue-ignore -->
             <template v-slot:[should_wrap_appbar_to_slot]>
                 <v-spacer></v-spacer>
                 <!--delete button-->
