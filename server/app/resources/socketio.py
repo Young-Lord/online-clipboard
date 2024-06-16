@@ -1,8 +1,6 @@
-from pprint import pprint
 from typing import Required, TypedDict
 from flask import current_app
 from flask_socketio import SocketIO, join_room, leave_room, emit, Namespace
-from app.note_const import Metadata
 
 socketio = SocketIO(
     cors_allowed_origins=current_app.config["CORS_ORIGINS"],

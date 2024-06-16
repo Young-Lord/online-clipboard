@@ -134,5 +134,7 @@ Example rule:
 
 #### WebSocket Server
 
+Clip uses [Socket.IO](https://socket.io/) to support Instant Sync feature, which allows multi users to edit together. A WebSocket server will run on the same port of backend Flask server.
+
 - [使用IIS做HTTP和WebSocket服务的反向代理](https://web.archive.org/web/20190406124734/https://imxieyi.com/2017/11/17/%E4%BD%BF%E7%94%A8iis%E5%81%9Ahttp%E5%92%8Cwebsocket%E6%9C%8D%E5%8A%A1%E7%9A%84%E5%8F%8D%E5%90%91%E4%BB%A3%E7%90%86/)
 - [Websocket based website behind a reverse proxy in IIS - Server Fault](https://serverfault.com/a/1038787)

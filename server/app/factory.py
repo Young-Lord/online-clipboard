@@ -83,6 +83,6 @@ class Factory:
 
     def set_socketio(self):
         with self.flask.app_context():
-            from .resources.websocket import socketio
+            from .resources.socketio import socketio
 
             socketio.init_app(self.flask)

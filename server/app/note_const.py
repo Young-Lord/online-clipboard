@@ -65,7 +65,7 @@ class BaseMetadata:
     max_file_size: int = 200 * 1024 * 1024  # 200 MiB
     max_file_count: int = 10
     max_all_file_size: int = 1024 * 1024 * 1024  # 1 GiB
-    # set any of two above to 0 to disable file upload
+    # set any of three above to 0 to disable file upload
     max_timeout: int = 60 * 60 * 24 * 365 * 3  # 3 years
     default_note_timeout: int = 60 * 60 * 24 * 30  # 30 day
     default_file_timeout: int = 60 * 60 * 24 * 30  # 30 day

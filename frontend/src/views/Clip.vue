@@ -190,7 +190,7 @@
                                     <v-checkbox
                                         v-model="encrypt_file"
                                         :label="$t('clip.encrypt_file')"
-                                        v-if="!is_readonly"
+                                        v-if="!is_readonly && allow_file"
                                         :disabled="uploading"
                                         @change="updateEncryptFile()"
                                     >
@@ -223,7 +223,7 @@
                                             $t('clip.websocket.instant_sync')
                                         "
                                         @change="onInstantSyncChange()"
-                                        v-if="!is_readonly"
+                                        v-if="!is_readonly && allow_instant_sync"
                                     ></v-checkbox>
                                 </v-list-group>
                             </v-list>
@@ -232,7 +232,7 @@
                     <v-col cols="12">
                         <v-card
                             id="file-card"
-                            v-if="!is_readonly || remote_files.length"
+                            v-if="(!is_readonly && allow_file) || remote_files.length"
                         >
                             <!-- Drag or click to upload file -->
                             <v-file-input
@@ -254,8 +254,7 @@
                                 @change="uploadFile()"
                                 v-if="
                                     !is_readonly &&
-                                    metadata.max_file_count > 0 &&
-                                    metadata.max_all_file_size > 0
+                                    allow_file
                                 "
                                 :disabled="
                                     uploading ||
@@ -353,7 +352,6 @@
 
 <script lang="ts">
 import {
-    MetaData,
     FileData,
     axios,
     UserProperty,
@@ -747,7 +745,7 @@ export default {
             return u8
         },
         onAttachFile(event: ClipboardEvent | DragEvent) {
-            if (this.is_readonly || this.uploading) return
+            if (this.is_readonly || this.uploading || !this.allow_file) return
             let items: FileList | undefined = undefined
             if (event instanceof DragEvent) {
                 // file drag & drop
@@ -1274,7 +1272,17 @@ export default {
             return this.hasReadonlyName ? this.readonly_url : " "
         },
         allow_mail(): boolean {
-            return this.metadata.allow_mail ?? false
+            return this.metadata.allow_mail
+        },
+        allow_file(): boolean {
+            return (
+                this.metadata.max_all_file_size !== 0 &&
+                this.metadata.max_file_count !== 0 &&
+                this.metadata.max_file_size !== 0
+            )
+        },
+        allow_instant_sync(): boolean {
+            return this.metadata.websocket_endpoint !== ""
         },
         should_wrap_appbar_to_slot(): string {
             return this.$vuetify.display.smAndUp ? "append" : "extension"
