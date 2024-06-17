@@ -106,7 +106,9 @@ def verify_file_id_decorator(f):
 
     @functools.wraps(f)
     def decorated_function(*args, **kwargs):
-        file = datastore.get_file(kwargs.get("id"))
+        file_id = kwargs.get("id")
+        assert isinstance(file_id, int)
+        file = datastore.get_file(file_id)
         if file is None:
             return return_json(status_code=404, message="No file found")
         note = file.note
@@ -443,25 +445,42 @@ class FileRest(BaseRest):
         file_path = os.path.join(Config.UPLOAD_FOLDER, filename)
         ensure_dir(Config.UPLOAD_FOLDER)
         file.save(file_path)
+        file_size = os.path.getsize(file_path)
+
+        # add file to database
+        file_instance = datastore.add_file(note, file.filename, file_path, file_size)
 
         # check limits
-        file_size = os.path.getsize(file_path)
+        ok: bool = True
+        status_code: int = 200
+        message: str = ""
+        error_id: str = ""
+
         all_file_size_limit_hit = (
             file_size + note.all_file_size > Metadata.max_all_file_size
         )
+        if all_file_size_limit_hit:
+            status_code = 400
+            message = "Too large all file size"
+            error_id = "ALL_FILE_SIZE_LIMIT_HIT"
+            ok = False
         single_file_size_limit_hit = file_size > Metadata.max_file_size
-        if all_file_size_limit_hit or single_file_size_limit_hit:
-            os.remove(file_path)
-            if all_file_size_limit_hit:
-                message = "Too large all file size"
-                error_id = "ALL_FILE_SIZE_LIMIT_HIT"
-            else:
-                message = "Too large file"
-                error_id = "SINGLE_FILE_SIZE_LIMIT_HIT"
-            return return_json(status_code=400, message=message, error_id=error_id)
+        if single_file_size_limit_hit:
+            status_code = 400
+            message = "Too large file"
+            error_id = "SINGLE_FILE_SIZE_LIMIT_HIT"
+            ok = False
+        if len(note.files) >= Metadata.max_file_count:
+            status_code = 400
+            message = "Too many files"
+            error_id = "TOTAL_FILES_COUNT_LIMIT_HIT"
+            ok = False
+        if not ok:
+            datastore.delete_file(file_instance)
+            return return_json(
+                status_code=status_code, message=message, error_id=error_id
+            )
 
-        # add file to database
-        datastore.add_file(note, file.filename, file_path, file_size)
         return return_json(status_code=201)
 
     def delete(self, name: str, id: int):

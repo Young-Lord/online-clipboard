@@ -239,7 +239,7 @@ class NoteDatastore(Datastore):
 
     def add_file(
         self, note: Note, filename: str, file_path: str, file_size: int
-    ) -> None:
+    ) -> File:
         file = File(
             filename=filename, file_path=file_path, note=note, file_size=file_size
         )
@@ -247,19 +247,23 @@ class NoteDatastore(Datastore):
         note.all_file_size += file_size
         self.session.add(note)
         self.session.commit()
+        return file
 
     def delete_file(self, file: File) -> None:
         file_path = file.file_path
         file.note.all_file_size -= file.file_size
         self.session.add(file.note)
+        self.delete_file_at_disk(file_path)
+        self.session.delete(file)
+        self.session.commit()
+    
+    def delete_file_at_disk(self, file_path: str) -> None:
         try:
             os.remove(file_path)
         except:
             pass
-        self.session.delete(file)
-        self.session.commit()
-
-    def get_file(self, file_id) -> Optional[File]:
+        
+    def get_file(self, file_id: int) -> Optional[File]:
         file: Optional[File] = self.session.query(File).filter_by(id=file_id).first()
         return file
 
