@@ -2,6 +2,8 @@ from typing import Required, TypedDict
 from flask import current_app
 from flask_socketio import SocketIO, join_room, leave_room, emit, Namespace
 
+from app.note_const import Metadata
+
 socketio = SocketIO(
     cors_allowed_origins=current_app.config["CORS_ORIGINS"],
     path=current_app.config["WEBSOCKET_PATH_FOR_SERVER"],
@@ -45,4 +47,5 @@ class InstantSyncNamespace(Namespace):
         )
 
 
-socketio.on_namespace(InstantSyncNamespace(instant_sync_namespace_name))
+if Metadata.websocket_endpoint != "":
+    socketio.on_namespace(InstantSyncNamespace(instant_sync_namespace_name))
