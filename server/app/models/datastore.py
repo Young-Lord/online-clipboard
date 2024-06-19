@@ -1,9 +1,9 @@
 from abc import ABC
 import datetime
 import os
-from typing import Optional
-import uuid
-from sqlalchemy import Boolean, Integer, String, ForeignKey, func, sql
+import time
+from typing import Any, Callable, NamedTuple, Optional
+from sqlalchemy import Boolean, Integer, String, ForeignKey, sql
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.note_const import PASSWORD_SCHEMES, make_readonly_name
 from passlib.context import CryptContext
@@ -12,9 +12,11 @@ from app.note_const import (
     DISABLE_WORDS_IN_NAMES,
     Metadata,
 )
-from app.utils import sha512
+from app.utils import ensure_dir
 from .base import DatabaseColumnBase, db
 from flask_sqlalchemy import SQLAlchemy
+from werkzeug.utils import secure_filename
+from app.config import Config
 
 passlib_context = CryptContext(schemes=PASSWORD_SCHEMES)
 
@@ -237,17 +239,32 @@ class NoteDatastore(Datastore):
         self.session.delete(note)
         self.session.commit()
 
+    class FileAtDiskData(NamedTuple):
+        file_path: str
+        file_size: int
+
     def add_file(
-        self, note: Note, filename: str, file_path: str, file_size: int
+        self, note: Note, filename: str, file_saver: Callable[[str], Any]
     ) -> File:
+        file_data = self.add_file_at_disk(note, filename, file_saver)
         file = File(
-            filename=filename, file_path=file_path, note=note, file_size=file_size
+            filename=filename, file_path=file_data.file_path, note=note, file_size=file_data.file_size
         )
         self.session.add(file)
-        note.all_file_size += file_size
+        note.all_file_size += file_data.file_size
         self.session.add(note)
         self.session.commit()
         return file
+
+    def add_file_at_disk(
+        self, note: Note, filename: str, file_saver: Callable[[str], Any]
+    ) -> FileAtDiskData:
+        filename_secured = secure_filename("%s_%s_%s" % (time.time(), note.name, filename))
+        file_path = os.path.join(Config.UPLOAD_FOLDER, filename_secured)
+        ensure_dir(Config.UPLOAD_FOLDER)
+        file_saver(file_path)
+        file_size = os.path.getsize(file_path)
+        return self.FileAtDiskData(file_path, file_size)
 
     def delete_file(self, file: File) -> None:
         file_path = file.file_path
@@ -256,13 +273,13 @@ class NoteDatastore(Datastore):
         self.delete_file_at_disk(file_path)
         self.session.delete(file)
         self.session.commit()
-    
+
     def delete_file_at_disk(self, file_path: str) -> None:
         try:
             os.remove(file_path)
         except:
             pass
-        
+
     def get_file(self, file_id: int) -> Optional[File]:
         file: Optional[File] = self.session.query(File).filter_by(id=file_id).first()
         return file
@@ -299,9 +316,7 @@ class NoteDatastore(Datastore):
             return MailAcceptStatus.NO_REQUESTED
         return mail.status
 
-    def can_send_verification_normal_mail(
-        self, mail_address: str
-    ) -> tuple[bool, bool]:
+    def can_send_verification_normal_mail(self, mail_address: str) -> tuple[bool, bool]:
         """
         Determine if a mail can be sent to the address.
         Returns a tuple of two booleans:

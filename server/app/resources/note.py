@@ -2,10 +2,8 @@ import base64
 import binascii
 import datetime
 import json
-import os
 from pathlib import Path
 import re
-import time
 import traceback
 from urllib.parse import quote
 from flask_mailman import EmailMessage
@@ -33,10 +31,9 @@ from app.models.datastore import (
 )
 from app.logic.content_filter import ClipTextContentFilter, MailContentFilter
 from .base import api_restx as api, limiter, api_bp, api_restx_at_root
-from app.note_const import Metadata, ALLOW_CHAR_IN_NAMES, is_readonly_name
-from app.utils import ensure_dir, return_json, sha256, sha512
+from app.note_const import Metadata, is_readonly_name
+from app.utils import return_json, sha256, sha512
 from app.logic.i18n import _t
-from werkzeug.utils import secure_filename
 from werkzeug.exceptions import NotFound
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
 from typing import TYPE_CHECKING
@@ -440,15 +437,9 @@ class FileRest(BaseRest):
         if file.filename is None:
             return return_json(status_code=400, message="Filename is empty")
 
-        # save file to local
-        filename = secure_filename("%s_%s_%s" % (time.time(), name, file.filename))
-        file_path = os.path.join(Config.UPLOAD_FOLDER, filename)
-        ensure_dir(Config.UPLOAD_FOLDER)
-        file.save(file_path)
-        file_size = os.path.getsize(file_path)
-
         # add file to database
-        file_instance = datastore.add_file(note, file.filename, file_path, file_size)
+        file_instance = datastore.add_file(note, file.filename, file.save)
+        file_size = file_instance.file_size
 
         # check limits
         ok: bool = True
@@ -457,7 +448,7 @@ class FileRest(BaseRest):
         error_id: str = ""
 
         all_file_size_limit_hit = (
-            file_size + note.all_file_size > Metadata.max_all_file_size
+            note.all_file_size > Metadata.max_all_file_size
         )
         if all_file_size_limit_hit:
             status_code = 400
