@@ -116,19 +116,6 @@
       "resend_request_success": "Mail verification request sent!"
     }
   },
-  "short": {
-    "year": "numeric",
-    "month": "short",
-    "day": "numeric"
-  },
-  "long": {
-    "year": "numeric",
-    "month": "long",
-    "day": "numeric",
-    "weekday": "long",
-    "hour": "numeric",
-    "minute": "numeric"
-  },
   "error": {
     "rate_limit": "You've hit the rate limit. Please wait a moment before trying again.",
     "decrypt_error": " [DECRYPT ERROR]"

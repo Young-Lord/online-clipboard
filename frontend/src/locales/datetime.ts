@@ -1,6 +1,6 @@
 import { I18nOptions } from "vue-i18n"
 
-export default {
+export const i18nOptions = {
     en: {
         short: {
             year: "numeric",
@@ -33,3 +33,13 @@ export default {
         },
     },
 } as I18nOptions["datetimeFormats"]
+
+import dayjs from "dayjs"
+import "dayjs/locale/zh-cn"
+import "dayjs/locale/en"
+import duration from "dayjs/plugin/duration"
+import relativeTime from "dayjs/plugin/relativeTime"
+dayjs.extend(duration)
+dayjs.extend(relativeTime)
+
+export { dayjs }

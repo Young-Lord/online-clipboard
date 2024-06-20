@@ -1,6 +1,6 @@
 import { createI18n } from "vue-i18n"
 import messages from "@intlify/unplugin-vue-i18n/messages"
-import datetime from "../locales/datetime"
+import { i18nOptions, dayjs } from "../locales/datetime"
 import { assert } from "../utils"
 
 const fallbackLanguage = "en"
@@ -21,12 +21,14 @@ const i18n = createI18n({
     globalInjection: true,
     fallbackLocale: fallbackLanguage,
     locale: selectedLanguage,
-    datetimeFormats: datetime,
+    datetimeFormats: i18nOptions,
     messages,
 })
 
 export default i18n
 export const $t = i18n.global.t
+document.documentElement.setAttribute("lang", selectedLanguage)
+dayjs.locale(selectedLanguage)
 
 const rtf = new Intl.RelativeTimeFormat(selectedLanguage, {
     style: "short",
@@ -44,24 +46,7 @@ const NameToMillis = {
 }
 
 export const timeDeltaToString = (seconds: number): string => {
-    const millis = seconds * NameToMillis.second
-    var ret = undefined
-    for (const [name, ms] of Object.entries(NameToMillis)) {
-        if (Math.abs(millis) >= ms) {
-            ret = rtf.format(
-                Math.trunc(millis / ms),
-                name as Intl.RelativeTimeFormatUnit
-            )
-            break
-        }
-    }
-    if (ret === undefined) {
-        ret = rtf.format(millis, "second")
-    }
-    if (userLanguage === "zh-CN") {
-        ret = ret.replace(/后$/, "")
-    } else if (userLanguage.startsWith("en-")) {
-        ret = ret.replace(/^in /, "")
-    }
-    return ret
+    return dayjs.duration(seconds, "s").humanize()
 }
+
+export { dayjs }
