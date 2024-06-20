@@ -2,7 +2,7 @@
     <v-app>
         <v-app-bar app>
             <v-btn icon @click="goToHome()">
-                <v-icon>mdi-home</v-icon>
+                <v-icon icon="$home" />
             </v-btn>
         </v-app-bar>
 

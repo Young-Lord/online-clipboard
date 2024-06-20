@@ -2,15 +2,15 @@
     <v-app @drop="onAttachFile" @dragover.prevent>
         <v-app-bar app>
             <v-btn icon @click="goToHome()">
-                <v-icon>mdi-home</v-icon>
+                <v-icon icon="$home" />
             </v-btn>
             <!-- sync button if outdated-->
             <v-btn icon @click="fetchContent(false)" v-if="is_local_outdated">
-                <v-icon>mdi-download</v-icon>
+                <v-icon :icon="mdiDownload" />
             </v-btn>
             <!-- sync button if outdated-->
             <v-btn icon @click="pushContent(true)" v-if="is_local_outdated">
-                <v-icon>mdi-upload</v-icon>
+                <v-icon :icon="mdiUpload" />
             </v-btn>
             <!-- saved status in plaintext -->
             <v-toolbar-title>{{
@@ -26,7 +26,7 @@
                     @click="deleteContent()"
                     v-if="!is_new && !is_readonly"
                 >
-                    <v-icon>mdi-delete</v-icon>
+                    <v-icon :icon="mdiDelete" />
                 </v-btn>
                 <!-- password button-->
                 <v-btn
@@ -34,19 +34,19 @@
                     @click="changePassword()"
                     v-if="!is_new && !is_readonly"
                 >
-                    <v-icon>mdi-lock</v-icon>
+                    <v-icon :icon="mdiLock" />
                 </v-btn>
                 <!--save button-->
                 <v-btn icon @click="pushContent()" v-if="!is_readonly">
-                    <v-icon>mdi-content-save</v-icon>
+                    <v-icon :icon="mdiContentSave" />
                 </v-btn>
                 <!-- copy button-->
                 <v-btn icon @click="copyString(local_content)">
-                    <v-icon>mdi-content-copy</v-icon>
+                    <v-icon :icon="mdiContentCopy" />
                 </v-btn>
                 <!-- download button-->
                 <v-btn icon @click="downloadContent()">
-                    <v-icon>mdi-download</v-icon>
+                    <v-icon :icon="mdiDownload" />
                 </v-btn>
             </template>
         </v-app-bar>
@@ -84,7 +84,7 @@
                                 :label="$t('clip.expiration')"
                                 @update:model-value="setNoteTimeout"
                                 v-model="selected_timeout"
-                                prepend-inner-icon="mdi-clock"
+                                :prepend-inner-icon="mdiClock"
                                 v-if="!is_new && !is_readonly"
                             >
                             </v-select>
@@ -93,7 +93,7 @@
                                 :label="$t('clip.current_url_click_to_copy')"
                                 v-model="current_url"
                                 readonly
-                                prepend-inner-icon="mdi-link"
+                                :prepend-inner-icon="mdiLink"
                                 @click="copyString(current_url)"
                                 class="cursor-pointer"
                                 v-if="!is_readonly"
@@ -109,7 +109,7 @@
                                 "
                                 v-model="readonly_url_check_empty"
                                 readonly
-                                prepend-inner-icon="mdi-link"
+                                :prepend-inner-icon="mdiLink"
                                 @click="
                                     hasReadonlyName && copyString(readonly_url)
                                 "
@@ -118,8 +118,8 @@
                                     is_readonly
                                         ? undefined
                                         : hasReadonlyName
-                                        ? 'mdi-delete'
-                                        : 'mdi-plus-circle-outline'
+                                        ? mdiDelete
+                                        : mdiPlusCircleOutline
                                 "
                                 @click:append-inner.stop="toggleReadonlyUrl()"
                             >
@@ -132,7 +132,7 @@
                                     <template v-slot:activator="{ props }">
                                         <v-list-item
                                             v-bind="props"
-                                            prepend-icon="mdi-cog"
+                                            :prepend-icon="mdiCog"
                                             :title="
                                                 $t('clip.advanced_settings')
                                             "
@@ -151,7 +151,7 @@
                                         @keydown.enter.exact="
                                             combinePushContent()
                                         "
-                                        append-inner-icon="mdi-comment-arrow-right"
+                                        :append-inner-icon="mdiCommentArrowRight"
                                         @click:append-inner="
                                             combinePushContent()
                                         "
@@ -202,14 +202,14 @@
                                         outlined
                                         dense
                                         @keydown.enter.exact="sendToMail()"
-                                        append-inner-icon="mdi-email-fast"
+                                        :append-inner-icon="mdiEmailFast"
                                         @click:append-inner="sendToMail()"
                                         v-if="allow_mail"
                                     >
                                     </v-text-field>
                                     <!--report clip-->
                                     <v-list-item
-                                        prepend-icon="mdi-alert-octagon"
+                                        :prepend-icon="mdiAlertOctagon"
                                         @click="reportClip()"
                                     >
                                         <v-list-item-title>{{
@@ -223,7 +223,9 @@
                                             $t('clip.websocket.instant_sync')
                                         "
                                         @change="onInstantSyncChange()"
-                                        v-if="!is_readonly && allow_instant_sync"
+                                        v-if="
+                                            !is_readonly && allow_instant_sync
+                                        "
                                     ></v-checkbox>
                                 </v-list-group>
                             </v-list>
@@ -232,7 +234,10 @@
                     <v-col cols="12">
                         <v-card
                             id="file-card"
-                            v-if="(!is_readonly && allow_file) || remote_files.length"
+                            v-if="
+                                (!is_readonly && allow_file) ||
+                                remote_files.length
+                            "
                         >
                             <!-- Drag or click to upload file -->
                             <v-file-input
@@ -250,12 +255,9 @@
                                         ),
                                     ])
                                 "
-                                prepend-icon="mdi-file-upload"
+                                :prepend-icon="mdiFileUpload"
                                 @change="uploadFile()"
-                                v-if="
-                                    !is_readonly &&
-                                    allow_file
-                                "
+                                v-if="!is_readonly && allow_file"
                                 :disabled="
                                     uploading ||
                                     metadata.max_file_count <=
@@ -301,9 +303,7 @@
                                                 v-if="!encrypt_file"
                                             >
                                                 <v-btn icon variant="text">
-                                                    <v-icon
-                                                        >mdi-download</v-icon
-                                                    >
+                                                    <v-icon :icon="mdiDownload" />
                                                 </v-btn>
                                             </a>
                                             <v-btn
@@ -314,7 +314,7 @@
                                                 "
                                                 v-else
                                             >
-                                                <v-icon>mdi-download</v-icon>
+                                                <v-icon :icon="mdiDownload" />
                                             </v-btn>
                                             <a
                                                 :href="file.preview_url"
@@ -327,7 +327,7 @@
                                                 v-if="!encrypt_file"
                                             >
                                                 <v-btn icon variant="text">
-                                                    <v-icon>mdi-eye</v-icon>
+                                                    <v-icon :icon="mdiEye" />
                                                 </v-btn>
                                             </a>
                                             <v-btn
@@ -336,7 +336,7 @@
                                                 @click="deleteFile(file)"
                                                 v-if="!is_readonly"
                                             >
-                                                <v-icon>mdi-delete</v-icon>
+                                                <v-icon :icon="mdiDelete" />
                                             </v-btn>
                                         </v-list-item-action>
                                     </template>
@@ -349,6 +349,10 @@
         </v-main>
     </v-app>
 </template>
+
+<script setup lang="ts">
+import { mdiDownload, mdiUpload, mdiDelete, mdiLock, mdiContentSave, mdiContentCopy, mdiClock, mdiLink, mdiPlusCircleOutline, mdiCog, mdiCommentArrowRight, mdiEmailFast, mdiAlertOctagon, mdiFileUpload, mdiEye } from "@mdi/js"
+</script>
 
 <script lang="ts">
 import {
@@ -414,10 +418,10 @@ export default {
             save_status: SaveStatus.empty,
             is_new: false,
             metadata: appStore.metadata,
+            current_url: window.location.href,
             password: "",
             current_timeout: -1,
             selected_timeout: "",
-            current_url: window.location.href,
             readonly_name: "",
             is_readonly: false,
             uploading: false,

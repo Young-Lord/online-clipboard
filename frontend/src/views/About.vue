@@ -2,7 +2,7 @@
     <v-app>
         <v-app-bar app>
             <v-btn icon @click="goToHome()">
-                <v-icon>mdi-home</v-icon>
+                <v-icon icon="$home" />
             </v-btn>
             <v-spacer></v-spacer>
             <v-btn
@@ -10,7 +10,7 @@
                 href="https://github.com/Young-Lord/online-clipboard"
                 target="_blank"
             >
-                <v-icon>mdi-github</v-icon>
+                <v-icon :icon="mdiGithub" />
             </v-btn>
         </v-app-bar>
         <v-main>
@@ -21,7 +21,7 @@
                     :label="$t('about.api_endpoint')"
                     outlined
                     dense
-                    append-icon="mdi-check"
+                    :append-icon="mdiCheck"
                     @click:append="updateEndpoint()"
                 ></v-text-field>
                 <!--expandable section for metadata prettified-->
@@ -37,8 +37,12 @@
     </v-app>
 </template>
 
+<script setup lang="ts">
+import { mdiGithub, mdiCheck } from "@mdi/js"
+</script>
+
 <script lang="ts">
-import { MetaData, axios } from "@/api"
+import { axios } from "@/api"
 import { useAppStore } from "@/store/app"
 const appStore = useAppStore()
 
