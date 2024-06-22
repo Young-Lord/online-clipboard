@@ -86,3 +86,23 @@ class Factory:
             from .resources.socketio import socketio
 
             socketio.init_app(self.flask)
+
+    def set_csp(self):
+        if self.flask.config["DEBUG"]:
+            from .views.misc import csp_report
+
+            self.flask.register_blueprint(
+                csp_report, url_prefix=self.flask.config["API_SUFFIX"]
+            )
+
+        @self.flask.after_request
+        def add_security_headers(resp: Response):
+            resp.headers["Content-Security-Policy"] = " ".join(
+                [
+                    "default-src 'self';",
+                    "connect-src *;",
+                    f"report-uri {self.flask.config['API_URL']}/csp-report;",
+                    "style-src 'self' 'unsafe-inline';",
+                ]
+            )
+            return resp

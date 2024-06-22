@@ -18,10 +18,10 @@ def create_app() -> Flask:
     f.set_mail()
     f.set_socketio()
     f.set_schedule_task()
+    f.set_csp()
 
-    with app.app_context():
-        from .views import frontend
-        from .views import api_bp, api_bp_at_root
+    from .views import frontend
+    from .views import api_bp, api_bp_at_root
 
     app.register_blueprint(api_bp, url_prefix=app.config["API_SUFFIX"])
     # we must register frontend before api_bp_at_root, because the latter has a / route
