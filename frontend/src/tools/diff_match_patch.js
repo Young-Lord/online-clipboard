@@ -1,7 +1,6 @@
 // Taken from https://github.com/dmsnell/diff-match-patch/blob/main/javascript/diff_match_patch_uncompressed.js
 // Added a export statement for `diff_match_patch`
 // docs: https://github.com/google/diff-match-patch/wiki/Language:-JavaScript
-// @ts-nocheck
 /**
  * Diff Match and Patch
  * Copyright 2018 The diff-match-patch Authors.
@@ -529,7 +528,7 @@ diff_match_patch.prototype.diff_bisectSplit_ = function (
  * hashes where each Unicode character represents one line.
  * @param {string} text1 First string.
  * @param {string} text2 Second string.
- * @return {{chars1: string, chars2: string, lineArray: !Array.<string>}}
+ * @return {{chars1, chars2, lineArray: !Array.<string>}}
  *     An object containing the encoded text1, the encoded text2 and
  *     the array of unique strings.
  *     The zeroth element of the array of unique strings is intentionally blank.
@@ -2711,14 +2710,7 @@ diff_match_patch.patch_obj.prototype.toString = function () {
     return text.join("").replace(/%20/g, " ")
 }
 
-const diff_match_patch_instance = new diff_match_patch()
 
-export default diff_match_patch_instance
 
-export interface patch_obj {
-    diffs: Array<Diff>
-    start1: number
-    start2: number
-    length1: number
-    length2: number
-}
+export default diff_match_patch = new diff_match_patch()
+export const patch_obj = diff_match_patch.patch_obj

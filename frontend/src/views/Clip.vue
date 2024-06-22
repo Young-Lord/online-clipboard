@@ -1174,7 +1174,7 @@ export default {
             let new_cursor_position = cursor_position
             diff.forEach((d) => {
                 // if start of the diff is before the cursor
-                if (d.start1 < cursor_position) {
+                if (d.start1 !== null && d.start1 < cursor_position) {
                     // move the cursor by the length of the diff
                     new_cursor_position += d.length2 - d.length1
                 }
