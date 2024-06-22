@@ -29,7 +29,7 @@ from app.models.datastore import (
     verify_name,
     passlib_context,
 )
-from app.logic.content_filter import ClipTextContentFilter, MailContentFilter
+from app.logic.content_filter import ClipTextContentFilter, MailContentFilter, is_browser_previewable
 from .base import api_restx as api, limiter, api_bp, api_restx_at_root
 from app.note_const import Metadata, is_readonly_name
 from app.utils import return_json, sha256, sha512
@@ -496,6 +496,8 @@ def get_file(id: int, as_attachment: bool):
     file_path = Path(file.file_path).resolve()
     basepath = Path(Config.UPLOAD_FOLDER).resolve()
     relative_path = file_path.relative_to(basepath)
+    if not is_browser_previewable(file.filename):
+        as_attachment = True
     try:
         return send_from_directory(
             directory=basepath,

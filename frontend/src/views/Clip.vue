@@ -328,7 +328,7 @@
                                                     text-decoration: none;
                                                 "
                                                 tabindex="-1"
-                                                v-if="!encrypt_file"
+                                                v-if="canPreviewFile(file)"
                                             >
                                                 <v-btn icon variant="text">
                                                     <v-icon :icon="mdiEye" />
@@ -385,7 +385,7 @@ import {
 } from "@/api"
 import { useAppStore } from "@/store/app"
 const appStore = useAppStore()
-import { replaceLastPartOfUrl, humanFileSize, assert } from "@/utils"
+import { replaceLastPartOfUrl, humanFileSize, assert, isBrowserPreviewable } from "@/utils"
 import { Buffer } from "buffer"
 import { timeDeltaToString } from "@/plugins/i18n"
 import AES from "crypto-js/aes"
@@ -1166,6 +1166,11 @@ export default {
             // save as blob
             const blob = new Blob([decrypted_file_data])
             this.saveBlob(blob, this.mayDecryptFilename(file.filename))
+        },
+        canPreviewFile(file: FileData): boolean {
+            if (this.encrypt_file) return false
+            if (!isBrowserPreviewable(file.filename)) return false
+            return true
         },
         calculateCursorPositionAfterMergeDiff(
             cursor_position: number,

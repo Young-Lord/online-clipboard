@@ -4,7 +4,7 @@
         "target": "ESNext",
         "useDefineForClassFields": true,
         "module": "ESNext",
-        "moduleResolution": "Node",
+        "moduleResolution": "Bundler",
         "strict": true,
         "jsx": "preserve",
         "resolveJsonModule": true,
@@ -17,7 +17,14 @@
             "@/*": ["src/*"]
         }
     },
-    "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue", "src/tools/diff_match_patch.js"],
+    "include": [
+        "src/**/*.ts",
+        "src/**/*.d.ts",
+        "src/**/*.tsx",
+        "src/**/*.vue",
+        "src/tools/diff_match_patch.js",
+        "src/utils.ts"
+    ],
     "references": [{ "path": "./tsconfig.node.json" }],
     "exclude": ["node_modules"]
 }
