@@ -2,7 +2,7 @@ from dataclasses import asdict, dataclass, field
 import json
 import os
 import string
-from typing import Any, Final
+from typing import Any, Callable, Final
 from uuid import uuid4
 
 from app.utils import sha512
@@ -87,7 +87,7 @@ class BaseMetadata:
             60 * 60 * 24 * 365 * 3,  # 3 years
         ]
     )
-    limiter_default: list[str] = field(
+    limiter_default: list[str | Callable[[],str]] = field(
         default_factory=lambda: ["100/minute"]
     )  # limiter for some API endpoint
     limiter_file: str = (

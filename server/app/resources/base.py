@@ -29,7 +29,7 @@ def RATELIMIT_DEFAULTS_EXEMPT_WHEN() -> bool:
     return False
 
 
-limiter = Limiter(get_remote_address, default_limits=Metadata.limiter_default, default_limits_exempt_when=RATELIMIT_DEFAULTS_EXEMPT_WHEN)  # type: ignore
+limiter = Limiter(get_remote_address, default_limits=Metadata.limiter_default, default_limits_exempt_when=RATELIMIT_DEFAULTS_EXEMPT_WHEN)
 
 # this is for sending mail, see https://flask-mailman.readthedocs.io/en/latest/
 # and configure SMTP settings in `.env.production` file
