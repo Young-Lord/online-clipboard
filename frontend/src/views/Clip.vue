@@ -151,7 +151,9 @@
                                         @keydown.enter.exact="
                                             combinePushContent()
                                         "
-                                        :append-inner-icon="mdiCommentArrowRight"
+                                        :append-inner-icon="
+                                            mdiCommentArrowRight
+                                        "
                                         @click:append-inner="
                                             combinePushContent()
                                         "
@@ -303,7 +305,9 @@
                                                 v-if="!encrypt_file"
                                             >
                                                 <v-btn icon variant="text">
-                                                    <v-icon :icon="mdiDownload" />
+                                                    <v-icon
+                                                        :icon="mdiDownload"
+                                                    />
                                                 </v-btn>
                                             </a>
                                             <v-btn
@@ -351,7 +355,23 @@
 </template>
 
 <script setup lang="ts">
-import { mdiDownload, mdiUpload, mdiDelete, mdiLock, mdiContentSave, mdiContentCopy, mdiClock, mdiLink, mdiPlusCircleOutline, mdiCog, mdiCommentArrowRight, mdiEmailFast, mdiAlertOctagon, mdiFileUpload, mdiEye } from "@mdi/js"
+import {
+    mdiDownload,
+    mdiUpload,
+    mdiDelete,
+    mdiLock,
+    mdiContentSave,
+    mdiContentCopy,
+    mdiClock,
+    mdiLink,
+    mdiPlusCircleOutline,
+    mdiCog,
+    mdiCommentArrowRight,
+    mdiEmailFast,
+    mdiAlertOctagon,
+    mdiFileUpload,
+    mdiEye,
+} from "@mdi/js"
 </script>
 
 <script lang="ts">
@@ -1030,7 +1050,10 @@ export default {
             }
         },
         onAutoFetch() {
-            if (Date.now() - this.last_edit_time > this.fetch_min_idle_time) {
+            if (
+                Date.now() - this.last_edit_time > this.fetch_min_idle_time &&
+                !this.is_ime_composing
+            ) {
                 this.fetchContent()
             }
         },
