@@ -61,18 +61,6 @@ export function humanFileSize(
     return result + " " + units[u]
 }
 
-export function isNodejs(): boolean {
-    return !!(
-        typeof "process" !== "undefined" &&
-        // @ts-ignore
-        process &&
-        // @ts-ignore
-        process.versions &&
-        // @ts-ignore
-        process.versions.node
-    )
-}
-
 export function assert(condition: any): asserts condition {
     if (!condition) {
         throw new Error()
