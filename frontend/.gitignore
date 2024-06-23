@@ -4,6 +4,7 @@
 .DS_Store
 node_modules
 /dist
+vite.config.mts.timestamp-*.mjs
 
 # local env files
 .env.local
