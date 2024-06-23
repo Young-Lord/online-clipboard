@@ -309,6 +309,8 @@
                                                 </v-btn>
                                             </a>
                                             <a
+                                                download
+                                                :filename="file.filename"
                                                 :href="file.download_url"
                                                 target="_self"
                                                 style="
@@ -720,18 +722,18 @@ export default {
                 confirmButtonText: this.$t("clip.delete.yes_delete_it"),
             })
 
-                if (result.isConfirmed) {
-                    try {
+            if (result.isConfirmed) {
+                try {
                     await axios.delete(`/note/${this.name}`)
-                        showAutoCloseSuccess({
-                            title: this.$t("clip.delete.deleted"),
+                    showAutoCloseSuccess({
+                        title: this.$t("clip.delete.deleted"),
                         text: this.$t("clip.delete.your_clip_has_been_deleted"),
-                            timer: undefined,
-                        }).then(this.goToHome)
-                    } catch (e: any) {
-                        console.log(e)
-                    }
+                        timer: undefined,
+                    }).then(this.goToHome)
+                } catch (e: any) {
+                    console.log(e)
                 }
+            }
         },
         // file
         getTotalSize(...file_arrays: (File[] | FileData[])[]): number {
