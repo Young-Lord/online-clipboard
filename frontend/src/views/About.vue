@@ -15,7 +15,7 @@
         </v-app-bar>
         <v-main>
             <v-container>
-                <p>{{ $t("about.description") }}</p>
+                <p>{{ $t("about.long_description") }}</p>
                 <v-text-field
                     v-model="api_endpoint"
                     :label="$t('about.api_endpoint')"

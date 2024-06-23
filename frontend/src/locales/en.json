@@ -91,7 +91,8 @@
   "about": {
     "author": "Author",
     "metadata": "Debug info",
-    "description": "Pick a name, create a clip, upload files, set password, share it with others or keep it yourself.",
+    "short_description": "Minimal editable online clipboard, access your text and files anywhere quickly.",
+    "long_description": "Pick a name, create a clip, upload files, set password, share it with others or keep it yourself.",
     "api_endpoint": "API endpoint"
   },
   "loading...": "loading...",

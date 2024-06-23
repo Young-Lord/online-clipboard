@@ -91,7 +91,8 @@
     "about": {
         "author": "作者",
         "metadata": "调试信息",
-        "description": "输入剪贴板名字并新建剪贴板；上传文件并设置密码；分享剪贴板链接；在多个设备间同步剪贴板内容。",
+        "short_description": "极简在线剪贴板 Clip，轻松访问您的文本与文件。",
+        "long_description": "输入剪贴板名字并新建剪贴板；上传文件并设置密码；分享剪贴板链接；在多个设备间同步剪贴板内容。",
         "api_endpoint": "API 端点"
     },
     "loading...": "加载中…",

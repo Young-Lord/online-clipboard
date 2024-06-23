@@ -27,23 +27,23 @@ const i18n = createI18n({
 
 export default i18n
 export const $t = i18n.global.t
-document.documentElement.setAttribute("lang", selectedLanguage)
 dayjs.locale(selectedLanguage)
 
-const rtf = new Intl.RelativeTimeFormat(selectedLanguage, {
-    style: "short",
-})
-
-// https://stackoverflow.com/a/67374710
-const NameToMillis = {
-    year: 1e3 * 60 * 60 * 24 * 365,
-    // month: 1e3 * 60 * 60 * 24 * 30,
-    // week: 1e3 * 60 * 60 * 24 * 7,
-    day: 1e3 * 60 * 60 * 24,
-    hour: 1e3 * 60 * 60,
-    minute: 1e3 * 60,
-    second: 1e3,
+document.documentElement.setAttribute("lang", selectedLanguage)
+function addHtmlMeta(name: string, content: string): void {
+    const headElement = document.head
+    var metaElement: Element = document.createElement("meta")
+    for (const e of Array.from(headElement.children)) {
+        if (e.getAttribute("name") === name) {
+            metaElement = e
+            break
+        }
+    }
+    metaElement.setAttribute("name", name)
+    metaElement.setAttribute("content", content)
+    headElement.appendChild(metaElement)
 }
+addHtmlMeta("description", $t('about.short_description'))
 
 export const timeDeltaToString = (seconds: number): string => {
     return dayjs.duration(seconds, "s").humanize()
