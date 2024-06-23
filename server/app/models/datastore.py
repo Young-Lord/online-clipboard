@@ -3,7 +3,7 @@ import datetime
 import os
 import time
 from typing import Any, Callable, NamedTuple, Optional
-from sqlalchemy import Boolean, Integer, String, ForeignKey, sql
+from sqlalchemy import Boolean, DateTime, Integer, String, ForeignKey, func, sql
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.note_const import PASSWORD_SCHEMES, make_readonly_name
 from passlib.context import CryptContext
@@ -52,6 +52,9 @@ class Note(db.Model, DatabaseColumnBase):
     ban_unitl: Mapped[datetime.datetime] = mapped_column(
         db.DateTime, nullable=True, default=None
     )
+    user_accessed_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, default=func.now(), server_default=func.now(), onupdate=func.now()
+    )
 
     @property
     def readonly_name_if_has(self) -> str:
@@ -69,7 +72,7 @@ class Note(db.Model, DatabaseColumnBase):
             and self.timeout_seconds > 0
             and (
                 datetime.datetime.now()
-                > self.updated_at + datetime.timedelta(seconds=self.timeout_seconds)
+                > self.user_accessed_at + datetime.timedelta(seconds=self.timeout_seconds)
             )
         )
 
@@ -248,7 +251,10 @@ class NoteDatastore(Datastore):
     ) -> File:
         file_data = self.add_file_at_disk(note, filename, file_saver)
         file = File(
-            filename=filename, file_path=file_data.file_path, note=note, file_size=file_data.file_size
+            filename=filename,
+            file_path=file_data.file_path,
+            note=note,
+            file_size=file_data.file_size,
         )
         self.session.add(file)
         note.all_file_size += file_data.file_size
@@ -259,7 +265,9 @@ class NoteDatastore(Datastore):
     def add_file_at_disk(
         self, note: Note, filename: str, file_saver: Callable[[str], Any]
     ) -> FileAtDiskData:
-        filename_secured = secure_filename("%s_%s_%s" % (time.time(), note.name, filename))
+        filename_secured = secure_filename(
+            "%s_%s_%s" % (time.time(), note.name, filename)
+        )
         file_path = os.path.join(Config.UPLOAD_FOLDER, filename_secured)
         ensure_dir(Config.UPLOAD_FOLDER)
         file_saver(file_path)
@@ -301,6 +309,15 @@ class NoteDatastore(Datastore):
             )
             self.session.add(note)
             self.session.commit()
+
+    def on_user_access_note(self, note: Note) -> None:
+        """
+        Call when user successfully view the note via web,
+        used to determine when should the note be removed.
+        """
+        note.user_accessed_at = func.now()
+        self.session.add(note)
+        self.session.commit()
 
     def set_mail_subscribe_setting(self, mail_address: str, status: int) -> None:
         mail = self.get_mail_address(mail_address)

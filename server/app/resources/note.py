@@ -318,6 +318,7 @@ class NoteRest(BaseRest):
         if g.is_readonly:
             return mashal_readonly_note(g.note)
         else:
+            datastore.on_user_access_note(g.note)
             return marshal_note(g.note)
 
     def post(self, name: str):
