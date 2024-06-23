@@ -1,9 +1,7 @@
 <template>
     <v-app>
         <v-app-bar app>
-            <v-btn icon @click="goToHome()">
-                <v-icon icon="$home" />
-            </v-btn>
+            <app-bar-home-button />
             <v-spacer></v-spacer>
             <v-btn
                 icon
@@ -39,6 +37,7 @@
 
 <script setup lang="ts">
 import { mdiGithub, mdiCheck } from "@mdi/js"
+import AppBarHomeButton from "@/components/AppBarHomeButton.vue"
 </script>
 
 <script lang="ts">
@@ -56,9 +55,6 @@ export default {
     methods: {
         async updateEndpoint() {
             await appStore.updateEndpoint(axios, this.api_endpoint)
-        },
-        goToHome() {
-            this.$router.push({ name: "Home" })
         },
     },
 }

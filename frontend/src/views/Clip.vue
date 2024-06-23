@@ -1,9 +1,7 @@
 <template>
     <v-app @drop="onAttachFile" @dragover.prevent>
         <v-app-bar app>
-            <v-btn icon @click="goToHome()">
-                <v-icon icon="$home" />
-            </v-btn>
+            <app-bar-home-button />
             <!-- sync button if outdated-->
             <v-btn icon @click="fetchContent(false)" v-if="is_local_outdated">
                 <v-icon :icon="mdiDownload" />
@@ -374,6 +372,7 @@ import {
     mdiFileUpload,
     mdiEye,
 } from "@mdi/js"
+import AppBarHomeButton from "@/components/AppBarHomeButton.vue"
 </script>
 
 <script lang="ts">

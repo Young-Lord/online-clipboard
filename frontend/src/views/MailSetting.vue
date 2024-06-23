@@ -1,9 +1,7 @@
 <template>
     <v-app>
         <v-app-bar app>
-            <v-btn icon @click="goToHome()">
-                <v-icon icon="$home" />
-            </v-btn>
+            <app-bar-home-button />
         </v-app-bar>
 
         <v-main>
@@ -108,6 +106,9 @@
         </v-main>
     </v-app>
 </template>
+<script setup lang="ts">
+import AppBarHomeButton from "@/components/AppBarHomeButton.vue"
+</script>
 
 <script lang="ts">
 import {
@@ -119,10 +120,7 @@ import {
 } from "@/api"
 import { useAppStore } from "@/store/app"
 const appStore = useAppStore()
-import {
-    showDetailWarning,
-    showAutoCloseSuccess,
-} from "@/plugins/swal"
+import { showDetailWarning, showAutoCloseSuccess } from "@/plugins/swal"
 import { isAxiosError } from "axios"
 import { onBeforeRouteLeave } from "vue-router"
 
@@ -232,9 +230,7 @@ export default {
             this.updateSubscriptionStatus()
             switch (this.$route.query.subscribe) {
                 case "true":
-                    this.setSubscriptionSetting(
-                        MailSubscriptionSetting.ACCEPT
-                    )
+                    this.setSubscriptionSetting(MailSubscriptionSetting.ACCEPT)
                     break
                 case "false":
                     this.setSubscriptionSetting(MailSubscriptionSetting.DENY)
