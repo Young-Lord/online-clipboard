@@ -293,7 +293,21 @@
                                     >
                                     <template v-slot:append>
                                         <v-list-item-action end>
-                                            <!--tabindex=-1 make it not focusable-->
+                                            <!--tabindex=-1 make anchor not focusable, i.e., focus only button-->
+                                            <a
+                                                :href="file.preview_url"
+                                                target="_blank"
+                                                style="
+                                                    color: inherit;
+                                                    text-decoration: none;
+                                                "
+                                                tabindex="-1"
+                                                v-if="canPreviewFile(file)"
+                                            >
+                                                <v-btn icon variant="text">
+                                                    <v-icon :icon="mdiEye" />
+                                                </v-btn>
+                                            </a>
                                             <a
                                                 :href="file.download_url"
                                                 target="_self"
@@ -320,20 +334,6 @@
                                             >
                                                 <v-icon :icon="mdiDownload" />
                                             </v-btn>
-                                            <a
-                                                :href="file.preview_url"
-                                                target="_blank"
-                                                style="
-                                                    color: inherit;
-                                                    text-decoration: none;
-                                                "
-                                                tabindex="-1"
-                                                v-if="canPreviewFile(file)"
-                                            >
-                                                <v-btn icon variant="text">
-                                                    <v-icon :icon="mdiEye" />
-                                                </v-btn>
-                                            </a>
                                             <v-btn
                                                 icon
                                                 variant="text"
@@ -385,12 +385,7 @@ import {
 } from "@/api"
 import { useAppStore } from "@/store/app"
 const appStore = useAppStore()
-import {
-    replaceLastPartOfUrl,
-    humanFileSize,
-    assert,
-    isBrowserPreviewable,
-} from "@/utils"
+import { replaceLastPartOfUrl, humanFileSize, assert } from "@/utils"
 import { Buffer } from "buffer"
 import { timeDeltaToString } from "@/plugins/i18n"
 import AES from "crypto-js/aes"
@@ -1174,7 +1169,6 @@ export default {
         },
         canPreviewFile(file: FileData): boolean {
             if (this.encrypt_file) return false
-            if (!isBrowserPreviewable(file.filename)) return false
             return true
         },
         calculateCursorPositionAfterMergeDiff(

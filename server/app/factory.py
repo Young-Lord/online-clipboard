@@ -97,12 +97,14 @@ class Factory:
 
         @self.flask.after_request
         def add_security_headers(resp: Response):
-            resp.headers["Content-Security-Policy"] = " ".join(
-                [
-                    "default-src 'self';",
-                    "connect-src *;",
-                    f"report-uri {self.flask.config['API_URL']}/csp-report;",
-                    "style-src 'self' 'unsafe-inline';",
-                ]
-            )
+            # more strict CSP rule should be applied to untrusted files, i.e., user upload files
+            if "Content-Security-Policy" not in resp.headers:
+                resp.headers["Content-Security-Policy"] = " ".join(
+                    [
+                        "default-src 'self';",
+                        "connect-src *;",
+                        f"report-uri {self.flask.config['API_URL']}/csp-report;",
+                        "style-src 'self' 'unsafe-inline';",
+                    ]
+                )
             return resp

@@ -66,16 +66,3 @@ export function assert(condition: any): asserts condition {
         throw new Error()
     }
 }
-
-const allow_filetypes = ["audio", "video", "image", "application/pdf"]
-export function isBrowserPreviewable(filename: string): boolean {
-    const mimestart = mime.getType(filename)
-    if (
-        mimestart !== null &&
-        (allow_filetypes.includes(mimestart.split("/")[0]) ||
-            allow_filetypes.includes(mimestart))
-    ) {
-        return true
-    }
-    return false
-}

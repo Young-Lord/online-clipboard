@@ -29,7 +29,10 @@ from app.models.datastore import (
     verify_name,
     passlib_context,
 )
-from app.logic.content_filter import ClipTextContentFilter, MailContentFilter, is_browser_previewable
+from app.logic.content_filter import (
+    ClipTextContentFilter,
+    MailContentFilter,
+)
 from .base import api_restx as api, limiter, api_bp, api_restx_at_root
 from app.note_const import Metadata, is_readonly_name
 from app.utils import return_json, sha256, sha512
@@ -447,9 +450,7 @@ class FileRest(BaseRest):
         message: str = ""
         error_id: str = ""
 
-        all_file_size_limit_hit = (
-            note.all_file_size > Metadata.max_all_file_size
-        )
+        all_file_size_limit_hit = note.all_file_size > Metadata.max_all_file_size
         if all_file_size_limit_hit:
             status_code = 400
             message = "Too large all file size"
@@ -496,15 +497,15 @@ def get_file(id: int, as_attachment: bool):
     file_path = Path(file.file_path).resolve()
     basepath = Path(Config.UPLOAD_FOLDER).resolve()
     relative_path = file_path.relative_to(basepath)
-    if not is_browser_previewable(file.filename):
-        as_attachment = True
     try:
-        return send_from_directory(
+        resp = send_from_directory(
             directory=basepath,
             path=relative_path,
             as_attachment=as_attachment,
             download_name=file.filename,
         )
+        resp.headers["Content-Security-Policy"] = "default-src 'none';"
+        return resp
     except NotFound as e:
         return return_json(status_code=500, message="File not exist at server!")
 
