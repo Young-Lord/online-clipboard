@@ -714,26 +714,24 @@ export default {
             }
         },
         async deleteContent() {
-            dangerousConfirm({
+            const result = await dangerousConfirm({
                 title: this.$t("clip.delete.are_you_sure"),
                 text: this.$t("clip.delete.you_wont_be_able_to_revert_this"),
                 confirmButtonText: this.$t("clip.delete.yes_delete_it"),
-            }).then(async (result) => {
+            })
+
                 if (result.isConfirmed) {
                     try {
-                        let response = await axios.delete(`/note/${this.name}`)
+                    await axios.delete(`/note/${this.name}`)
                         showAutoCloseSuccess({
                             title: this.$t("clip.delete.deleted"),
-                            text: this.$t(
-                                "clip.delete.your_clip_has_been_deleted"
-                            ),
+                        text: this.$t("clip.delete.your_clip_has_been_deleted"),
                             timer: undefined,
                         }).then(this.goToHome)
                     } catch (e: any) {
                         console.log(e)
                     }
                 }
-            })
         },
         // file
         getTotalSize(...file_arrays: (File[] | FileData[])[]): number {
@@ -897,11 +895,21 @@ export default {
             }
         },
         async deleteFile(file: FileData) {
+            if (this.uploading) return
             this.uploading = true
+            const result = await dangerousConfirm({
+                title: this.$t("clip.delete.are_you_sure"),
+                text: this.$t("clip.delete.you_wont_be_able_to_revert_this"),
+                confirmButtonText: this.$t("clip.delete.yes_delete_it"),
+            })
+
+            if (!result.isConfirmed) {
+                this.uploading = false
+                return
+            }
+
             try {
-                let response = await axios.delete(
-                    `/note/${this.name}/file/${file.id}`
-                )
+                await axios.delete(`/note/${this.name}/file/${file.id}`)
                 this.fetchContent(true)
                 /* showAutoCloseSuccess({
                     title: this.$t('clip.file.deleted'),
