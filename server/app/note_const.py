@@ -49,8 +49,8 @@ class BaseMetadata:
     description: str = "A simple clipboard app"
     owner: str = "Niko"
     email: str = "ly-niko@qq.com"
-    version: str = "0.0.31"
-    min_compatible_frontend_version: str = "0.0.31"
+    version: str = "0.0.32"
+    min_compatible_frontend_version: str = "0.0.32"
     url: str = ""
     logo: str = ""
     repository: str = "https://github.com/Young-Lord/online-clipboard"
@@ -87,7 +87,7 @@ class BaseMetadata:
             60 * 60 * 24 * 365 * 3,  # 3 years
         ]
     )
-    limiter_default: list[str | Callable[[],str]] = field(
+    limiter_default: list[str | Callable[[], str]] = field(
         default_factory=lambda: ["100/minute"]
     )  # limiter for some API endpoint
     limiter_file: str = (
