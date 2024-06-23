@@ -385,7 +385,12 @@ import {
 } from "@/api"
 import { useAppStore } from "@/store/app"
 const appStore = useAppStore()
-import { replaceLastPartOfUrl, humanFileSize, assert, isBrowserPreviewable } from "@/utils"
+import {
+    replaceLastPartOfUrl,
+    humanFileSize,
+    assert,
+    isBrowserPreviewable,
+} from "@/utils"
 import { Buffer } from "buffer"
 import { timeDeltaToString } from "@/plugins/i18n"
 import AES from "crypto-js/aes"
@@ -1394,5 +1399,11 @@ export default {
 #file-card div.v-input__prepend {
     margin-inline-start: 16px !important;
     margin-inline-end: 16px !important;
+}
+
+/* Vuetify issue: https://github.com/vuetifyjs/vuetify/issues/16928 */
+.v-messages,
+.v-label {
+    opacity: var(--v-high-emphasis-opacity) !important;
 }
 </style>
