@@ -7,6 +7,7 @@
                 icon
                 href="https://github.com/Young-Lord/online-clipboard"
                 target="_blank"
+                :aria-label="$t('clip.a11y.appbar.github')"
             >
                 <v-icon :icon="mdiGithub" />
             </v-btn>

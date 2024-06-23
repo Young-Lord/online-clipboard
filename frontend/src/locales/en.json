@@ -20,9 +20,32 @@
     "name": "Name"
   },
   "clip": {
-    "current_url_click_to_copy": "Current URL (click to copy)",
-    "readonly_url_click_to_copy": "Readonly URL (click to copy)",
-    "readonly_url_is_disabled": "Readonly URL is disabled",
+    "a11y": {
+      "input_box": "Main text input area",
+      "file": {
+        "file_list": "List of files in this clip",
+        "download_file": "Download file {0}",
+        "preview_file": "Preview file {0}",
+        "delete_file": "Delete file {0}"
+      },
+      "appbar": {
+        "home": "Back to homepage",
+        "github": "Open Clip's GitHub repository",
+        "conflict_drop_remote": "Drop remote changes, save local changes",
+        "conflict_drop_local": "Drop local changes, fetch remote changes",
+        "delete": "Delete clip",
+        "password": "Set password for clip",
+        "save": "Save clip",
+        "copy": "Copy clip content",
+        "download": "Download clip content as text file"
+      },
+      "disable_readonly_url": "Disable readonly link",
+      "enable_readonly_url": "Enable readonly link",
+      "toggle_more_options": "Toggle show or hide more options"
+    },
+    "current_url_click_to_copy": "Current link (click to copy)",
+    "readonly_url_click_to_copy": "Readonly link (click to copy)",
+    "readonly_url_is_disabled": "Readonly link is disabled",
     "drag_or_click_to_upload_file": "Drag or Click to upload file(s)",
     "file_limits": "max {0} per file, current uploaded: {1} / {2}, storage quota left: {3} / {4}",
     "invalid_clip_name": "Invalid clip name!",

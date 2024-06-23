@@ -20,9 +20,32 @@
         "name": "名字？"
     },
     "clip": {
-        "current_url_click_to_copy": "当前 URL (点击复制)",
-        "readonly_url_click_to_copy": "只读 URL (点击复制)",
-        "readonly_url_is_disabled": "只读 URL 已禁用",
+        "a11y": {
+            "input_box": "最主要的文本输入框",
+            "file": {
+                "file_list": "剪贴板中的文件列表",
+                "download_file": "下载文件 {0}",
+                "preview_file": "在浏览器中预览文件 {0}",
+                "delete_file": "删除文件 {0}"
+            },
+            "appbar": {
+                "home": "回到主页",
+                "github": "打开 Clip 的 GitHub 存储仓库",
+                "conflict_drop_remote": "使用本地更改，覆盖远程更改",
+                "conflict_drop_local": "使用远程更改，覆盖本地更改",
+                "delete": "删除剪贴板",
+                "password": "设置剪贴板密码",
+                "save": "保存剪贴板",
+                "copy": "复制剪贴板内容",
+                "download": "下载剪贴板文本内容"
+            },
+            "disable_readonly_url": "禁用只读链接",
+            "enable_readonly_url": "启用只读链接",
+            "toggle_more_options": "展开或隐藏更多选项"
+        },
+        "current_url_click_to_copy": "当前剪贴板链接 (点击复制)",
+        "readonly_url_click_to_copy": "只读链接 (点击复制)",
+        "readonly_url_is_disabled": "只读链接 已禁用",
         "drag_or_click_to_upload_file": "拖拽或点击上传文件",
         "file_limits": "单个文件最大 {0}，当前共有文件 {1} / {2} 个，占用空间 {3} / {4}",
         "expiration": "过期时间",

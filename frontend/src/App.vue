@@ -39,3 +39,11 @@ export default {
     },
 }
 </script>
+
+<style>
+/* Vuetify a11y issue: https://github.com/vuetifyjs/vuetify/issues/16928 */
+.v-messages,
+.v-label {
+    opacity: var(--v-high-emphasis-opacity) !important;
+}
+</style>

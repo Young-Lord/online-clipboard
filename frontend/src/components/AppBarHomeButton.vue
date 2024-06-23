@@ -1,5 +1,5 @@
 <template>
-    <v-btn icon @click="goToHome()">
+    <v-btn icon @click="goToHome()" :aria-label="$t('clip.a11y.appbar.home')">
         <v-icon icon="$home" />
     </v-btn>
 </template>

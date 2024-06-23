@@ -3,11 +3,21 @@
         <v-app-bar app>
             <app-bar-home-button />
             <!-- sync button if outdated-->
-            <v-btn icon @click="fetchContent(false)" v-if="is_local_outdated">
+            <v-btn
+                icon
+                @click="fetchContent(false)"
+                v-if="is_local_outdated"
+                :aria-label="$t('clip.a11y.appbar.conflict_drop_local')"
+            >
                 <v-icon :icon="mdiDownload" />
             </v-btn>
             <!-- sync button if outdated-->
-            <v-btn icon @click="pushContent(true)" v-if="is_local_outdated">
+            <v-btn
+                icon
+                @click="pushContent(true)"
+                v-if="is_local_outdated"
+                :aria-label="$t('clip.a11y.appbar.conflict_drop_local')"
+            >
                 <v-icon :icon="mdiUpload" />
             </v-btn>
             <!-- saved status in plaintext -->
@@ -23,6 +33,7 @@
                     icon
                     @click="deleteContent()"
                     v-if="!is_new && !is_readonly"
+                    :aria-label="$t('clip.a11y.appbar.delete')"
                 >
                     <v-icon :icon="mdiDelete" />
                 </v-btn>
@@ -31,19 +42,33 @@
                     icon
                     @click="changePassword()"
                     v-if="!is_new && !is_readonly"
+                    :aria-label="$t('clip.a11y.appbar.password')"
                 >
                     <v-icon :icon="mdiLock" />
                 </v-btn>
                 <!--save button-->
-                <v-btn icon @click="pushContent()" v-if="!is_readonly">
+                <v-btn
+                    icon
+                    @click="pushContent()"
+                    v-if="!is_readonly"
+                    :aria-label="$t('clip.a11y.appbar.save')"
+                >
                     <v-icon :icon="mdiContentSave" />
                 </v-btn>
                 <!-- copy button-->
-                <v-btn icon @click="copyString(local_content)">
+                <v-btn
+                    icon
+                    @click="copyString(local_content)"
+                    :aria-label="$t('clip.a11y.appbar.copy')"
+                >
                     <v-icon :icon="mdiContentCopy" />
                 </v-btn>
                 <!-- download button-->
-                <v-btn icon @click="downloadContent()">
+                <v-btn
+                    icon
+                    @click="downloadContent()"
+                    :aria-label="$t('clip.a11y.appbar.download')"
+                >
                     <v-icon :icon="mdiDownload" />
                 </v-btn>
             </template>
@@ -67,6 +92,7 @@
                             @compositionstart="setComposing(true)"
                             @compositionend="setComposing(false)"
                             ref="editor"
+                            :aria-label="$t('clip.a11y.input_box')"
                         >
                         </v-textarea>
                     </v-col>
@@ -125,14 +151,26 @@
                             <v-list
                                 v-model:opened="sidebar_list_opened"
                                 v-if="!is_new"
+                                :role="
+                                    sidebar_list_opened.includes(
+                                        'more_options_list'
+                                    )
+                                        ? 'listbox'
+                                        : null
+                                "
                             >
-                                <v-list-group>
+                                <v-list-group value="more_options_list">
                                     <template v-slot:activator="{ props }">
                                         <v-list-item
                                             v-bind="props"
                                             :prepend-icon="mdiCog"
                                             :title="
                                                 $t('clip.advanced_settings')
+                                            "
+                                            :aria-label="
+                                                $t(
+                                                    'clip.a11y.toggle_more_options'
+                                                )
                                             "
                                         ></v-list-item>
                                     </template>
@@ -270,10 +308,14 @@
                             >
                             </v-file-input>
                             <!--all files, with download and delete button-->
-                            <v-list>
+                            <v-list
+                                :aria-label="$t('clip.a11y.file.file_list')"
+                                role="list"
+                            >
                                 <v-list-item
                                     v-for="file in remote_files"
                                     :key="file.id"
+                                    role="listitem"
                                 >
                                     <v-list-item-title
                                         >{{ mayDecryptFilename(file.filename) }}
@@ -292,6 +334,7 @@
                                     <template v-slot:append>
                                         <v-list-item-action end>
                                             <!--tabindex=-1 make anchor not focusable, i.e., focus only button-->
+                                            <!--preview file-->
                                             <a
                                                 :href="file.preview_url"
                                                 target="_blank"
@@ -301,11 +344,27 @@
                                                 "
                                                 tabindex="-1"
                                                 v-if="canPreviewFile(file)"
+                                                :aria-label="
+                                                    $t(
+                                                        'clip.a11y.file.preview_file',
+                                                        [file.filename]
+                                                    )
+                                                "
                                             >
-                                                <v-btn icon variant="text">
+                                                <v-btn
+                                                    icon
+                                                    variant="text"
+                                                    :aria-label="
+                                                        $t(
+                                                            'clip.a11y.file.preview_file',
+                                                            [file.filename]
+                                                        )
+                                                    "
+                                                >
                                                     <v-icon :icon="mdiEye" />
                                                 </v-btn>
                                             </a>
+                                            <!--download file (non-encrypted)-->
                                             <a
                                                 download
                                                 :filename="file.filename"
@@ -317,13 +376,29 @@
                                                 "
                                                 tabindex="-1"
                                                 v-if="!encrypt_file"
+                                                :aria-label="
+                                                    $t(
+                                                        'clip.a11y.file.download_file',
+                                                        [file.filename]
+                                                    )
+                                                "
                                             >
-                                                <v-btn icon variant="text">
+                                                <v-btn
+                                                    icon
+                                                    variant="text"
+                                                    :aria-label="
+                                                        $t(
+                                                            'clip.a11y.file.download_file',
+                                                            [file.filename]
+                                                        )
+                                                    "
+                                                >
                                                     <v-icon
                                                         :icon="mdiDownload"
                                                     />
                                                 </v-btn>
                                             </a>
+                                            <!--download file (encrypted)-->
                                             <v-btn
                                                 icon
                                                 variant="text"
@@ -331,14 +406,27 @@
                                                     downloadEncryptedFile(file)
                                                 "
                                                 v-else
+                                                :aria-label="
+                                                    $t(
+                                                        'clip.a11y.file.download_file',
+                                                        [file.filename]
+                                                    )
+                                                "
                                             >
                                                 <v-icon :icon="mdiDownload" />
                                             </v-btn>
+                                            <!--delete file-->
                                             <v-btn
                                                 icon
                                                 variant="text"
                                                 @click="deleteFile(file)"
                                                 v-if="!is_readonly"
+                                                :aria-label="
+                                                    $t(
+                                                        'clip.a11y.file.delete_file',
+                                                        [file.filename]
+                                                    )
+                                                "
                                             >
                                                 <v-icon :icon="mdiDelete" />
                                             </v-btn>
@@ -455,7 +543,7 @@ export default {
             fetch_timer: null as ReturnType<typeof setTimeout> | null,
             last_edit_time: Date.now(),
             user_property: {} as UserProperty,
-            sidebar_list_opened: [],
+            sidebar_list_opened: [] as string[],
             encrypt_text_content: false,
             encrypt_file: false,
             max_interval: 1e10,
@@ -1402,11 +1490,5 @@ export default {
 #file-card div.v-input__prepend {
     margin-inline-start: 16px !important;
     margin-inline-end: 16px !important;
-}
-
-/* Vuetify issue: https://github.com/vuetifyjs/vuetify/issues/16928 */
-.v-messages,
-.v-label {
-    opacity: var(--v-high-emphasis-opacity) !important;
 }
 </style>
