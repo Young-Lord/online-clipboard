@@ -2,12 +2,16 @@
     <v-app>
         <v-main>
             <div class="vl-parent" v-if="isLoading">
-                <loading
-                    v-model:active="isLoading"
-                    loader="spinner"
-                    :can-cancel="false"
-                    :is-full-page="true"
-                />
+                <v-overlay
+                    :model-value="true"
+                    class="align-center justify-center"
+                >
+                    <v-progress-circular
+                        color="primary"
+                        size="64"
+                        indeterminate
+                    ></v-progress-circular>
+                </v-overlay>
             </div>
             <router-view v-else />
         </v-main>
@@ -15,8 +19,6 @@
 </template>
 
 <script lang="ts">
-import Loading from "vue-loading-overlay"
-import "vue-loading-overlay/dist/css/index.css"
 import { useAppStore } from "./store/app"
 
 export default {
@@ -24,9 +26,6 @@ export default {
         return {
             isLoading: true,
         }
-    },
-    components: {
-        Loading,
     },
     methods: {},
     async mounted() {
