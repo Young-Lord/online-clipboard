@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "online-clipboard"
-version = "0.0.32"
+version = "0.0.33"
 description = "Vuetify 3 + Flask based, in-place editable clipboard"
 authors = ["LY <ly-niko@qq.com>"]
 readme = "../README.md"
