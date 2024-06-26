@@ -1,4 +1,6 @@
+from json import loads as json_loads
 import os
+from typing import Any
 from app.note_const import Metadata, FLASK_ENV
 
 
@@ -41,6 +43,7 @@ class Config:
         False  # set to True to disable frontend, only API will be available
     )
     BEHIND_REVERSE_PROXY: bool = os.environ["BEHIND_REVERSE_PROXY"] == "true"
+    PROXYFIX_EXTRA_KWARGS: dict[str, Any] = json_loads(os.environ["PROXYFIX_EXTRA_KWARGS"] or "{}")
 
     # mail
     if Metadata.allow_mail:

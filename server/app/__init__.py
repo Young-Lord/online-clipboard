@@ -7,8 +7,8 @@ from app import models  # this must be imported to make migration work
 
 def create_app() -> Flask:
     f = Factory()
-    f.set_flask()
-    app = f.flask
+    app = f.set_flask()
+    f.set_logger()
     f.set_db()
     f.set_migration()
     f.set_cors()
@@ -30,6 +30,6 @@ def create_app() -> Flask:
     app.register_blueprint(api_bp_at_root, url_prefix="/")
 
     if app.config["BEHIND_REVERSE_PROXY"]:
-        app.wsgi_app = ProxyFix(app.wsgi_app)
+        app.wsgi_app = ProxyFix(app.wsgi_app, **app.config["PROXYFIX_EXTRA_KWARGS"])
 
     return app

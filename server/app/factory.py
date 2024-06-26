@@ -19,9 +19,13 @@ class Factory:
     def environment(self) -> str:
         return self._environment
 
-    def set_flask(self, **kwargs):
+    def set_flask(self, **kwargs) -> Flask:
         self.flask = Flask(__name__, **kwargs, static_folder=None, template_folder=None)
         self.flask.config.from_object(config)
+
+        return self.flask
+
+    def set_logger(self) -> None:
         # setup logging
         file_handler = RotatingFileHandler("api.log", maxBytes=10000, backupCount=1)
         file_handler.setLevel(logging.INFO)
@@ -30,9 +34,7 @@ class Factory:
         stdout.setLevel(logging.DEBUG)
         self.flask.logger.addHandler(stdout)
 
-        return self.flask
-
-    def set_db(self):
+    def set_db(self) -> None:
         from .models.base import db
 
         db.init_app(self.flask)
@@ -41,12 +43,12 @@ class Factory:
             # Datastore(db).drop_it(yes_do_as_i_say=True)
             db.create_all()
 
-    def set_migration(self):
+    def set_migration(self) -> None:
         from .models.base import db, migrate
 
         migrate.init_app(self.flask, db)
 
-    def set_cors(self):
+    def set_cors(self) -> None:
         CORS(
             self.flask,
             origins=self.flask.config["CORS_ORIGINS"],
@@ -63,20 +65,20 @@ class Factory:
                 return Response()
             # To create a slow-speed server: time.sleep(6)
 
-    def set_jwt(self):
+    def set_jwt(self) -> None:
         from .resources.base import file_jwt
 
         file_jwt.init_app(self.flask)
 
-    def set_schedule_task(self):
+    def set_schedule_task(self) -> None:
         RemoveExpiredThings(self.flask)
 
-    def set_rate_limit(self):
+    def set_rate_limit(self) -> None:
         from .resources.base import limiter
 
         limiter.init_app(self.flask)
 
-    def set_mail(self):
+    def set_mail(self) -> None:
         from .resources.base import mail
 
         mail.init_app(self.flask)
@@ -87,7 +89,7 @@ class Factory:
 
             socketio.init_app(self.flask)
 
-    def set_csp(self):
+    def set_csp(self) -> None:
         if self.flask.config["DEBUG"]:
             from .views.misc import csp_report
 

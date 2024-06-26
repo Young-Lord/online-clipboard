@@ -26,10 +26,17 @@ file_jwt = JWTManager()
 
 # this raises 429 error when rate limit in `app/note_const.py` exceeded
 def RATELIMIT_DEFAULTS_EXEMPT_WHEN() -> bool:
+    """
+    Skip rate limit for specific requests
+    """
     return False
 
 
-limiter = Limiter(get_remote_address, default_limits=Metadata.limiter_default, default_limits_exempt_when=RATELIMIT_DEFAULTS_EXEMPT_WHEN)
+limiter = Limiter(
+    get_remote_address,
+    default_limits=Metadata.limiter_default,
+    default_limits_exempt_when=RATELIMIT_DEFAULTS_EXEMPT_WHEN,
+)
 
 # this is for sending mail, see https://flask-mailman.readthedocs.io/en/latest/
 # and configure SMTP settings in `.env.production` file
