@@ -1,9 +1,14 @@
 import json
 import tomllib
 from pathlib import Path
+from typing import Final
 
 
-load_path = Path("../frontend/src/locales")
+load_paths: Final[list[Path]] = [
+    Path("app/locales"),
+    Path("server/app/locales"),
+    Path(__file__) / ".." / "locales",
+]
 locales: dict[str, dict[str, str]] = {}
 fallback = "en"
 
@@ -20,17 +25,18 @@ def construct_translation_items(
             result.update({f"{parent}.{key}" if parent else key: value})
 
 
-for file in load_path.glob("*.json"):
-    result = {}
-    with open(file, "r", encoding="utf8") as f:
-        construct_translation_items(result, json.load(f))
-    locales.setdefault(Path(file).stem, {}).update(result)
+for load_path in load_paths:
+    for file in load_path.glob("*.json"):
+        result = {}
+        with open(file, "r", encoding="utf8") as f:
+            construct_translation_items(result, json.load(f))
+        locales.setdefault(file.stem, {}).update(result)
 
-for file in load_path.glob("*.toml"):
-    result = {}
-    with open(file, "rb") as f:
-        construct_translation_items(result, tomllib.load(f))
-    locales.setdefault(Path(file).stem, {}).update(result)
+    for file in load_path.glob("*.toml"):
+        result = {}
+        with open(file, "rb") as f:
+            construct_translation_items(result, tomllib.load(f))
+        locales.setdefault(file.stem, {}).update(result)
 
 assert fallback in locales
 
