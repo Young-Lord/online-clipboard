@@ -4,6 +4,7 @@ version = "0.0.33"
 description = "Vuetify 3 + Flask based, in-place editable clipboard"
 authors = ["LY <ly-niko@qq.com>"]
 readme = "../README.md"
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.11"
