@@ -22,7 +22,9 @@ class Config:
     # set more at `note_const.py`
 
     # store - database
-    SQLALCHEMY_DATABASE_URI = "sqlite:///main.db"
+    SQLALCHEMY_DATABASE_URI: str = os.environ.get(
+        "SQLALCHEMY_DATABASE_URI", "sqlite:///main.db"
+    )
 
     # store - upload
     UPLOAD_FOLDER = "uploads"
