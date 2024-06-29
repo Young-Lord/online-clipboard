@@ -4,7 +4,7 @@
             <div class="vl-parent" v-if="isLoading">
                 <v-overlay
                     :model-value="true"
-                    class="align-center justify-center"
+                    class="fill-height justify-center align-center"
                 >
                     <v-progress-circular
                         color="primary"

@@ -11,7 +11,6 @@
 @forward "vuetify/settings" with (
     $utilities: (
         "align-content": false,
-        "align-items": false,
         "align-self": false,
         "border-bottom": false,
         "border-end": false,
@@ -31,8 +30,9 @@
         "float": false,
         "font-italic": false,
         "font-weight": false,
-        "justify-content": false,
-        // use `fill-height justify-center` to center something if this is enabled
+        // "align-items": false,
+        // "justify-content": false,
+        // use `fill-height justify-center align-center` to center something if this is commented (i.e., enabled)
         "margin-bottom": false,
         "margin-end": false,
         "margin-left": false,

@@ -1,15 +1,6 @@
 <template>
     <!--vuetify 3, horizonally + vertically centered-->
-    <v-container
-        fluid
-        style="
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        "
-    >
+    <v-container fluid class="fill-height justify-center">
         <v-col cols="12" md="8">
             <v-card elevation="16" variant="tonal">
                 <v-card-title>
