@@ -27,9 +27,12 @@ class Factory:
 
     def set_logger(self) -> None:
         # setup logging
-        file_handler = RotatingFileHandler("api.log", maxBytes=10000, backupCount=1)
-        file_handler.setLevel(logging.INFO)
-        self.flask.logger.addHandler(file_handler)
+        try:
+            file_handler = RotatingFileHandler("api.log", maxBytes=10000, backupCount=1)
+            file_handler.setLevel(logging.INFO)
+            self.flask.logger.addHandler(file_handler)
+        except OSError:
+            pass
         stdout = logging.StreamHandler(sys.stdout)
         stdout.setLevel(logging.DEBUG)
         self.flask.logger.addHandler(stdout)
