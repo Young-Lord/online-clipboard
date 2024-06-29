@@ -1,6 +1,6 @@
 {
   "name": "online-clipboard-vercel-build",
   "scripts": {
-    "build": "mkdir dist && cd frontend && yarn install && yarn build && cd .. && rm -rf frontend && cp -r server/app/templates/* dist && cd server && pip3 install poetry-plugin-export poetry && python3 -m poetry export -f requirements.txt --output requirements.txt && pip3 uninstall -y poetry-plugin-export poetry && mv requirements.txt .. && cd .."
+    "build": "mkdir dist && cd frontend && yarn install && yarn build && cd .. && rm -rf frontend && cp -r server/app/templates/* dist && cd server && pip3 install poetry-plugin-export poetry && python3 -m poetry add psycopg2-binary^2.9.9 && python3 -m poetry export -f requirements.txt --output requirements.txt && pip3 uninstall -y poetry-plugin-export poetry && mv requirements.txt .. && cd .."
   }
 }
