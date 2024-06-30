@@ -5,6 +5,7 @@ import { defineStore } from "pinia"
 import { AxiosInstance } from "axios"
 import { assert } from "@/utils"
 import { nanoid } from "nanoid/non-secure"
+import local_metadata from "@/metadata.json"
 
 export const useAppStore = defineStore("app", {
     state: () => ({
@@ -16,19 +17,20 @@ export const useAppStore = defineStore("app", {
     actions: {
         async basicInit() {
             axios.defaults.baseURL = this.api_endpoint
+            this._metadata = local_metadata
         },
         async initMetadata() {
             if (this.is_metadata_fetched) return
-            this.basicInit()
-            const _metadata = (await axios.get("/metadata")).data
+            await this.basicInit()
+            const remote_metadata = (await axios.get("/metadata")).data
                 .data as MetaData
             // console.log("metadata fetched!")
             if (
                 this._metadata === null ||
-                _metadata.metadata_hash !== this._metadata.metadata_hash
+                remote_metadata.metadata_hash !== this._metadata.metadata_hash
             ) {
                 // console.log("hash set fetched!")
-                this._metadata = _metadata
+                this._metadata = remote_metadata
             }
             this.is_metadata_fetched = true
         },

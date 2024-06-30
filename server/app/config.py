@@ -1,5 +1,5 @@
 from json import loads as json_loads
-import os
+from os import environ
 from typing import Any
 from app.note_const import Metadata, FLASK_ENV
 
@@ -12,7 +12,7 @@ class Config:
 
     # security
     SECRET_KEY: bytes = b"secret-key"  # used as JWT_SECRET_KEY
-    CORS_ORIGINS: list[str] = os.environ.get(
+    CORS_ORIGINS: list[str] = environ.get(
         "CORS_ORIGINS", ""
     ).split()  # separate consecutive whitespace
     CORS_MAX_AGE = 7200  # cache CORS result for at most 2 hours
@@ -22,7 +22,7 @@ class Config:
     # set more at `note_const.py`
 
     # store - database
-    SQLALCHEMY_DATABASE_URI: str = os.environ.get(
+    SQLALCHEMY_DATABASE_URI: str = environ.get(
         "SQLALCHEMY_DATABASE_URI", "sqlite:///main.db"
     )
 
@@ -35,28 +35,29 @@ class Config:
     )
 
     # endpoint
+    # check if a WSGI server is required. If not, remove unused imports & monkey patches
     API_SUFFIX = "/api"
-    HOMEPAGE_URL: str = os.environ["VITE_HOMEPAGE_URL"]
-    API_URL: str = os.environ["VITE_API_URL"]
-    BIND_HOST: str = os.environ["BIND_HOST"]
-    BIND_PORT: int = int(os.environ["BIND_PORT"])
-    WEBSOCKET_PATH_FOR_SERVER = os.environ["WEBSOCKET_PATH_FOR_SERVER"]
+    HOMEPAGE_URL: str = environ["VITE_HOMEPAGE_URL"]
+    API_URL: str = environ["VITE_API_URL"]
+    BIND_HOST: str = environ["BIND_HOST"]
+    BIND_PORT: int = int(environ["BIND_PORT"])
+    WEBSOCKET_PATH_FOR_SERVER = environ["WEBSOCKET_PATH_FOR_SERVER"]
     NO_FRONTEND: bool = (
         False  # set to True to disable frontend, only API will be available
     )
-    BEHIND_REVERSE_PROXY: bool = os.environ["BEHIND_REVERSE_PROXY"] == "true"
-    PROXYFIX_EXTRA_KWARGS: dict[str, Any] = json_loads(os.environ["PROXYFIX_EXTRA_KWARGS"] or "{}")
+    BEHIND_REVERSE_PROXY: bool = environ["BEHIND_REVERSE_PROXY"] == "true"
+    PROXYFIX_EXTRA_KWARGS: dict[str, Any] = json_loads(environ["PROXYFIX_EXTRA_KWARGS"] or "{}")
 
     # mail
     if Metadata.allow_mail:
         # https://waynerv.github.io/flask-mailman/
-        MAIL_SERVER = os.environ.get("MAIL_SERVER", "localhost")
-        MAIL_PORT = int(os.environ.get("MAIL_PORT", 25))
-        MAIL_USERNAME = os.environ.get("MAIL_USERNAME", None)
-        MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD", None)
-        MAIL_DEFAULT_SENDER = os.environ.get("MAIL_DEFAULT_SENDER", None)
-        MAIL_USE_TLS = os.environ.get("MAIL_USE_TLS", "false").lower() == "true"
-        MAIL_USE_SSL = os.environ.get("MAIL_USE_SSL", "false").lower() == "true"
+        MAIL_SERVER = environ.get("MAIL_SERVER", "localhost")
+        MAIL_PORT = int(environ.get("MAIL_PORT", 25))
+        MAIL_USERNAME = environ.get("MAIL_USERNAME", None)
+        MAIL_PASSWORD = environ.get("MAIL_PASSWORD", None)
+        MAIL_DEFAULT_SENDER = environ.get("MAIL_DEFAULT_SENDER", None)
+        MAIL_USE_TLS = environ.get("MAIL_USE_TLS", "false").lower() == "true"
+        MAIL_USE_SSL = environ.get("MAIL_USE_SSL", "false").lower() == "true"
 
 
 class DevConfig(Config):
@@ -65,7 +66,7 @@ class DevConfig(Config):
 
 class ProdConfig(Config):
     BIND_HOST = "0.0.0.0"
-    SECRET_KEY = os.environ.get("APP_SECRET", "").encode("ascii")
+    SECRET_KEY = environ.get("APP_SECRET", "").encode("ascii")
     assert (
         FLASK_ENV != "production" or SECRET_KEY
     ), 'APP_SECRET must be set.\nUse `python -c "import secrets; print(secrets.token_urlsafe(128))"` to generate one.'

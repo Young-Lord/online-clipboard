@@ -32,7 +32,7 @@ dayjs.locale(selectedLanguage)
 document.documentElement.setAttribute("lang", selectedLanguage)
 function addHtmlMeta(name: string, content: string): void {
     const headElement = document.head
-    var metaElement: Element = document.createElement("meta")
+    let metaElement: Element = document.createElement("meta")
     for (const e of Array.from(headElement.children)) {
         if (e.getAttribute("name") === name) {
             metaElement = e

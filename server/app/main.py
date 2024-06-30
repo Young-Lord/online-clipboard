@@ -2,7 +2,7 @@ from flask import Flask
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from .factory import Factory
-from app import models  # this must be imported to make migration work
+from app import models  # this must be imported to make migration work  # type: ignore
 
 
 def create_app() -> Flask:

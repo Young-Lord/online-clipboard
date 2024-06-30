@@ -4,13 +4,16 @@ interface Dictionary<T> {
     [Key: string]: T
 }
 
-export function getKeyByValue(object: Dictionary<any>, value: any): any {
+export function getKeyByValue<T>(
+    object: Dictionary<T>,
+    value: T
+): string | undefined {
     return Object.keys(object).find((key) => object[key] === value)
 }
 
 export function replaceLastPartOfUrl(href: string, new_part: string): string {
     // replaceLastPartOfUrl("https://a.com/a/old?aa=1&dd=3#hash", "new") -> "https://a.com/a/new?aa=1&dd=3#hash"
-    let url = new URL(href)
+    const url = new URL(href)
     const segments = url.pathname.split("/")
     segments.pop()
     segments.push(new_part)
@@ -61,7 +64,7 @@ export function humanFileSize(
     return result + " " + units[u]
 }
 
-export function assert(condition: any): asserts condition {
+export function assert(condition: boolean): asserts condition {
     if (!condition) {
         throw new Error()
     }

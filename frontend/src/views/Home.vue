@@ -16,8 +16,7 @@
                     ></v-card-subtitle
                 >
                 <v-card-text>
-                    <v-form @submit.native.prevent>
-                        <!--https://blog.csdn.net/Livenus_csdn/article/details/119573057-->
+                    <v-form @submit.prevent>
                         <v-text-field
                             v-model="name"
                             :label="$t('home.name')"

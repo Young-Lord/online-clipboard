@@ -3,10 +3,11 @@
   "version": "0.0.33",
   "private": true,
   "scripts": {
-    "dev": "vite",
-    "build": "vite build --emptyOutDir",
+    "gen-metadata": "cd .. && cd server && poetry run python wsgi.py --export-metadata ../frontend/src/metadata.json",
+    "dev": "yarn run gen-metadata && vite",
+    "build": "yarn run gen-metadata && cd .. && cd frontend && vite build --emptyOutDir",
     "preview": "vite preview",
-    "lint": "eslint . --fix --ignore-path .gitignore"
+    "lint": "eslint . --fix"
   },
   "dependencies": {
     "@intlify/unplugin-vue-i18n": "^2.0.0",
@@ -33,13 +34,17 @@
     "vuetify": "^3.0.0"
   },
   "devDependencies": {
+    "@eslint/compat": "^1.1.0",
+    "@eslint/js": "^9.6.0",
     "@mdi/js": "^7.4.47",
     "@types/node": "^20.12.12",
     "@vitejs/plugin-vue": "^4.0.0",
-    "eslint": "^8.37.0",
-    "eslint-plugin-vue": "^9.3.0",
+    "eslint": "9.x",
+    "eslint-plugin-vue": "^9.26.0",
+    "globals": "^15.6.0",
     "rollup-plugin-visualizer": "^5.12.0",
     "sass": "^1.60.0",
+    "typescript-eslint": "^7.14.1",
     "unplugin-fonts": "^1.0.3",
     "vite": "^5.2.11",
     "vite-plugin-vuetify": "^2.0.3"

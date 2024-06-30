@@ -106,6 +106,7 @@
         </v-main>
     </v-app>
 </template>
+
 <script setup lang="ts">
 import AppBarHomeButton from "@/components/AppBarHomeButton.vue"
 import {
@@ -118,7 +119,7 @@ import {
 import { showDetailWarning, showAutoCloseSuccess } from "@/plugins/swal"
 import { isAxiosError } from "axios"
 import { onBeforeRouteLeave } from "vue-router"
-import { onMounted, ref, computed } from "vue";
+import { onMounted, ref, computed } from "vue"
 
 import { useAppStore } from "@/store/app"
 const appStore = useAppStore()
@@ -130,12 +131,11 @@ const route = useRoute()
 import { useI18n } from "vue-i18n"
 const { t: $t } = useI18n()
 
-const subscription_status = ref<MailSubscriptionStatus | null>( null )
+const subscription_status = ref<MailSubscriptionStatus | null>(null)
 const input_mail_address = ref("")
-const owned_mail_address = computed(()=> {
-    return route.params.address as string // empty if direct access this page (not from subscription link in email)
-})
-const subscription_status_string = computed(()=> {
+const owned_mail_address = route.params.address as string // empty if direct access this page (not from subscription link in email)
+
+const subscription_status_string = computed(() => {
     switch (subscription_status.value) {
         // accept, deny, pending, no_requested, loading
         case MailSubscriptionStatus.ACCEPT:
@@ -169,7 +169,7 @@ onMounted(() => {
     onBeforeRouteLeave(() => {
         axios.interceptors.request.eject(auth_interceptor)
     })
-    if (owned_mail_address.value) {
+    if (owned_mail_address) {
         updateSubscriptionStatus()
         switch (route.query.subscribe) {
             case "true":
@@ -187,7 +187,7 @@ async function updateSubscriptionStatus(
 ) {
     if (status === undefined) {
         const res = await axios.get<Response<MailSubscriptionData>>(
-            `/mail/${owned_mail_address.value}/settings`
+            `/mail/${owned_mail_address}/settings`
         )
         status = res.data.data.subscribe
     }
@@ -196,7 +196,7 @@ async function updateSubscriptionStatus(
 async function setSubscriptionSetting(status: MailSubscriptionSetting) {
     try {
         const res = await axios.post(
-            `/mail/${owned_mail_address.value}/settings`,
+            `/mail/${owned_mail_address}/settings`,
             {
                 subscribe: status,
             }
@@ -230,4 +230,5 @@ async function resendVerificationMail() {
             })
         }
     }
+}
 </script>

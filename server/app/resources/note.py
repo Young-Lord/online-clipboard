@@ -34,7 +34,7 @@ from app.logic.content_filter import (
     MailContentFilter,
 )
 from .base import api_restx as api, limiter, api_bp, api_restx_at_root
-from app.note_const import Metadata, is_readonly_name
+from app.note_const import Metadata, Metadata_dict, is_readonly_name
 from app.utils import return_json, sha256, sha512
 from app.logic.i18n import _t
 from werkzeug.exceptions import NotFound
@@ -60,7 +60,7 @@ else:
 @api_bp.route("/metadata")
 @limiter.limit("100/minute")
 def api_metadata():
-    return return_json(data=Metadata.to_dict())
+    return return_json(data=Metadata_dict)
 
 
 NO_DATA_METHODS = {"GET", "DELETE"}

@@ -15,7 +15,7 @@ export const dangerousOptions = {
 
 export function showDetailWarning(
     options: SweetAlertOptions
-): Promise<SweetAlertResult<any>> {
+): Promise<SweetAlertResult> {
     return Swal.fire({
         ...baseOptions,
         icon: "error",
@@ -25,7 +25,7 @@ export function showDetailWarning(
 
 export function showAutoCloseSuccess(
     options: SweetAlertOptions
-): Promise<SweetAlertResult<any>> {
+): Promise<SweetAlertResult> {
     return Swal.fire({
         ...baseOptions,
         icon: "success",
@@ -36,7 +36,7 @@ export function showAutoCloseSuccess(
 
 export function cancelableInput(
     options: SweetAlertOptions
-): Promise<SweetAlertResult<any>> {
+): Promise<SweetAlertResult> {
     return Swal.fire({
         ...baseOptions,
         showCancelButton: true,
@@ -46,7 +46,7 @@ export function cancelableInput(
 
 export function dangerousConfirm(
     options: SweetAlertOptions
-): Promise<SweetAlertResult<any>> {
+): Promise<SweetAlertResult> {
     return Swal.fire({
         ...baseOptions,
         ...dangerousOptions,

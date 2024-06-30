@@ -2,7 +2,6 @@ from hashlib import sha256 as _sha256, sha512 as _sha512
 import os
 from typing import Any, Optional
 from flask import (
-    current_app,
     jsonify,
     make_response,
     Response,

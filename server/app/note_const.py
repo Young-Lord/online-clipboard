@@ -125,3 +125,4 @@ Metadata = BaseMetadata()
 Metadata.metadata_hash = sha512(
     json.dumps(Metadata.to_dict(), sort_keys=True, ensure_ascii=False)
 )
+Metadata_dict = Metadata.to_dict()
