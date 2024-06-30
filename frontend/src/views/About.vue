@@ -39,24 +39,12 @@
 <script setup lang="ts">
 import { mdiGithub, mdiCheck } from "@mdi/js"
 import AppBarHomeButton from "@/components/AppBarHomeButton.vue"
-</script>
-
-<script lang="ts">
 import { axios } from "@/api"
 import { useAppStore } from "@/store/app"
 const appStore = useAppStore()
-
-export default {
-    data() {
-        return {
-            appStore: appStore,
-            api_endpoint: appStore.api_endpoint,
-        }
-    },
-    methods: {
-        async updateEndpoint() {
-            await appStore.updateEndpoint(axios, this.api_endpoint)
-        },
-    },
+import { ref } from "vue"
+const api_endpoint = ref(appStore.api_endpoint)
+async function updateEndpoint() {
+    await appStore.updateEndpoint(axios, api_endpoint.value)
 }
 </script>

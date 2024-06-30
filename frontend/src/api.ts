@@ -70,9 +70,9 @@ export interface WebSocketBaseData {
 }
 
 export interface UserProperty {
-    encrypt_text_content: boolean | undefined
-    encrypt_text_content_algo: string | undefined
-    encrypt_file: boolean | undefined
+    encrypt_text_content?: boolean
+    encrypt_text_content_algo?: string
+    encrypt_file?: boolean
 }
 
 export enum MailSubscriptionStatus {

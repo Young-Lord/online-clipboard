@@ -39,28 +39,23 @@
     </v-container>
 </template>
 
-<script lang="ts">
-export default {
-    data() {
-        return {
-            name: "",
-        }
-    },
-    created() {},
-    methods: {
-        goToClipPage() {
-            this.$router.push({
-                name: "Clip",
-                params: {
-                    name: this.name,
-                },
-            })
+<script setup lang="ts">
+import { ref } from "vue"
+import { useRouter } from "vue-router"
+const router = useRouter()
+
+const name = ref("")
+function goToClipPage() {
+    router.push({
+        name: "Clip",
+        params: {
+            name: name.value,
         },
-        goToAboutPage() {
-            this.$router.push({
-                name: "About",
-            })
-        },
-    },
+    })
+}
+function goToAboutPage() {
+    router.push({
+        name: "About",
+    })
 }
 </script>

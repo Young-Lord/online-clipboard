@@ -444,27 +444,6 @@
 
 <script setup lang="ts">
 import {
-    mdiDownload,
-    mdiUpload,
-    mdiDelete,
-    mdiLock,
-    mdiContentSave,
-    mdiContentCopy,
-    mdiClock,
-    mdiLink,
-    mdiPlusCircleOutline,
-    mdiCog,
-    mdiCommentArrowRight,
-    mdiEmailFast,
-    mdiAlertOctagon,
-    mdiFileUpload,
-    mdiEye,
-} from "@mdi/js"
-import AppBarHomeButton from "@/components/AppBarHomeButton.vue"
-</script>
-
-<script lang="ts">
-import {
     FileData,
     axios,
     UserProperty,
@@ -493,6 +472,32 @@ import { SweetAlertResult } from "sweetalert2"
 import { onBeforeRouteLeave } from "vue-router"
 import { io } from "socket.io-client"
 import diff_match_patch, { patch_obj } from "@/tools/diff_match_patch"
+import { ref, onMounted, computed } from "vue"
+import {
+    mdiDownload,
+    mdiUpload,
+    mdiDelete,
+    mdiLock,
+    mdiContentSave,
+    mdiContentCopy,
+    mdiClock,
+    mdiLink,
+    mdiPlusCircleOutline,
+    mdiCog,
+    mdiCommentArrowRight,
+    mdiEmailFast,
+    mdiAlertOctagon,
+    mdiFileUpload,
+    mdiEye,
+} from "@mdi/js"
+import AppBarHomeButton from "@/components/AppBarHomeButton.vue"
+
+import { useRouter, useRoute } from "vue-router"
+const router = useRouter()
+const route = useRoute()
+
+import { useI18n } from "vue-i18n"
+const { t: $t } = useI18n()
 
 enum SaveStatus {
     // Current status displayed on top left. The values are used to get i18n string.
@@ -514,956 +519,895 @@ const UnsavedSaveStatus = new Set([
 
 const default_save_interval = 3
 const websocket_save_interval = 1
+const first_fetched = ref(false)
+const clip_version = ref(1)
+const remote_version = ref(1)
+const local_content = ref("")
+const remote_content = ref("")
+const last_saved = ref(Date.now())
+const save_status = ref(SaveStatus.empty)
+const is_new = ref(false)
+const metadata = ref(appStore.metadata)
+const current_url = ref(window.location.href)
+const password = ref("")
+const current_timeout = ref(-1)
+const selected_timeout = ref("")
+const readonly_name = ref("")
+const is_readonly = ref(false)
+const uploading = ref(false)
+const file_to_upload = ref<File[]>([])
+const remote_files = ref<FileData[]>([])
+const save_interval = ref<number | string>(default_save_interval)
+const fetch_min_idle_time = ref(1)
+const fetch_interval = ref<number | string>(0)
+const save_timer = ref<ReturnType<typeof setTimeout> | null>(null)
+const fetch_timer = ref<ReturnType<typeof setTimeout> | null>(null)
+const last_edit_time = ref(Date.now())
+const user_property = ref<UserProperty>({})
+const sidebar_list_opened = ref<string[]>([])
+const encrypt_text_content = ref(false)
+const encrypt_file = ref(false)
+const max_interval = ref(1e10)
+const combine_content = ref("")
+const mail_address = ref("")
+const instant_sync = ref(false)
+const autosave_while_instant_sync = ref(false)
+const instant_sync_socket = ref<ReturnType<typeof io> | null>(null)
+const is_ime_composing = ref(false)
+const instant_sync_patches_queue = ref<patch_obj[][]>([])
 
-export default {
-    data() {
-        return {
-            first_fetched: false,
-            clip_version: 1,
-            remote_version: 1,
-            local_content: "",
-            remote_content: "",
-            last_saved: Date.now(),
-            save_status: SaveStatus.empty,
-            is_new: false,
-            metadata: appStore.metadata,
-            current_url: window.location.href,
-            password: "",
-            current_timeout: -1,
-            selected_timeout: "",
-            readonly_name: "",
-            is_readonly: false,
-            uploading: false,
-            file_to_upload: [] as File[],
-            remote_files: [] as FileData[],
-            save_interval: default_save_interval as number | string,
-            fetch_min_idle_time: 1,
-            fetch_interval: 0 as number | string,
-            save_timer: null as ReturnType<typeof setTimeout> | null,
-            fetch_timer: null as ReturnType<typeof setTimeout> | null,
-            last_edit_time: Date.now(),
-            user_property: {} as UserProperty,
-            sidebar_list_opened: [] as string[],
-            encrypt_text_content: false,
-            encrypt_file: false,
-            max_interval: 1e10,
-            combine_content: "",
-            mail_address: "",
-            instant_sync: false,
-            autosave_while_instant_sync: false,
-            instant_sync_socket: null as ReturnType<typeof io> | null,
-            is_ime_composing: false,
-            instant_sync_patches_queue: [] as patch_obj[][],
+const name = computed(() => {
+    return route.params.name as string
+})
+const encryptPassword = computed(() => {
+    return SHA256(password.value).toString()
+})
+const timeout_selections = computed(() => {
+    return metadata.value.timeout_selections || []
+})
+const hasReadonlyName = computed(() => {
+    return readonly_name.value !== ""
+})
+const readonly_url = computed(() => {
+    return replaceLastPartOfUrl(window.location.href, readonly_name.value)
+})
+const readonly_url_check_empty = computed(() => {
+    return hasReadonlyName.value ? readonly_url.value : " "
+})
+const allow_mail = computed(() => {
+    return metadata.value.allow_mail
+})
+const allow_file = computed(() => {
+    return (
+        metadata.value.max_all_file_size !== 0 &&
+        metadata.value.max_file_count !== 0 &&
+        metadata.value.max_file_size !== 0
+    )
+})
+const allow_instant_sync = computed(() => {
+    return metadata.value.websocket_endpoint !== ""
+})
+import { useDisplay } from 'vuetify'
+
+const { smAndUp } = useDisplay()
+const should_wrap_appbar_to_slot = computed(() => {
+    return smAndUp.value ? "append" : "extension"
+})
+const is_local_outdated = computed(() => {
+    return save_status.value === SaveStatus.local_outdated
+})
+const server_authoirzation_password = computed(() => {
+    return Buffer.from(SHA512(password.value).toString(), "utf8").toString(
+        "base64"
+    )
+})
+const websocket_base_data = computed(() => {
+    return {
+        name: name.value,
+        client_id: appStore.client_id,
+        authorization: server_authoirzation_password.value,
+        data: {},
+    }
+})
+
+onMounted(() => {
+    // get password from url in hash part
+    // example: https://example.com/name#password
+    if (window.location.hash) {
+        password.value = window.location.hash.slice(1) // remove #
+    }
+
+    // disable unload warning on leave
+    onBeforeRouteLeave(() => {
+        setUnloadWarning(false)
+        disconnectWebSocket()
+    })
+
+    // add auth header
+    const auth_interceptor = axios.interceptors.request.use((config) => {
+        config.headers[
+            "Authorization"
+        ] = `Bearer ${server_authoirzation_password.value}`
+        return config
+    })
+    onBeforeRouteLeave(() => {
+        axios.interceptors.request.eject(auth_interceptor)
+    })
+
+    // register auto save & fetch
+    onUpdateSaveInterval()
+    onUpdateFetchInterval()
+
+    // first fetch
+    fetchContent()
+})
+
+// UI / UX
+function goToHome() {
+    router.push({ name: "Home" })
+}
+function beforeUnloadHandler(event: BeforeUnloadEvent) {
+    event.preventDefault()
+    event.returnValue = true
+}
+function setUnloadWarning(enable: boolean) {
+    const event_name = "beforeunload"
+    if (enable) window.addEventListener(event_name, beforeUnloadHandler)
+    else window.removeEventListener(event_name, beforeUnloadHandler)
+}
+function setSaveStatus(new_save_status: SaveStatus) {
+    if (save_status.value === new_save_status) return
+    save_status.value = new_save_status
+    if (UnsavedSaveStatus.has(new_save_status)) setUnloadWarning(true)
+    else setUnloadWarning(false)
+}
+async function setEditingStatusOnEdit() {
+    last_edit_time.value = Date.now()
+    if (is_readonly.value) return
+    setSaveStatus(SaveStatus.editing)
+}
+// create / fetch / push / delete
+async function requestPassword(): Promise<SweetAlertResult<any>> {
+    return cancelableInput({
+        title: $t("clip.password_question"),
+        input: "password",
+    })
+}
+async function createIfNotExist() {
+    if (!is_new.value) return
+    try {
+        let response = await axios.post(`/note/${name.value}`, {})
+        await fetchContent()
+        is_new.value = false
+    } catch (e: any) {
+        console.log(e)
+    }
+}
+async function pushContentIfChanged() {
+    if (local_content.value != remote_content.value) {
+        if (instant_sync.value) {
+            doInstantSync()
+            if (autosave_while_instant_sync.value) {
+                pushContent()
+            }
+        } else {
+            pushContent()
         }
-    },
-    methods: {
-        // UI / UX
-        humanFileSize: humanFileSize,
-        timeDeltaToString: timeDeltaToString,
-        goToHome() {
-            this.$router.push({ name: "Home" })
-        },
-        beforeUnloadHandler(event: BeforeUnloadEvent) {
-            event.preventDefault()
-            event.returnValue = true
-        },
-        setUnloadWarning(enable: boolean) {
-            const event_name = "beforeunload"
-            if (enable)
-                window.addEventListener(event_name, this.beforeUnloadHandler)
-            else
-                window.removeEventListener(event_name, this.beforeUnloadHandler)
-        },
-        setSaveStatus(save_status: SaveStatus) {
-            if (this.save_status === save_status) return
-            this.save_status = save_status
-            if (UnsavedSaveStatus.has(save_status)) this.setUnloadWarning(true)
-            else this.setUnloadWarning(false)
-        },
-        async setEditingStatusOnEdit() {
-            this.last_edit_time = Date.now()
-            if (this.is_readonly) return
-            this.setSaveStatus(SaveStatus.editing)
-        },
-        // create / fetch / push / delete
-        async requestPassword(): Promise<SweetAlertResult<any>> {
-            return cancelableInput({
-                title: this.$t("clip.password_question"),
-                input: "password",
+    }
+}
+async function combinePushContent() {
+    if (
+        is_readonly.value ||
+        combine_content.value === "" ||
+        encrypt_text_content.value
+    )
+        return
+    let combine_mode = "prepend"
+    let response = await axios.put(`/note/${name.value}`, {
+        content: combine_content.value + "\n",
+        combine_mode: combine_mode,
+    })
+    clip_version.value = response.data.data.clip_version
+    combine_content.value = ""
+    local_content.value = remote_content.value = response.data.data.content
+    clip_version.value = remote_version.value = response.data.data.clip_version
+}
+function doInstantSync() {
+    assert(instant_sync_socket.value !== null)
+    instant_sync_socket.value.emit("diff", {
+        ...websocket_base_data.value,
+        data: diff_match_patch.patch_make(
+            remote_content.value,
+            local_content.value
+        ),
+    })
+    remote_content.value = local_content.value
+}
+async function pushContent(force = false) {
+    if (is_readonly.value) return
+    if (save_status.value === SaveStatus.saving) return
+    if (!force && is_local_outdated.value) return
+    if (force) clip_version.value = remote_version.value
+    last_saved.value = Date.now()
+    setSaveStatus(SaveStatus.saving)
+    await createIfNotExist()
+    let content = local_content.value
+    if (encrypt_text_content.value) {
+        if (user_property.value.encrypt_text_content_algo === "aes") {
+            if (content !== "")
+                content = AES.encrypt(content, encryptPassword.value).toString()
+        } else {
+            showDetailWarning({
+                title: $t("clip.error"),
+                text: $t("clip.encrypt_text_content_algo_not_supported"),
             })
-        },
-        async createIfNotExist() {
-            if (!this.is_new) return
-            try {
-                let response = await axios.post(`/note/${this.name}`, {})
-                await this.fetchContent(true)
-                this.is_new = false
-            } catch (e: any) {
-                console.log(e)
-            }
-        },
-        async fetchContent(no_update_content = false) {
-            try {
-                let response
-                try {
-                    response = await axios.get<Response<ClipData>>(
-                        `/note/${this.name}`
-                    )
-                } catch (e: any) {
-                    if (isAxiosError(e)) {
-                        if (e.response?.status === 400) {
-                            showDetailWarning({
-                                title: this.$t("clip.error"),
-                                text: this.$t("clip.invalid_clip_name"),
-                            }).then(this.goToHome)
-                            return
-                        } else if (e.response?.status === 401) {
-                            this.requestPassword().then((result) => {
-                                if (result.isConfirmed) {
-                                    this.password = result.value as string
-                                    this.fetchContent()
-                                } else {
-                                    this.goToHome()
-                                }
-                            })
-                            return
-                        } else if (e.response?.status === 451) {
-                            showDetailWarning({
-                                title: this.$t("clip.error"),
-                                text: this.$t(
-                                    "clip.report.clip_has_been_banned"
-                                ),
-                            }).then(this.goToHome)
-                            return
-                        }
-                    }
-                    throw e
-                }
-                if (response.status === 204) {
-                    this.is_new = true
-                    this.setSaveStatus(SaveStatus.new)
-                    this.local_content = ""
-                    this.remote_content = ""
-                    this.remote_version = this.clip_version = 1
-                    return
-                } else {
-                    try {
-                        this.user_property = JSON.parse(
-                            response.data.data.user_property
-                        ) as UserProperty
-                    } catch {
-                        this.user_property = {} as UserProperty
-                        console.log(response.data.data.user_property)
-                        showDetailWarning({
-                            title: this.$t("clip.error"),
-                            text: this.$t("clip.failed_to_parse_user_property"),
-                        })
-                    }
-                    this.encrypt_text_content =
-                        this.user_property.encrypt_text_content ?? false
-                    this.encrypt_file = this.user_property.encrypt_file ?? false
-                    let content = response.data.data.content
-                    if (this.user_property.encrypt_text_content) {
-                        if (
-                            this.user_property.encrypt_text_content_algo ===
-                            "aes"
-                        ) {
-                            const decrypt = AES.decrypt(
-                                content,
-                                this.encryptPassword
-                            ).toString(utf8)
-                            if (content !== "" && decrypt === "") {
-                                content =
-                                    content + this.$t("error.decrypt_error")
-                            } else {
-                                content = decrypt
-                            }
-                        } else {
-                            showDetailWarning({
-                                title: this.$t("clip.error"),
-                                text: this.$t(
-                                    "clip.encrypt_text_content_algo_not_supported"
-                                ),
-                            })
-                        }
-                    }
-                    this.remote_version = response.data.data.clip_version ?? 1
-                    if (
-                        !no_update_content &&
-                        (this.remote_version > this.clip_version ||
-                            this.first_fetched === false)
-                    ) {
-                        this.local_content = content
-                    }
-                    this.first_fetched = true
-                    this.current_timeout = response.data.data.timeout_seconds
-                    this.selected_timeout = timeDeltaToString(
-                        this.current_timeout
-                    )
-                    this.remote_content = content
-                    this.clip_version = this.remote_version
-                    this.readonly_name = response.data.data.readonly_name
-                    this.is_readonly = response.data.data.is_readonly
-                    this.remote_files = response.data.data.files
-                    if (this.save_status === SaveStatus.local_outdated) {
-                        this.setSaveStatus(SaveStatus.conflict_resolved)
-                    }
-                }
-            } catch (e: any) {
-                console.log(e)
-            }
-        },
-        async pushContentIfChanged() {
-            if (this.local_content != this.remote_content) {
-                if (this.instant_sync) {
-                    this.doInstantSync()
-                    if (this.autosave_while_instant_sync) {
-                        this.pushContent()
-                    }
-                } else {
-                    this.pushContent()
-                }
-            }
-        },
-        async combinePushContent() {
-            if (
-                this.is_readonly ||
-                this.combine_content === "" ||
-                this.encrypt_text_content
-            )
+            return
+        }
+    }
+    try {
+        let response = await axios.put(`/note/${name.value}`, {
+            user_property: JSON.stringify(user_property.value),
+            content: content,
+            clip_version: clip_version.value,
+        })
+        clip_version.value = response.data.data.clip_version
+        fetchContent(true)
+        setSaveStatus(SaveStatus.saved)
+    } catch (e: any) {
+        if (isAxiosError(e)) {
+            if (e.response?.status === 409) {
+                remote_version.value = e.response.data.data.clip_version
+                setSaveStatus(SaveStatus.local_outdated)
                 return
-            let combine_mode = "prepend"
-            let response = await axios.put(`/note/${this.name}`, {
-                content: this.combine_content + "\n",
-                combine_mode: combine_mode,
-            })
-            this.clip_version = response.data.data.clip_version
-            this.combine_content = ""
-            this.local_content = this.remote_content =
-                response.data.data.content
-            this.clip_version = this.remote_version =
-                response.data.data.clip_version
-        },
-        doInstantSync() {
-            assert(this.instant_sync_socket !== null)
-            this.instant_sync_socket.emit("diff", {
-                ...this.websocket_base_data,
-                data: diff_match_patch.patch_make(
-                    this.remote_content,
-                    this.local_content
-                ),
-            })
-            this.remote_content = this.local_content
-        },
-        async pushContent(force = false) {
-            if (this.is_readonly) return
-            if (this.save_status === SaveStatus.saving) return
-            if (!force && this.is_local_outdated) return
-            if (force) this.clip_version = this.remote_version
-            this.last_saved = Date.now()
-            this.setSaveStatus(SaveStatus.saving)
-            await this.createIfNotExist()
-            let content = this.local_content
-            if (this.encrypt_text_content) {
-                if (this.user_property.encrypt_text_content_algo === "aes") {
-                    if (content !== "")
-                        content = AES.encrypt(
-                            content,
-                            this.encryptPassword
-                        ).toString()
+            }
+        }
+        console.log(e)
+        setSaveStatus(SaveStatus.error)
+    }
+}
+async function fetchContent(no_update_content = false) {
+    try {
+        let response
+        try {
+            response = await axios.get<Response<ClipData>>(`/note/${name.value}`)
+        } catch (e: any) {
+            if (isAxiosError(e)) {
+                if (e.response?.status === 400) {
+                    showDetailWarning({
+                        title: $t("clip.error"),
+                        text: $t("clip.invalid_clip_name"),
+                    }).then(goToHome)
+                    return
+                } else if (e.response?.status === 401) {
+                    requestPassword().then((result) => {
+                        if (result.isConfirmed) {
+                            password.value = result.value as string
+                            fetchContent(no_update_content)
+                        } else {
+                            goToHome()
+                        }
+                    })
+                    return
+                } else if (e.response?.status === 451) {
+                    showDetailWarning({
+                        title: $t("clip.error"),
+                        text: $t("clip.report.clip_has_been_banned"),
+                    }).then(goToHome)
+                    return
+                }
+            }
+            throw e
+        }
+        if (response.status === 204) {
+            is_new.value = true
+            setSaveStatus(SaveStatus.new)
+            local_content.value = ""
+            remote_content.value = ""
+            remote_version.value = clip_version.value = 1
+            return
+        } else {
+            try {
+                user_property.value = JSON.parse(
+                    response.data.data.user_property
+                ) as UserProperty
+            } catch {
+                user_property.value = {} as UserProperty
+                console.log(response.data.data.user_property)
+                showDetailWarning({
+                    title: $t("clip.error"),
+                    text: $t("clip.failed_to_parse_user_property"),
+                })
+            }
+            encrypt_text_content.value =
+                user_property.value.encrypt_text_content ?? false
+            encrypt_file.value = user_property.value.encrypt_file ?? false
+            let content = response.data.data.content
+            if (user_property.value.encrypt_text_content) {
+                if (user_property.value.encrypt_text_content_algo === "aes") {
+                    const decrypt = AES.decrypt(
+                        content,
+                        encryptPassword.value
+                    ).toString(utf8)
+                    if (content !== "" && decrypt === "") {
+                        content = content + $t("error.decrypt_error")
+                    } else {
+                        content = decrypt
+                    }
                 } else {
                     showDetailWarning({
-                        title: this.$t("clip.error"),
-                        text: this.$t(
+                        title: $t("clip.error"),
+                        text: $t(
                             "clip.encrypt_text_content_algo_not_supported"
                         ),
                     })
-                    return
                 }
             }
-            try {
-                let response = await axios.put(`/note/${this.name}`, {
-                    user_property: JSON.stringify(this.user_property),
-                    content: content,
-                    clip_version: this.clip_version,
-                })
-                this.clip_version = response.data.data.clip_version
-                this.fetchContent(true)
-                this.setSaveStatus(SaveStatus.saved)
-            } catch (e: any) {
-                if (isAxiosError(e)) {
-                    if (e.response?.status === 409) {
-                        this.remote_version = e.response.data.data.clip_version
-                        this.setSaveStatus(SaveStatus.local_outdated)
-                        return
-                    }
-                }
-                console.log(e)
-                this.setSaveStatus(SaveStatus.error)
-            }
-        },
-        async deleteContent() {
-            const result = await dangerousConfirm({
-                title: this.$t("clip.delete.are_you_sure"),
-                text: this.$t("clip.delete.you_wont_be_able_to_revert_this"),
-                confirmButtonText: this.$t("clip.delete.yes_delete_it"),
-            })
-
-            if (result.isConfirmed) {
-                try {
-                    await axios.delete(`/note/${this.name}`)
-                    showAutoCloseSuccess({
-                        title: this.$t("clip.delete.deleted"),
-                        text: this.$t("clip.delete.your_clip_has_been_deleted"),
-                        timer: undefined,
-                    }).then(this.goToHome)
-                } catch (e: any) {
-                    console.log(e)
-                }
-            }
-        },
-        // file
-        getTotalSize(...file_arrays: (File[] | FileData[])[]): number {
-            let total_size = 0
-            file_arrays.forEach((files) => {
-                files.forEach((file) => {
-                    total_size += file.size
-                })
-            })
-            return total_size
-        },
-        arrayBufferToWordArray(ab: ArrayBuffer): WordArray {
-            // https://stackoverflow.com/questions/33914764/how-to-read-a-binary-file-with-filereader-in-order-to-hash-it-with-sha-256-in-cr
-            var i8a = new Uint8Array(ab)
-            var a = []
-            for (var i = 0; i < i8a.length; i += 4) {
-                a.push(
-                    (i8a[i] << 24) |
-                        (i8a[i + 1] << 16) |
-                        (i8a[i + 2] << 8) |
-                        i8a[i + 3]
-                )
-            }
-            return WordArray.create(a, i8a.length)
-        },
-        wordArrayToArrayBuffer(wordArray: WordArray): ArrayBuffer {
-            const { words } = wordArray
-            const { sigBytes } = wordArray
-            const u8 = new Uint8Array(sigBytes)
-            for (let i = 0; i < sigBytes; i += 1) {
-                u8[i] = (words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff
-            }
-            return u8
-        },
-        onAttachFile(event: ClipboardEvent | DragEvent) {
-            if (this.is_readonly || this.uploading || !this.allow_file) return
-            let items: FileList | undefined = undefined
-            if (event instanceof DragEvent) {
-                // file drag & drop
-                items = event.dataTransfer?.files
-            } else {
-                // clipboard
-                items = event.clipboardData?.files
-            }
-            if (items === undefined || items.length === 0) return
-            event.preventDefault()
-            this.file_to_upload = Array.from(items)
-            this.uploadFile()
-        },
-        async uploadSingleFile(file: File) {
-            var formData = new FormData()
-            if (this.encrypt_file) {
-                // encrypt file
-                let reader = new FileReader()
-                let file_data = await new Promise<ArrayBuffer>(
-                    (resolve, reject) => {
-                        reader.onload = () => {
-                            resolve(reader.result as ArrayBuffer)
-                        }
-                        reader.onerror = () => {
-                            reject(reader.error)
-                        }
-                        reader.readAsArrayBuffer(file)
-                    }
-                )
-                let encrypted_file_data = AES.encrypt(
-                    this.arrayBufferToWordArray(file_data),
-                    this.encryptPassword
-                ).toString()
-                let encrypted_file = new File(
-                    [encrypted_file_data],
-                    this.encryptFilename(file.name),
-                    { type: file.type }
-                )
-                file = encrypted_file
-            }
-            formData.append("file", file)
-            await axios.post(`/note/${this.name}/file/0`, formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                },
-            })
-        },
-        async uploadFile() {
-            await this.createIfNotExist()
-            if (this.file_to_upload.length === 0) return
-            this.uploading = true
-            let error_string = null
-            let file_count =
-                this.file_to_upload.length + this.remote_files.length
+            remote_version.value = response.data.data.clip_version ?? 1
             if (
-                this.metadata.max_file_count &&
-                file_count > this.metadata.max_file_count
+                !no_update_content &&
+                (remote_version.value > clip_version.value ||
+                    first_fetched.value === false)
             ) {
-                error_string = this.$t(
-                    "clip.file.error.TOTAL_FILES_COUNT_LIMIT_HIT"
-                )
+                local_content.value = content
             }
-            this.file_to_upload.forEach((file) => {
-                if (
-                    this.metadata.max_file_size &&
-                    file.size > this.metadata.max_file_size
-                ) {
-                    error_string = this.$t(
-                        "clip.file.error.SINGLE_FILE_SIZE_LIMIT_HIT"
-                    )
-                }
-            })
-            let total_size = this.getTotalSize(
-                this.file_to_upload,
-                this.remote_files
-            )
+            first_fetched.value = true
+            current_timeout.value = response.data.data.timeout_seconds
+            selected_timeout.value = timeDeltaToString(current_timeout.value)
+            remote_content.value = content
+            clip_version.value = remote_version.value
+            readonly_name.value = response.data.data.readonly_name
+            is_readonly.value = response.data.data.is_readonly
+            remote_files.value = response.data.data.files
+            if (save_status.value === SaveStatus.local_outdated) {
+                setSaveStatus(SaveStatus.conflict_resolved)
+            }
+        }
+    } catch (e: any) {
+        console.log(e)
+    }
+}
+async function deleteContent() {
+    const result = await dangerousConfirm({
+        title: $t("clip.delete.are_you_sure"),
+        text: $t("clip.delete.you_wont_be_able_to_revert_this"),
+        confirmButtonText: $t("clip.delete.yes_delete_it"),
+    })
 
+    if (result.isConfirmed) {
+        try {
+            await axios.delete(`/note/${name.value}`)
+            showAutoCloseSuccess({
+                title: $t("clip.delete.deleted"),
+                text: $t("clip.delete.your_clip_has_been_deleted"),
+                timer: undefined,
+            }).then(goToHome)
+        } catch (e: any) {
+            console.log(e)
+        }
+    }
+}
+// file
+function getTotalSize(...file_arrays: (File[] | FileData[])[]): number {
+    let total_size = 0
+    file_arrays.forEach((files) => {
+        files.forEach((file) => {
+            total_size += file.size
+        })
+    })
+    return total_size
+}
+function arrayBufferToWordArray(ab: ArrayBuffer): WordArray {
+    // https://stackoverflow.com/questions/33914764/how-to-read-a-binary-file-with-filereader-in-order-to-hash-it-with-sha-256-in-cr
+    var i8a = new Uint8Array(ab)
+    var a = []
+    for (var i = 0; i < i8a.length; i += 4) {
+        a.push(
+            (i8a[i] << 24) | (i8a[i + 1] << 16) | (i8a[i + 2] << 8) | i8a[i + 3]
+        )
+    }
+    return WordArray.create(a, i8a.length)
+}
+function wordArrayToArrayBuffer(wordArray: WordArray): ArrayBuffer {
+    const { words } = wordArray
+    const { sigBytes } = wordArray
+    const u8 = new Uint8Array(sigBytes)
+    for (let i = 0; i < sigBytes; i += 1) {
+        u8[i] = (words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff
+    }
+    return u8
+}
+function onAttachFile(event: ClipboardEvent | DragEvent) {
+    if (is_readonly.value || uploading.value || !allow_file.value) return
+    let items: FileList | undefined = undefined
+    if (event instanceof DragEvent) {
+        // file drag & drop
+        items = event.dataTransfer?.files
+    } else {
+        // clipboard
+        items = event.clipboardData?.files
+    }
+    if (items === undefined || items.length === 0) return
+    event.preventDefault()
+    file_to_upload.value = Array.from(items)
+    uploadFile()
+}
+async function uploadSingleFile(file: File) {
+    var formData = new FormData()
+    if (encrypt_file.value) {
+        // encrypt file
+        let reader = new FileReader()
+        let file_data = await new Promise<ArrayBuffer>((resolve, reject) => {
+            reader.onload = () => {
+                resolve(reader.result as ArrayBuffer)
+            }
+            reader.onerror = () => {
+                reject(reader.error)
+            }
+            reader.readAsArrayBuffer(file)
+        })
+        let encrypted_file_data = AES.encrypt(
+            arrayBufferToWordArray(file_data),
+            encryptPassword.value
+        ).toString()
+        let encrypted_file = new File(
+            [encrypted_file_data],
+            encryptFilename(file.name),
+            { type: file.type }
+        )
+        file = encrypted_file
+    }
+    formData.append("file", file)
+    await axios.post(`/note/${name.value}/file/0`, formData, {
+        headers: {
+            "Content-Type": "multipart/form-data",
+        },
+    })
+}
+async function uploadFile() {
+    await createIfNotExist()
+    if (file_to_upload.value.length === 0) return
+    uploading.value = true
+    let error_string = null
+    let file_count = file_to_upload.value.length + remote_files.value.length
+    if (
+        metadata.value.max_file_count &&
+        file_count > metadata.value.max_file_count
+    ) {
+        error_string = $t("clip.file.error.TOTAL_FILES_COUNT_LIMIT_HIT")
+    }
+    file_to_upload.value.forEach((file) => {
+        if (
+            metadata.value.max_file_size &&
+            file.size > metadata.value.max_file_size
+        ) {
+            error_string = $t("clip.file.error.SINGLE_FILE_SIZE_LIMIT_HIT")
+        }
+    })
+    let total_size = getTotalSize(file_to_upload.value, remote_files.value)
+
+    if (
+        metadata.value.max_all_file_size &&
+        total_size > metadata.value.max_all_file_size
+    ) {
+        error_string = $t("clip.file.error.TOTAL_FILES_SIZE_LIMIT_HIT")
+    }
+    if (error_string !== null) {
+        showDetailWarning({
+            title: $t("clip.error"),
+            text: error_string,
+        })
+        file_to_upload.value = []
+        uploading.value = false
+        return
+    }
+    try {
+        await Promise.all(file_to_upload.value.map(uploadSingleFile))
+        fetchContent(true)
+        /* showAutoCloseSuccess({
+                    title: $t('clip.file.uploaded'),
+                    text: $t('clip.file.your_file_has_been_uploaded'),
+                }) */
+    } catch (e: any) {
+        console.log(e)
+        error_string = $t("clip.file.failed_to_upload_file")
+        if (isAxiosError(e)) {
             if (
-                this.metadata.max_all_file_size &&
-                total_size > this.metadata.max_all_file_size
+                e.response?.status === 400 &&
+                e.response?.data?.error_id !== null
             ) {
-                error_string = this.$t(
-                    "clip.file.error.TOTAL_FILES_SIZE_LIMIT_HIT"
+                error_string = $t(
+                    "clip.file.error." + e.response.data.error_id
                 )
             }
-            if (error_string !== null) {
-                showDetailWarning({
-                    title: this.$t("clip.error"),
-                    text: error_string,
-                })
-                this.file_to_upload = []
-                this.uploading = false
-                return
-            }
-            try {
-                await Promise.all(
-                    this.file_to_upload.map(this.uploadSingleFile)
-                )
-                this.fetchContent(true)
-                /* showAutoCloseSuccess({
-                    title: this.$t('clip.file.uploaded'),
-                    text: this.$t('clip.file.your_file_has_been_uploaded'),
+        }
+        showDetailWarning({
+            title: $t("clip.error"),
+            text: error_string,
+        })
+    } finally {
+        file_to_upload.value = []
+        uploading.value = false
+        fetchContent(true)
+    }
+}
+async function deleteFile(file: FileData) {
+    if (uploading.value) return
+    uploading.value = true
+    const result = await dangerousConfirm({
+        title: $t("clip.delete.are_you_sure"),
+        text: $t("clip.delete.you_wont_be_able_to_revert_this"),
+        confirmButtonText: $t("clip.delete.yes_delete_it"),
+    })
+
+    if (!result.isConfirmed) {
+        uploading.value = false
+        return
+    }
+
+    try {
+        await axios.delete(`/note/${name.value}/file/${file.id}`)
+        fetchContent(true)
+        /* showAutoCloseSuccess({
+                    title: $t('clip.file.deleted'),
+                    text: $t('clip.file.your_file_has_been_deleted'),
                 }) */
-            } catch (e: any) {
-                console.log(e)
-                error_string = this.$t("clip.file.failed_to_upload_file")
-                if (isAxiosError(e)) {
-                    if (
-                        e.response?.status === 400 &&
-                        e.response?.data?.error_id !== null
-                    ) {
-                        error_string = this.$t(
-                            "clip.file.error." + e.response.data.error_id
-                        )
-                    }
-                }
-                showDetailWarning({
-                    title: this.$t("clip.error"),
-                    text: error_string,
-                })
-            } finally {
-                this.file_to_upload = []
-                this.uploading = false
-                this.fetchContent(true)
+    } catch (e: any) {
+        console.log(e)
+        showDetailWarning({
+            title: $t("clip.error"),
+            text: $t("clip.file.failed_to_delete_file"),
+        })
+    } finally {
+        uploading.value = false
+    }
+}
+// password
+async function changePassword() {
+    let password = (
+        await cancelableInput({
+            title: $t("clip.new_password_question"),
+            input: "password",
+        })
+    ).value
+    if (password === undefined) return
+    try {
+        await axios.put(`/note/${name.value}`, {
+            new_password: password === "" ? "" : SHA512(password).toString(),
+        })
+        password.value = password
+        await updateEncryptText()
+        showAutoCloseSuccess({
+            title: $t("clip.password_changed"),
+        })
+    } catch (e: any) {
+        console.log(e)
+    }
+}
+async function updateEncryptText() {
+    if (encrypt_text_content.value) {
+        user_property.value.encrypt_text_content = true
+        user_property.value.encrypt_text_content_algo = "aes"
+    } else {
+        user_property.value.encrypt_text_content = false
+        user_property.value.encrypt_text_content_algo = ""
+    }
+    pushContent()
+}
+async function updateEncryptFile() {
+    user_property.value.encrypt_file = encrypt_file.value
+    pushContent()
+}
+async function setNoteTimeout(selected_timeout: string) {
+    await createIfNotExist()
+    try {
+        let new_timeout = undefined
+        timeout_selections.value.forEach((timeout) => {
+            if (timeDeltaToString(timeout) === selected_timeout) {
+                new_timeout = timeout
             }
-        },
-        async deleteFile(file: FileData) {
-            if (this.uploading) return
-            this.uploading = true
-            const result = await dangerousConfirm({
-                title: this.$t("clip.delete.are_you_sure"),
-                text: this.$t("clip.delete.you_wont_be_able_to_revert_this"),
-                confirmButtonText: this.$t("clip.delete.yes_delete_it"),
+        })
+
+        let invalid_timeout_toast = () => {
+            showDetailWarning({
+                title: $t("clip.error"),
+                text: $t("clip.invalid_timeout"),
             })
+        }
 
-            if (!result.isConfirmed) {
-                this.uploading = false
-                return
-            }
-
-            try {
-                await axios.delete(`/note/${this.name}/file/${file.id}`)
-                this.fetchContent(true)
-                /* showAutoCloseSuccess({
-                    title: this.$t('clip.file.deleted'),
-                    text: this.$t('clip.file.your_file_has_been_deleted'),
-                }) */
-            } catch (e: any) {
-                console.log(e)
-                showDetailWarning({
-                    title: this.$t("clip.error"),
-                    text: this.$t("clip.file.failed_to_delete_file"),
-                })
-            } finally {
-                this.uploading = false
-            }
-        },
-        // password
-        async changePassword() {
-            let password = (
-                await cancelableInput({
-                    title: this.$t("clip.new_password_question"),
-                    input: "password",
-                })
-            ).value
-            if (password === undefined) return
-            try {
-                await axios.put(`/note/${this.name}`, {
-                    new_password:
-                        password === "" ? "" : SHA512(password).toString(),
-                })
-                this.password = password
-                await this.updateEncryptText()
-                showAutoCloseSuccess({
-                    title: this.$t("clip.password_changed"),
-                })
-            } catch (e: any) {
-                console.log(e)
-            }
-        },
-        async updateEncryptText() {
-            if (this.encrypt_text_content) {
-                this.user_property.encrypt_text_content = true
-                this.user_property.encrypt_text_content_algo = "aes"
-            } else {
-                this.user_property.encrypt_text_content = false
-                this.user_property.encrypt_text_content_algo = ""
-            }
-            this.pushContent()
-        },
-        async updateEncryptFile() {
-            this.user_property.encrypt_file = this.encrypt_file
-            this.pushContent()
-        },
-        async setNoteTimeout(selected_timeout: string) {
-            await this.createIfNotExist()
-            try {
-                let new_timeout = undefined
-                this.timeout_selections.forEach((timeout) => {
-                    if (timeDeltaToString(timeout) === selected_timeout) {
-                        new_timeout = timeout
-                    }
-                })
-
-                let invalid_timeout_toast = () => {
-                    showDetailWarning({
-                        title: this.$t("clip.error"),
-                        text: this.$t("clip.invalid_timeout"),
-                    })
-                }
-
-                if (new_timeout === undefined) {
+        if (new_timeout === undefined) {
+            invalid_timeout_toast()
+            return
+        }
+        try {
+            let response = await axios.put(`/note/${name.value}`, {
+                timeout_seconds: new_timeout,
+            })
+            current_timeout.value = new_timeout
+        } catch (e: any) {
+            if (isAxiosError(e)) {
+                if (e.response?.status === 400) {
                     invalid_timeout_toast()
                     return
                 }
-                try {
-                    let response = await axios.put(`/note/${this.name}`, {
-                        timeout_seconds: new_timeout,
-                    })
-                    this.current_timeout = new_timeout
-                } catch (e: any) {
-                    if (isAxiosError(e)) {
-                        if (e.response?.status === 400) {
-                            invalid_timeout_toast()
-                            return
-                        }
-                    }
-                    console.log(e)
-                }
-            } catch (e: any) {
-                console.log(e)
             }
-        },
-        // useful features
-        async copyString(content: string) {
-            if (!content) return
-            if (navigator?.clipboard?.writeText === undefined) {
-                // http fallback
-                // https://stackoverflow.com/questions/400212/how-do-i-copy-to-the-clipboard-in-javascript
-                let textArea = document.createElement("textarea")
-                // Avoid scrolling to bottom
-                textArea.style.top = "0"
-                textArea.style.left = "0"
-                textArea.style.position = "fixed"
-                textArea.value = content
-                document.body.appendChild(textArea)
-                textArea.focus()
-                textArea.select()
-                return new Promise((res, rej) => {
-                    document.execCommand("copy") ? res(null) : rej()
-                    textArea.remove()
-                })
-            }
-            try {
-                await navigator.clipboard.writeText(content)
-            } catch (e: any) {
-                console.log(e)
-            }
-        },
-        async downloadContent() {
-            // save as blob
-            const blob = new Blob([this.local_content], { type: "text/plain" })
-            this.saveBlob(blob, `${this.name}.txt`)
-        },
-        saveBlob(blob: Blob, filename: string) {
-            const link = document.createElement("a")
-            link.href = URL.createObjectURL(blob)
-            link.download = filename
-            link.click()
-            URL.revokeObjectURL(link.href)
-        },
-        // readonly url
-        async toggleReadonlyUrl() {
-            try {
-                let response = await axios.put(`/note/${this.name}`, {
-                    enable_readonly: !this.hasReadonlyName,
-                })
-                this.fetchContent()
-            } catch (e: any) {
-                console.log(e)
-            }
-        },
-        // auto save & fetch
-        onAutoSave() {
-            assert(typeof this.save_interval === "number")
-            if (Date.now() - this.last_saved > this.save_interval * 1000) {
-                this.pushContentIfChanged()
-            }
-        },
-        onAutoFetch() {
-            if (
-                Date.now() - this.last_edit_time > this.fetch_min_idle_time &&
-                !this.is_ime_composing
-            ) {
-                this.fetchContent()
-            }
-        },
-        onUpdateSaveInterval() {
-            this.save_interval = parseInt(this.save_interval.toString())
-            if (Number.isNaN(this.save_interval) || this.save_interval < 0)
-                this.save_interval = 0
-            if (this.save_interval > this.max_interval)
-                this.save_interval = this.max_interval
-            if (this.save_timer !== null) clearInterval(this.save_timer)
-            this.save_timer = null
-            if (this.save_interval > 0)
-                this.save_timer = setInterval(
-                    this.onAutoSave,
-                    this.save_interval * 1000
-                )
-            if (this.save_interval === 0) this.save_interval = ""
-        },
-        onUpdateFetchInterval() {
-            this.fetch_interval = parseInt(this.fetch_interval.toString())
-            if (Number.isNaN(this.fetch_interval) || this.fetch_interval < 0)
-                this.fetch_interval = 0
-            if (this.fetch_interval > this.max_interval)
-                this.fetch_interval = this.max_interval
-            if (this.fetch_timer !== null) clearInterval(this.fetch_timer)
-            this.fetch_timer = null
-            if (this.fetch_interval > 0)
-                this.fetch_timer = setInterval(
-                    this.onAutoFetch,
-                    this.fetch_interval * 1000
-                )
-            if (this.fetch_interval === 0) this.fetch_interval = ""
-        },
-        async reportClip() {
-            try {
-                dangerousConfirm({
-                    title: this.$t("clip.report.report_clip_confirm"),
-                    text: this.$t("clip.report.clip_will_be_banned"),
-                }).then(async (result) => {
-                    if (result.isConfirmed) {
-                        let response = await axios.put(`/note/${this.name}`, {
-                            report: true,
-                        })
-                        showAutoCloseSuccess({
-                            title: this.$t("clip.report.reported"),
-                            text: this.$t("clip.report.clip_has_been_reported"),
-                        }).then(this.goToHome)
-                    }
-                })
-            } catch (e: any) {
-                console.log(e)
-            }
-        },
-        async sendToMail() {
-            try {
-                let response = await axios.post(`/mailto`, {
-                    address: this.mail_address,
-                    content: this.local_content,
-                })
-                if (response.status === 202) {
-                    await showDetailWarning({
-                        title: this.$t("clip.error"),
-                        text: this.$t("clip.mail.MAIL_NOT_VERIFIED"),
-                    })
-                    return
-                } else {
-                    await showAutoCloseSuccess({
-                        title: this.$t("clip.mail.sent"),
-                    })
-                }
-            } catch (e: any) {
-                if (isAxiosError(e)) {
-                    showDetailWarning({
-                        title: this.$t("clip.error"),
-                        text: this.$t(
-                            "clip.mail." + e.response?.data?.error_id
-                        ),
-                    })
-                    return
-                }
-                console.log(e)
-            }
-        },
-        mayDecryptFilename(filename: string): string {
-            if (!this.encrypt_file) return filename
-            const decrypt = AES.decrypt(
-                filename,
-                this.encryptPassword
-            ).toString(utf8)
-            if (filename !== "" && decrypt === "")
-                return filename + this.$t("error.decrypt_error")
-            else return decrypt
-        },
-        encryptFilename(filename: string): string {
-            if (filename !== "")
-                return AES.encrypt(filename, this.encryptPassword).toString()
-            else return ""
-        },
-        async downloadEncryptedFile(file: FileData) {
-            // https://blog.csdn.net/qq_38916811/article/details/127515455
-            // fetch file from remote url and decrypt
-            const response = await axios.get(file.download_url, {
-                responseType: "arraybuffer",
-            })
-            const enc = new TextDecoder("utf-8")
-            const str = enc.decode(response.data)
-            const decrypted_file_data = this.wordArrayToArrayBuffer(
-                AES.decrypt(str, this.encryptPassword)
-            )
-            // save as blob
-            const blob = new Blob([decrypted_file_data])
-            this.saveBlob(blob, this.mayDecryptFilename(file.filename))
-        },
-        canPreviewFile(file: FileData): boolean {
-            if (this.encrypt_file) return false
-            return true
-        },
-        calculateCursorPositionAfterMergeDiff(
-            cursor_position: number,
-            diff: patch_obj[]
-        ): number {
-            let new_cursor_position = cursor_position
-            diff.forEach((d) => {
-                // if start of the diff is before the cursor
-                if (d.start1 !== null && d.start1 < cursor_position) {
-                    // move the cursor by the length of the diff
-                    new_cursor_position += d.length2 - d.length1
-                }
-            })
-            return new_cursor_position
-        },
-        connectWebSocket() {
-            this.autosave_while_instant_sync = true
-            this.instant_sync_socket = io(
-                appStore.metadata.websocket_endpoint + "/instant_sync",
-                { path: appStore.metadata.websocket_path }
-            )
-
-            this.instant_sync_socket.on("connect", () => {
-                this.autosave_while_instant_sync = false
-                if (this.instant_sync_socket !== null)
-                    this.instant_sync_socket.emit(
-                        "join",
-                        this.websocket_base_data
-                    )
-            })
-
-            this.instant_sync_socket.on(
-                "enable_save",
-                (data: WebSocketBaseData) => {
-                    this.autosave_while_instant_sync = true
-                }
-            )
-
-            this.instant_sync_socket.on("diff", (data: WebSocketBaseData) => {
-                if (data.client_id === this.websocket_base_data.client_id)
-                    return
-                const patches = data.data as patch_obj[]
-                this.handleInstantSyncPatchesQueue(patches)
-            })
-        },
-        disconnectWebSocket() {
-            if (this.instant_sync_socket !== null) {
-                this.instant_sync_socket.disconnect()
-                this.instant_sync_socket = null
-                this.autosave_while_instant_sync = false
-            }
-        },
-        onInstantSyncChange() {
-            if (this.instant_sync) {
-                this.save_interval = websocket_save_interval
-                this.connectWebSocket()
-            } else {
-                this.save_interval = default_save_interval
-                this.disconnectWebSocket()
-            }
-        },
-        setComposing(status: boolean) {
-            this.is_ime_composing = status
-            this.handleInstantSyncPatchesQueue()
-        },
-        handleInstantSyncPatchesQueue(
-            patches: patch_obj[] | undefined = undefined
-        ) {
-            if (patches !== undefined) {
-                this.instant_sync_patches_queue.push(patches)
-            }
-            if (!this.is_ime_composing) {
-                this.instant_sync_patches_queue.forEach((patches) => {
-                    this.handleInstantSyncPatches(patches)
-                })
-                this.instant_sync_patches_queue = []
-            }
-        },
-        handleInstantSyncPatches(patches: patch_obj[]) {
-            const [result, successes] = diff_match_patch.patch_apply(
-                patches,
-                this.local_content
-            ) as [string, boolean[]]
-            if (successes.every((v) => v === true)) {
-                // cursor position
-                // @ts-ignore
-                const bodyTextArea = this.$refs.editor.$el.querySelector(
-                    "textarea"
-                ) as HTMLTextAreaElement
-                const selectionStart =
-                    this.calculateCursorPositionAfterMergeDiff(
-                        bodyTextArea.selectionStart,
-                        patches
-                    )
-                const selectionEnd = this.calculateCursorPositionAfterMergeDiff(
-                    bodyTextArea.selectionEnd,
-                    patches
-                )
-                this.remote_content = this.local_content = result
-                setTimeout(() => {
-                    // Set selection with 1ms delay, ref: https://stackoverflow.com/a/52333799
-                    bodyTextArea.selectionStart = selectionStart
-                    bodyTextArea.selectionEnd = selectionEnd
-                })
-                if (this.autosave_while_instant_sync) {
-                    this.pushContent()
-                }
-            }
-        },
-    },
-    computed: {
-        name(): string {
-            return this.$route.params.name as string
-        },
-        encryptPassword(): string {
-            return SHA256(this.password).toString()
-        },
-        timeout_selections(): number[] {
-            return this.metadata.timeout_selections || []
-        },
-        hasReadonlyName(): boolean {
-            return this.readonly_name !== ""
-        },
-        readonly_url(): string {
-            return replaceLastPartOfUrl(
-                window.location.href,
-                this.readonly_name
-            )
-        },
-        readonly_url_check_empty(): string {
-            return this.hasReadonlyName ? this.readonly_url : " "
-        },
-        allow_mail(): boolean {
-            return this.metadata.allow_mail
-        },
-        allow_file(): boolean {
-            return (
-                this.metadata.max_all_file_size !== 0 &&
-                this.metadata.max_file_count !== 0 &&
-                this.metadata.max_file_size !== 0
-            )
-        },
-        allow_instant_sync(): boolean {
-            return this.metadata.websocket_endpoint !== ""
-        },
-        should_wrap_appbar_to_slot(): string {
-            return this.$vuetify.display.smAndUp ? "append" : "extension"
-        },
-        is_local_outdated(): boolean {
-            return this.save_status === SaveStatus.local_outdated
-        },
-        server_authoirzation_password(): string {
-            return Buffer.from(
-                SHA512(this.password).toString(),
-                "utf8"
-            ).toString("base64")
-        },
-        websocket_base_data(): WebSocketBaseData {
-            return {
-                name: this.name,
-                client_id: appStore.client_id,
-                authorization: this.server_authoirzation_password,
-                data: {},
-            }
-        },
-    },
-    mounted() {
-        // get password from url in hash part
-        // example: https://example.com/name#password
-        if (window.location.hash) {
-            this.password = window.location.hash.slice(1) // remove #
+            console.log(e)
         }
-
-        // disable unload warning on leave
-        onBeforeRouteLeave(() => {
-            this.setUnloadWarning(false)
-            this.disconnectWebSocket()
+    } catch (e: any) {
+        console.log(e)
+    }
+}
+// useful features
+async function copyString(content: string) {
+    if (!content) return
+    if (navigator?.clipboard?.writeText === undefined) {
+        // http fallback
+        // https://stackoverflow.com/questions/400212/how-do-i-copy-to-the-clipboard-in-javascript
+        let textArea = document.createElement("textarea")
+        // Avoid scrolling to bottom
+        textArea.style.top = "0"
+        textArea.style.left = "0"
+        textArea.style.position = "fixed"
+        textArea.value = content
+        document.body.appendChild(textArea)
+        textArea.focus()
+        textArea.select()
+        return new Promise((res, rej) => {
+            document.execCommand("copy") ? res(null) : rej()
+            textArea.remove()
         })
-
-        // add auth header
-        const auth_interceptor = axios.interceptors.request.use((config) => {
-            config.headers[
-                "Authorization"
-            ] = `Bearer ${this.server_authoirzation_password}`
-            return config
+    }
+    try {
+        await navigator.clipboard.writeText(content)
+    } catch (e: any) {
+        console.log(e)
+    }
+}
+async function downloadContent() {
+    // save as blob
+    const blob = new Blob([local_content.value], { type: "text/plain" })
+    saveBlob(blob, `${name.value}.txt`)
+}
+function saveBlob(blob: Blob, filename: string) {
+    const link = document.createElement("a")
+    link.href = URL.createObjectURL(blob)
+    link.download = filename
+    link.click()
+    URL.revokeObjectURL(link.href)
+}
+// readonly url
+async function toggleReadonlyUrl() {
+    try {
+        let response = await axios.put(`/note/${name.value}`, {
+            enable_readonly: !hasReadonlyName.value,
         })
-        onBeforeRouteLeave(() => {
-            axios.interceptors.request.eject(auth_interceptor)
+        fetchContent()
+    } catch (e: any) {
+        console.log(e)
+    }
+}
+// auto save & fetch
+function onAutoSave() {
+    assert(typeof save_interval.value === "number")
+    if (Date.now() - last_saved.value > save_interval.value * 1000) {
+        pushContentIfChanged()
+    }
+}
+function onAutoFetch() {
+    if (
+        Date.now() - last_edit_time.value > fetch_min_idle_time.value &&
+        !is_ime_composing.value
+    ) {
+        fetchContent()
+    }
+}
+function onUpdateSaveInterval() {
+    save_interval.value = parseInt(save_interval.value.toString())
+    if (Number.isNaN(save_interval.value) || save_interval.value < 0)
+        save_interval.value = 0
+    if (save_interval.value > max_interval.value)
+        save_interval.value = max_interval.value
+    if (save_timer.value !== null) clearInterval(save_timer.value)
+    save_timer.value = null
+    if (save_interval.value > 0)
+        save_timer.value = setInterval(
+            onAutoSave,
+            save_interval.value * 1000
+        )
+    if (save_interval.value === 0) save_interval.value = ""
+}
+function onUpdateFetchInterval() {
+    fetch_interval.value = parseInt(fetch_interval.value.toString())
+    if (Number.isNaN(fetch_interval.value) || fetch_interval.value < 0)
+        fetch_interval.value = 0
+    if (fetch_interval.value > max_interval.value)
+        fetch_interval.value = max_interval.value
+    if (fetch_timer.value !== null) clearInterval(fetch_timer.value)
+    fetch_timer.value = null
+    if (fetch_interval.value > 0)
+        fetch_timer.value = setInterval(
+            onAutoFetch,
+            fetch_interval.value * 1000
+        )
+    if (fetch_interval.value === 0) fetch_interval.value = ""
+}
+async function reportClip() {
+    try {
+        dangerousConfirm({
+            title: $t("clip.report.report_clip_confirm"),
+            text: $t("clip.report.clip_will_be_banned"),
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                let response = await axios.put(`/note/${name.value}`, {
+                    report: true,
+                })
+                showAutoCloseSuccess({
+                    title: $t("clip.report.reported"),
+                    text: $t("clip.report.clip_has_been_reported"),
+                }).then(goToHome)
+            }
         })
+    } catch (e: any) {
+        console.log(e)
+    }
+}
+async function sendToMail() {
+    try {
+        let response = await axios.post(`/mailto`, {
+            address: mail_address.value,
+            content: local_content.value,
+        })
+        if (response.status === 202) {
+            await showDetailWarning({
+                title: $t("clip.error"),
+                text: $t("clip.mail.MAIL_NOT_VERIFIED"),
+            })
+            return
+        } else {
+            await showAutoCloseSuccess({
+                title: $t("clip.mail.sent"),
+            })
+        }
+    } catch (e: any) {
+        if (isAxiosError(e)) {
+            showDetailWarning({
+                title: $t("clip.error"),
+                text: $t("clip.mail." + e.response?.data?.error_id),
+            })
+            return
+        }
+        console.log(e)
+    }
+}
+function mayDecryptFilename(filename: string): string {
+    if (!encrypt_file.value) return filename
+    const decrypt = AES.decrypt(filename, encryptPassword.value).toString(utf8)
+    if (filename !== "" && decrypt === "")
+        return filename + $t("error.decrypt_error")
+    else return decrypt
+}
+function encryptFilename(filename: string): string {
+    if (filename !== "")
+        return AES.encrypt(filename, encryptPassword.value).toString()
+    else return ""
+}
+async function downloadEncryptedFile(file: FileData) {
+    // https://blog.csdn.net/qq_38916811/article/details/127515455
+    // fetch file from remote url and decrypt
+    const response = await axios.get(file.download_url, {
+        responseType: "arraybuffer",
+    })
+    const enc = new TextDecoder("utf-8")
+    const str = enc.decode(response.data)
+    const decrypted_file_data = wordArrayToArrayBuffer(
+        AES.decrypt(str, encryptPassword.value)
+    )
+    // save as blob
+    const blob = new Blob([decrypted_file_data])
+    saveBlob(blob, mayDecryptFilename(file.filename))
+}
+function canPreviewFile(file: FileData): boolean {
+    if (encrypt_file.value) return false
+    return true
+}
+function calculateCursorPositionAfterMergeDiff(
+    cursor_position: number,
+    diff: patch_obj[]
+): number {
+    let new_cursor_position = cursor_position
+    diff.forEach((d) => {
+        // if start of the diff is before the cursor
+        if (d.start1 !== null && d.start1 < cursor_position) {
+            // move the cursor by the length of the diff
+            new_cursor_position += d.length2 - d.length1
+        }
+    })
+    return new_cursor_position
+}
+function connectWebSocket() {
+    autosave_while_instant_sync.value = true
+    instant_sync_socket.value = io(
+        appStore.metadata.websocket_endpoint + "/instant_sync",
+        { path: appStore.metadata.websocket_path }
+    )
 
-        // register auto save & fetch
-        this.onUpdateSaveInterval()
-        this.onUpdateFetchInterval()
+    instant_sync_socket.value.on("connect", () => {
+        autosave_while_instant_sync.value = false
+        if (instant_sync_socket.value !== null)
+            instant_sync_socket.value.emit("join", websocket_base_data.value)
+    })
 
-        // first fetch
-        this.fetchContent()
-    },
+    instant_sync_socket.value.on("enable_save", (data: WebSocketBaseData) => {
+        autosave_while_instant_sync.value = true
+    })
+
+    instant_sync_socket.value.on("diff", (data: WebSocketBaseData) => {
+        if (data.client_id === websocket_base_data.value.client_id) return
+        const patches = data.data as patch_obj[]
+        handleInstantSyncPatchesQueue(patches)
+    })
+}
+function disconnectWebSocket() {
+    if (instant_sync_socket.value !== null) {
+        instant_sync_socket.value.disconnect()
+        instant_sync_socket.value = null
+        autosave_while_instant_sync.value = false
+    }
+}
+function onInstantSyncChange() {
+    if (instant_sync.value) {
+        save_interval.value = websocket_save_interval
+        connectWebSocket()
+    } else {
+        save_interval.value = default_save_interval
+        disconnectWebSocket()
+    }
+}
+function setComposing(status: boolean) {
+    is_ime_composing.value = status
+    handleInstantSyncPatchesQueue()
+}
+function handleInstantSyncPatchesQueue(
+    patches: patch_obj[] | undefined = undefined
+) {
+    if (patches !== undefined) {
+        instant_sync_patches_queue.value.push(patches)
+    }
+    if (!is_ime_composing.value) {
+        instant_sync_patches_queue.value.forEach((patches) => {
+            handleInstantSyncPatches(patches)
+        })
+        instant_sync_patches_queue.value = []
+    }
+}
+function handleInstantSyncPatches(patches: patch_obj[]) {
+    const [result, successes] = diff_match_patch.patch_apply(
+        patches,
+        local_content.value
+    ) as [string, boolean[]]
+    if (successes.every((v) => v === true)) {
+        // cursor position
+        // @ts-ignore
+        const bodyTextArea = this.$refs.editor.$el.querySelector(
+            "textarea"
+        ) as HTMLTextAreaElement
+        const selectionStart = calculateCursorPositionAfterMergeDiff(
+            bodyTextArea.selectionStart,
+            patches
+        )
+        const selectionEnd = calculateCursorPositionAfterMergeDiff(
+            bodyTextArea.selectionEnd,
+            patches
+        )
+        remote_content.value = local_content.value = result
+        setTimeout(() => {
+            // Set selection with 1ms delay, ref: https://stackoverflow.com/a/52333799
+            bodyTextArea.selectionStart = selectionStart
+            bodyTextArea.selectionEnd = selectionEnd
+        })
+        if (autosave_while_instant_sync.value) {
+            pushContent()
+        }
+    }
 }
 </script>
 

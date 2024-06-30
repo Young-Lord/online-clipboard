@@ -97,7 +97,7 @@
                         </v-card-text>
                         <v-card-text>{{
                             $t("setting.mail.not_received_hint", [
-                                metadata.email,
+                                appStore.metadata.email,
                             ])
                         }}</v-card-text>
                     </div>
@@ -108,9 +108,6 @@
 </template>
 <script setup lang="ts">
 import AppBarHomeButton from "@/components/AppBarHomeButton.vue"
-</script>
-
-<script lang="ts">
 import {
     MailSubscriptionData,
     MailSubscriptionSetting,
@@ -118,127 +115,119 @@ import {
     Response,
     axios,
 } from "@/api"
-import { useAppStore } from "@/store/app"
-const appStore = useAppStore()
 import { showDetailWarning, showAutoCloseSuccess } from "@/plugins/swal"
 import { isAxiosError } from "axios"
 import { onBeforeRouteLeave } from "vue-router"
+import { onMounted, ref, computed } from "vue";
 
-export default {
-    data() {
-        return {
-            subscription_status: null as MailSubscriptionStatus | null,
-            input_mail_address: "",
-            metadata: appStore.metadata,
-            MailSubscriptionStatus: MailSubscriptionStatus,
-            MailSubscriptionSetting: MailSubscriptionSetting,
-        }
-    },
-    methods: {
-        goToHome() {
-            this.$router.push({ name: "Home" })
-        },
-        async updateSubscriptionStatus(
-            status: MailSubscriptionStatus | undefined = undefined
-        ) {
-            if (status === undefined) {
-                const res = await axios.get<Response<MailSubscriptionData>>(
-                    `/mail/${this.owned_mail_address}/settings`
-                )
-                status = res.data.data.subscribe
-            }
-            this.subscription_status = status
-        },
-        async setSubscriptionSetting(status: MailSubscriptionSetting) {
-            try {
-                const res = await axios.post(
-                    `/mail/${this.owned_mail_address}/settings`,
-                    {
-                        subscribe: status,
-                    }
-                )
-                this.updateSubscriptionStatus(res.data.data.subscribe)
-                showAutoCloseSuccess({
-                    text: this.$t("setting.mail.update_success"),
-                })
-            } catch (e) {
-                showDetailWarning({
-                    text: this.$t("setting.mail.update_failed"),
-                })
-            }
-        },
-        async resendVerificationMail() {
-            try {
-                const res = await axios.post(`/mailto/send_verification_mail`, {
-                    address: this.input_mail_address,
-                })
-                showAutoCloseSuccess({
-                    text: this.$t("setting.mail.resend_request_success"),
-                })
-            } catch (e) {
-                if (isAxiosError(e) && e.response?.status === 400) {
-                    showDetailWarning({
-                        text: this.$t("clip.mail.INVALID_ADDRESS"),
-                    })
-                } else {
-                    showDetailWarning({
-                        text: this.$t("clip.error"),
-                    })
-                }
-            }
-        },
-    },
-    computed: {
-        owned_mail_address(): string {
-            return this.$route.params.address as string // empty if direct access this page (not from subscription link in email)
-        },
-        subscription_status_string(): string {
-            switch (this.subscription_status) {
-                // accept, deny, pending, no_requested, loading
-                case MailSubscriptionStatus.ACCEPT:
-                    return this.$t("setting.mail.accept")
-                case MailSubscriptionStatus.DENY:
-                    return this.$t("setting.mail.deny")
-                case MailSubscriptionStatus.PENDING:
-                    return this.$t("setting.mail.pending")
-                case MailSubscriptionStatus.NO_REQUESTED:
-                    return this.$t("setting.mail.no_requested")
-                case null:
-                    return this.$t("loading")
-                default:
-                    return this.$t("setting.mail.unknown")
-            }
-        },
-    },
-    mounted() {
-        if (!appStore.metadata.allow_mail) {
-            showDetailWarning({
-                title: this.$t("clip.error"),
-                text: this.$t("clip.mail.MAIL_NOT_ALLOWED"),
-            })
-            this.$router.push({ name: "Home" })
-        }
-        // add auth header
-        const auth_interceptor = axios.interceptors.request.use((config) => {
-            config.headers["Authorization"] = `Bearer ${this.$route.query.jwt}`
-            return config
+import { useAppStore } from "@/store/app"
+const appStore = useAppStore()
+
+import { useRouter, useRoute } from "vue-router"
+const router = useRouter()
+const route = useRoute()
+
+import { useI18n } from "vue-i18n"
+const { t: $t } = useI18n()
+
+const subscription_status = ref<MailSubscriptionStatus | null>( null )
+const input_mail_address = ref("")
+const owned_mail_address = computed(()=> {
+    return route.params.address as string // empty if direct access this page (not from subscription link in email)
+})
+const subscription_status_string = computed(()=> {
+    switch (subscription_status.value) {
+        // accept, deny, pending, no_requested, loading
+        case MailSubscriptionStatus.ACCEPT:
+            return $t("setting.mail.accept")
+        case MailSubscriptionStatus.DENY:
+            return $t("setting.mail.deny")
+        case MailSubscriptionStatus.PENDING:
+            return $t("setting.mail.pending")
+        case MailSubscriptionStatus.NO_REQUESTED:
+            return $t("setting.mail.no_requested")
+        case null:
+            return $t("loading")
+        default:
+            return $t("setting.mail.unknown")
+    }
+})
+
+onMounted(() => {
+    if (!appStore.metadata.allow_mail) {
+        showDetailWarning({
+            title: $t("clip.error"),
+            text: $t("clip.mail.MAIL_NOT_ALLOWED"),
         })
-        onBeforeRouteLeave(() => {
-            axios.interceptors.request.eject(auth_interceptor)
-        })
-        if (this.owned_mail_address) {
-            this.updateSubscriptionStatus()
-            switch (this.$route.query.subscribe) {
-                case "true":
-                    this.setSubscriptionSetting(MailSubscriptionSetting.ACCEPT)
-                    break
-                case "false":
-                    this.setSubscriptionSetting(MailSubscriptionSetting.DENY)
-                    break
-            }
+        router.push({ name: "Home" })
+    }
+    // add auth header
+    const auth_interceptor = axios.interceptors.request.use((config) => {
+        config.headers["Authorization"] = `Bearer ${route.query.jwt}`
+        return config
+    })
+    onBeforeRouteLeave(() => {
+        axios.interceptors.request.eject(auth_interceptor)
+    })
+    if (owned_mail_address.value) {
+        updateSubscriptionStatus()
+        switch (route.query.subscribe) {
+            case "true":
+                setSubscriptionSetting(MailSubscriptionSetting.ACCEPT)
+                break
+            case "false":
+                setSubscriptionSetting(MailSubscriptionSetting.DENY)
+                break
         }
-    },
+    }
+})
+
+async function updateSubscriptionStatus(
+    status: MailSubscriptionStatus | undefined = undefined
+) {
+    if (status === undefined) {
+        const res = await axios.get<Response<MailSubscriptionData>>(
+            `/mail/${owned_mail_address.value}/settings`
+        )
+        status = res.data.data.subscribe
+    }
+    subscription_status.value = status
 }
+async function setSubscriptionSetting(status: MailSubscriptionSetting) {
+    try {
+        const res = await axios.post(
+            `/mail/${owned_mail_address.value}/settings`,
+            {
+                subscribe: status,
+            }
+        )
+        updateSubscriptionStatus(res.data.data.subscribe)
+        showAutoCloseSuccess({
+            text: $t("setting.mail.update_success"),
+        })
+    } catch (e) {
+        showDetailWarning({
+            text: $t("setting.mail.update_failed"),
+        })
+    }
+}
+async function resendVerificationMail() {
+    try {
+        await axios.post(`/mailto/send_verification_mail`, {
+            address: input_mail_address.value,
+        })
+        showAutoCloseSuccess({
+            text: $t("setting.mail.resend_request_success"),
+        })
+    } catch (e) {
+        if (isAxiosError(e) && e.response?.status === 400) {
+            showDetailWarning({
+                text: $t("clip.mail.INVALID_ADDRESS"),
+            })
+        } else {
+            showDetailWarning({
+                text: $t("clip.error"),
+            })
+        }
+    }
 </script>
-
-<style></style>
