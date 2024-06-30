@@ -328,7 +328,7 @@ class NoteRest(BaseRest):
         if not ClipTextContentFilter(clip_name=name).is_valid():
             return return_json(status_code=451, message="Illegal name")
         note = datastore.update_note(name=name)
-        return marshal_note(note, 201)
+        return marshal_note(note)
 
     def put(self, name: str):
         note = g.note
@@ -473,8 +473,7 @@ class FileRest(BaseRest):
             return return_json(
                 status_code=status_code, message=message, error_id=error_id
             )
-
-        return return_json(status_code=201)
+        return marshal_note(g.note)
 
     def delete(self, name: str, id: int):
         if g.note is None or g.is_readonly:
@@ -483,7 +482,7 @@ class FileRest(BaseRest):
         if file is None:
             return return_json(status_code=404, message="No file found")
         datastore.delete_file(file)
-        return return_json(status_code=204)
+        return marshal_note(g.note)
 
 
 def get_file(id: int, as_attachment: bool):
