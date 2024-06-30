@@ -15,13 +15,13 @@ export const useAppStore = defineStore("app", {
         client_id: nanoid(),
     }),
     actions: {
-        async basicInit() {
+        basicInit() {
             axios.defaults.baseURL = this.api_endpoint
             this._metadata = local_metadata
         },
         async initMetadata() {
             if (this.is_metadata_fetched) return
-            await this.basicInit()
+            this.basicInit()
             const remote_metadata = (await axios.get("/metadata")).data
                 .data as MetaData
             // console.log("metadata fetched!")
