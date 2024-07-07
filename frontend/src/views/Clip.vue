@@ -628,70 +628,67 @@ async function processFetchedContent(
     if (axios_response.status === 204) {
         is_new.value = true
         setSaveStatus(SaveStatus.new)
-        local_content.value = ""
-        remote_content.value = ""
-        remote_version.value = clip_version.value = 1
         return
-    } else {
-        try {
-            user_property.value = JSON.parse(
-                response_data.data.user_property
-            ) as UserProperty
-        } catch {
-            user_property.value = {} as UserProperty
-            console.log(response_data.data.user_property)
+    }
+    is_new.value = false
+    try {
+        user_property.value = JSON.parse(
+            response_data.data.user_property
+        ) as UserProperty
+    } catch {
+        user_property.value = {} as UserProperty
+        console.log(response_data.data.user_property)
+        showDetailWarning({
+            title: $t("clip.error"),
+            text: $t("clip.failed_to_parse_user_property"),
+        })
+    }
+    encrypt_text_content.value =
+        user_property.value.encrypt_text_content ?? false
+    encrypt_file.value = user_property.value.encrypt_file ?? false
+    let content = response_data.data.content
+    if (user_property.value.encrypt_text_content) {
+        if (user_property.value.encrypt_text_content_algo === "aes") {
+            const decrypt = AES.decrypt(
+                content,
+                encryptPassword.value
+            ).toString(utf8)
+            if (content !== "" && decrypt === "") {
+                content = content + $t("error.decrypt_error")
+            } else {
+                content = decrypt
+            }
+        } else {
             showDetailWarning({
                 title: $t("clip.error"),
-                text: $t("clip.failed_to_parse_user_property"),
+                text: $t("clip.encrypt_text_content_algo_not_supported"),
             })
         }
-        encrypt_text_content.value =
-            user_property.value.encrypt_text_content ?? false
-        encrypt_file.value = user_property.value.encrypt_file ?? false
-        let content = response_data.data.content
-        if (user_property.value.encrypt_text_content) {
-            if (user_property.value.encrypt_text_content_algo === "aes") {
-                const decrypt = AES.decrypt(
-                    content,
-                    encryptPassword.value
-                ).toString(utf8)
-                if (content !== "" && decrypt === "") {
-                    content = content + $t("error.decrypt_error")
-                } else {
-                    content = decrypt
-                }
-            } else {
-                showDetailWarning({
-                    title: $t("clip.error"),
-                    text: $t("clip.encrypt_text_content_algo_not_supported"),
-                })
-            }
-        }
-        remote_version.value = response_data.data.clip_version ?? 1
-        if (
-            (options.include_slots === undefined ||
-                options.include_slots.includes("content")) &&
-            (remote_version.value > clip_version.value ||
-                first_fetched.value === false)
-        ) {
-            local_content.value = content
-            clip_version.value = remote_version.value
-        }
-        if (
-            options.include_slots === undefined ||
-            options.include_slots.includes("file")
-        ) {
-            remote_files.value = response_data.data.files
-        }
-        if (options.include_slots !== undefined) first_fetched.value = true
-        current_timeout.value = response_data.data.timeout_seconds
-        selected_timeout.value = timeDeltaToString(current_timeout.value)
-        remote_content.value = content
-        readonly_name.value = response_data.data.readonly_name
-        is_readonly.value = response_data.data.is_readonly
-        if (save_status.value === SaveStatus.local_outdated) {
-            setSaveStatus(SaveStatus.conflict_resolved)
-        }
+    }
+    remote_version.value = response_data.data.clip_version ?? 1
+    if (
+        (options.include_slots === undefined ||
+            options.include_slots.includes("content")) &&
+        (remote_version.value > clip_version.value ||
+            first_fetched.value === false)
+    ) {
+        local_content.value = content
+        clip_version.value = remote_version.value
+    }
+    if (
+        options.include_slots === undefined ||
+        options.include_slots.includes("file")
+    ) {
+        remote_files.value = response_data.data.files
+    }
+    if (options.include_slots !== undefined) first_fetched.value = true
+    current_timeout.value = response_data.data.timeout_seconds
+    selected_timeout.value = timeDeltaToString(current_timeout.value)
+    remote_content.value = content
+    readonly_name.value = response_data.data.readonly_name
+    is_readonly.value = response_data.data.is_readonly
+    if (save_status.value === SaveStatus.local_outdated) {
+        setSaveStatus(SaveStatus.conflict_resolved)
     }
 }
 async function fetchContent(
