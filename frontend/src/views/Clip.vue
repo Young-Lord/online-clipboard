@@ -1273,18 +1273,18 @@ const server_authoirzation_password = computed(() => {
     )
 })
 async function changePassword() {
-    let password = (
+    let new_password = (
         await cancelableInput({
             title: $t("clip.new_password_question"),
             input: "password",
         })
     ).value
-    if (password === undefined) return
+    if (new_password === undefined) return
     try {
         await axios.put(`/note/${name}`, {
-            new_password: password === "" ? "" : SHA512(password).toString(),
+            new_password: new_password === "" ? "" : SHA512(new_password).toString(),
         })
-        password.value = password
+        password.value = new_password
         await updateEncryptText()
         showAutoCloseSuccess({
             title: $t("clip.password_changed"),
