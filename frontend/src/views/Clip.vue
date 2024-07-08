@@ -324,7 +324,7 @@
                                     role="listitem"
                                 >
                                     <v-list-item-title
-                                        >{{ mayDecryptFilename(file.filename) }}
+                                        >{{ file.filename }}
                                     </v-list-item-title>
                                     <v-list-item-subtitle
                                         >{{ humanFileSize(file.size) }};
@@ -381,7 +381,10 @@
                                                     text-decoration: none;
                                                 "
                                                 tabindex="-1"
-                                                v-if="!encrypt_file"
+                                                v-if="
+                                                    !file.user_property
+                                                        .encrypt_file_content
+                                                "
                                                 :aria-label="
                                                     $t(
                                                         'clip.a11y.file.download_file',
@@ -470,6 +473,8 @@ import {
     Response,
     ClipData,
     WebSocketBaseData,
+    FileUserProperty,
+    FileDataRaw,
 } from "@/api"
 import { AxiosResponse, isAxiosError } from "axios"
 
@@ -627,6 +632,14 @@ async function createIfNotExist() {
         console.log(e)
     }
 }
+function processFetchedFiles(files: FileDataRaw[]) {
+    files.forEach((file) => {
+        file.user_property = JSON.parse(file.user_property)
+        file.filename = mayDecryptFilename(file as FileData)
+    })
+    console.log(files)
+    remote_files.value = files as FileData[]
+}
 async function processFetchedContent(
     axios_response: AxiosResponse<Response<ClipData>>,
     options: { include_slots?: ("content" | "file" | "version")[] } = {}
@@ -661,7 +674,7 @@ async function processFetchedContent(
                 encryptPassword.value
             ).toString(utf8)
             if (content !== "" && decrypt === "") {
-                content = content + $t("error.decrypt_error")
+                content = markDecryptError(content)
             } else {
                 content = decrypt
             }
@@ -695,7 +708,7 @@ async function processFetchedContent(
         options.include_slots === undefined ||
         options.include_slots.includes("file")
     ) {
-        remote_files.value = response_data.data.files
+        processFetchedFiles(response_data.data.files)
     }
     if (first_fetched.value === false) {
         first_fetched.value = true
@@ -955,7 +968,8 @@ function onAttachFile(event: ClipboardEvent | DragEvent) {
     uploadFile()
 }
 async function uploadSingleFile(file: File) {
-    var formData = new FormData()
+    let formData = new FormData()
+    let user_property: FileUserProperty = {}
     if (encrypt_file.value) {
         // encrypt file
         let reader = new FileReader()
@@ -978,8 +992,16 @@ async function uploadSingleFile(file: File) {
             { type: file.type }
         )
         file = encrypted_file
+        user_property = {
+            ...user_property,
+            encrypt_file_content: true,
+            encrypt_file_content_algo: "aes",
+            encrypt_file_name: true,
+            encrypt_file_name_algo: "aes",
+        }
     }
     formData.append("file", file)
+    formData.append("user_property", JSON.stringify(user_property))
     await axios.post(`/note/${name}/file/0`, formData, {
         headers: {
             "Content-Type": "multipart/form-data",
@@ -1290,10 +1312,16 @@ async function changePassword() {
     ).value
     if (new_password === undefined) return
     try {
-        await axios.put(`/note/${name}`, {
-            new_password:
-                new_password === "" ? "" : SHA512(new_password).toString(),
-        })
+        await axios
+            .put(`/note/${name}`, {
+                new_password:
+                    new_password === "" ? "" : SHA512(new_password).toString(),
+            })
+            .then((resp) =>
+                processFetchedContent(resp, {
+                    include_slots: ["file"],
+                })
+            )
         password.value = new_password
         await updateEncryptText()
         showAutoCloseSuccess({
@@ -1307,6 +1335,9 @@ async function changePassword() {
 const encryptPassword = computed(() => {
     return SHA256(password.value).toString()
 })
+function markDecryptError(s: string): string {
+    return s + $t("error.decrypt_error")
+}
 const encrypt_text_content = ref(false)
 async function updateEncryptText() {
     if (encrypt_text_content.value) {
@@ -1322,12 +1353,21 @@ async function updateEncryptFile() {
     user_property.value.encrypt_file = encrypt_file.value
     pushContent()
 }
-function mayDecryptFilename(filename: string): string {
-    if (!encrypt_file.value) return filename
-    const decrypt = AES.decrypt(filename, encryptPassword.value).toString(utf8)
-    if (filename !== "" && decrypt === "")
-        return filename + $t("error.decrypt_error")
-    else return decrypt
+function mayDecryptFilename(file: FileData): string {
+    const filename = file.filename
+    if (!file.user_property.encrypt_file_name) return filename
+    switch (file.user_property.encrypt_file_name_algo) {
+        case "aes":
+            const decrypt = AES.decrypt(
+                filename,
+                encryptPassword.value
+            ).toString(utf8)
+            if (filename !== "" && decrypt === "")
+                return markDecryptError(filename)
+            return decrypt
+        default:
+            return markDecryptError(filename)
+    }
 }
 function encryptFilename(filename: string): string {
     if (filename !== "")
@@ -1342,12 +1382,15 @@ async function downloadEncryptedFile(file: FileData) {
     })
     const enc = new TextDecoder("utf-8")
     const str = enc.decode(response.data)
-    const decrypted_file_data = wordArrayToArrayBuffer(
-        AES.decrypt(str, encryptPassword.value)
-    )
-    // save as blob
-    const blob = new Blob([decrypted_file_data])
-    saveBlob(blob, mayDecryptFilename(file.filename))
+    switch (file.user_property.encrypt_file_content_algo) {
+        case "aes":
+            const decrypted_file_data = wordArrayToArrayBuffer(
+                AES.decrypt(str, encryptPassword.value)
+            )
+            // save as blob
+            const blob = new Blob([decrypted_file_data])
+            saveBlob(blob, file.filename)
+    }
 }
 
 // useful features

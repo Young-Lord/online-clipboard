@@ -247,6 +247,7 @@ file_model = api.model(
             attribute=functools.partial(create_file_link, suffix="preview")
         ),
         "size": fields.Integer(attribute="file_size"),
+        "user_property": fields.String,
     },
 )
 
@@ -458,9 +459,14 @@ class FileRest(BaseRest):
             return return_json(status_code=400, message="No file provided")
         if file.filename is None:
             return return_json(status_code=400, message="Filename is empty")
+        user_property: str = request.form.get("user_property", "{}")
+        if (
+            len(user_property) > Metadata.max_user_property_length
+        ):
+            return return_json(status_code=400, message="Content too long")
 
         # add file to database
-        file_instance = datastore.add_file(note, file.filename, file.save)
+        file_instance = datastore.add_file(note, file.filename, file.save, user_property)
         file_size = file_instance.file_size
 
         # check limits

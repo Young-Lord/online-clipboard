@@ -72,7 +72,8 @@ class Note(db.Model, DatabaseColumnBase):
             and self.timeout_seconds > 0
             and (
                 datetime.datetime.now()
-                > self.user_accessed_at + datetime.timedelta(seconds=self.timeout_seconds)
+                > self.user_accessed_at
+                + datetime.timedelta(seconds=self.timeout_seconds)
             )
         )
 
@@ -87,6 +88,9 @@ class File(db.Model, DatabaseColumnBase):
     file_size: Mapped[int] = mapped_column(Integer)
     timeout_seconds: Mapped[int] = mapped_column(
         Integer, default=Metadata.default_file_timeout
+    )
+    user_property: Mapped[str] = mapped_column(
+        String, default="{}", server_default="{}"
     )
 
     @property
@@ -247,7 +251,11 @@ class NoteDatastore(Datastore):
         file_size: int
 
     def add_file(
-        self, note: Note, filename: str, file_saver: Callable[[str], Any]
+        self,
+        note: Note,
+        filename: str,
+        file_saver: Callable[[str], Any],
+        user_property: str,
     ) -> File:
         file_data = self.add_file_at_disk(note, filename, file_saver)
         file = File(
@@ -255,6 +263,7 @@ class NoteDatastore(Datastore):
             file_path=file_data.file_path,
             note=note,
             file_size=file_data.file_size,
+            user_property=user_property,
         )
         self.session.add(file)
         note.all_file_size += file_data.file_size

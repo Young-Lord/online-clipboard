@@ -17,12 +17,19 @@ export interface ClipData {
     clip_version: number
     content: string
     file_count: number
-    files: FileData[]
+    files: FileDataRaw[]
     is_readonly: boolean
     name: string
     readonly_name: string
     timeout_seconds: number
     user_property: string
+}
+
+export interface FileUserProperty {
+    encrypt_file_name?: boolean
+    encrypt_file_name_algo?: string
+    encrypt_file_content?: boolean
+    encrypt_file_content_algo?: string
 }
 
 export interface FileData {
@@ -34,6 +41,11 @@ export interface FileData {
     preview_url: string
     size: number
     timeout_seconds: number
+    user_property: FileUserProperty
+}
+
+export interface FileDataRaw extends Omit<FileData, 'user_property'> {
+    user_property: string
 }
 
 export interface MetaData {
