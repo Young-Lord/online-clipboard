@@ -203,7 +203,7 @@ base_decorators = [  # this is fking from bottom to top!
 
 
 def note_to_jwt_id(note: Note) -> str:
-    return sha256(
+    return "note_"+sha256(
         combine_name_and_password_and_readonly(
             note.name, note.password, note.readonly_name_if_has
         )
@@ -556,7 +556,7 @@ class PreviewFileContentRest(DownloadFileContentRest):
 @jwt_required(locations=["headers"])
 def api_get_mail_setting(address: str):
     # validate JWT token
-    if get_jwt_identity() != address:
+    if get_jwt_identity() != mail_address_to_jwt_id(address):
         return return_json(status_code=403, message="Permission denied")
 
     setting = datastore.get_mail_subscribe_setting(address)
@@ -568,7 +568,7 @@ def api_get_mail_setting(address: str):
 @jwt_required(locations=["headers"])
 def api_mail_setting(address: str):
     # validate JWT token
-    if get_jwt_identity() != address:
+    if get_jwt_identity() != mail_address_to_jwt_id(address):
         return return_json(status_code=403, message="Permission denied")
 
     # get mail subscribe setting from querystring
@@ -596,6 +596,9 @@ def api_mail_setting(address: str):
     return return_json(status_code=200, message="OK", data={"subscribe": new_status})
 
 
+def mail_address_to_jwt_id(address: str) -> str:
+    return "mail_" + sha256(address)
+
 def create_subscribe_post_link(
     address: str, subscribe: bool, frontend: bool = True, email_header: bool = False
 ) -> str:
@@ -607,7 +610,7 @@ def create_subscribe_post_link(
     :param email_header: True for email header (with < > around), False for plain text
     """
     jwt = create_access_token(
-        identity=address,
+        identity=mail_address_to_jwt_id(address),
         expires_delta=datetime.timedelta(seconds=Metadata.mail_verify_timeout),
     )
     if frontend:
