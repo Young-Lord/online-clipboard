@@ -1,0 +1,23 @@
+name: Auto Tag
+on: [push]
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    name: Auto Tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # parse version from git log like `release: 0.0.35`
+      - name: Get version
+        run: |
+          version=$(git log --pretty=oneline -1 | grep -oP 'release: \K[0-9.]+' || echo '')
+          echo VERSION=$version >> $GITHUB_ENV
+      # create & push tag
+      - name: Create & push tag
+        if: ${{ env.VERSION != '' }}
+        run: |
+          git tag v$VERSION 
+          git push origin v$VERSION
