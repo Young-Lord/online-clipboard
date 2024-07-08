@@ -1,147 +1,148 @@
 {
-  "page": {
-    "home": "Homepage"
-  },
-  "save_status": {
-    "new": "New",
-    "success": "Saved",
-    "error": "Error!",
-    "editing": "Editing",
-    "saving": "Saving",
-    "saved": "Saved",
-    "local_outdated": "Edit conflict",
-    "conflict_resolved": "Pulled from remote"
-  },
-  "home": {
-    "title": "Clip",
-    "welcome_to_clip": "Welcome to Clip!",
-    "about": "About",
-    "go_to_clip": "GO TO CLIP",
-    "name": "Name"
-  },
-  "clip": {
-    "a11y": {
-      "input_box": "Main text input area",
-      "file": {
-        "file_list": "List of files in this clip",
-        "download_file": "Download file {0}",
-        "preview_file": "Preview file {0}",
-        "delete_file": "Delete file {0}"
-      },
-      "appbar": {
-        "home": "Back to homepage",
-        "github": "Open Clip's GitHub repository",
-        "conflict_drop_remote": "Drop remote changes, save local changes",
-        "conflict_drop_local": "Drop local changes, fetch remote changes",
-        "delete": "Delete clip",
-        "password": "Set password for clip",
-        "save": "Save clip",
-        "copy": "Copy clip content",
-        "download": "Download clip content as text file"
-      },
-      "disable_readonly_url": "Disable readonly link",
-      "enable_readonly_url": "Enable readonly link",
-      "toggle_more_options": "Toggle show or hide more options"
+    "page": {
+        "home": "Homepage"
     },
-    "current_url_click_to_copy": "Current link (click to copy)",
-    "readonly_url_click_to_copy": "Readonly link (click to copy)",
-    "readonly_url_is_disabled": "Readonly link is disabled",
-    "drag_or_click_to_upload_file": "Drag or Click to upload file(s)",
-    "file_limits": "max {0} per file, current uploaded: {1} / {2}, storage quota left: {3} / {4}",
-    "invalid_clip_name": "Invalid clip name!",
-    "expiration": "Expiration",
-    "invalid_timeout": "Invalid timeout!",
-    "password_question": "Password?",
-    "new_password_question": "New password?",
-    "password_changed": "Password changed!",
-    "ok": "OK",
-    "cancel": "Cancel",
-    "error": "Error",
-    "file": {
-      "failed_to_upload_file": "Failed to upload file.",
-      "deleted": "Deleted!",
-      "your_file_has_been_deleted": "Your file has been deleted.",
-      "uploaded": "Uploaded!",
-      "your_file_has_been_uploaded": "Your file has been uploaded.",
-      "failed_to_delete_file": "Failed to delete file.",
-      "expiration_date_is": "EXP: {0}",
-      "error": {
-        "TOTAL_FILES_COUNT_LIMIT_HIT": "Total files count limit hit!",
-        "SINGLE_FILE_SIZE_LIMIT_HIT": "Single file size limit hit!",
-        "TOTAL_FILES_SIZE_LIMIT_HIT": "Total files size limit hit!"
-      }
+    "save_status": {
+        "new": "New",
+        "success": "Saved",
+        "error": "Error!",
+        "editing": "Editing",
+        "saving": "Saving",
+        "saved": "Saved",
+        "local_outdated": "Edit conflict",
+        "conflict_resolved": "Pulled from remote"
     },
-    "delete": {
-      "are_you_sure": "Are you sure?",
-      "you_wont_be_able_to_revert_this": "You won't be able to revert this!",
-      "yes_delete_it": "Yes, delete it!",
-      "deleted": "Deleted!",
-      "your_clip_has_been_deleted": "Your clip has been deleted."
+    "home": {
+        "title": "Clip",
+        "welcome_to_clip": "Welcome to Clip!",
+        "about": "About",
+        "go_to_clip": "GO TO CLIP",
+        "name": "Name"
     },
-    "outdated": "Remote clip is changed. Refresh to pull remote changes.",
-    "auto_fetch_remote_content": "Automatically fetch updates from remote clip",
-    "auto_save_interval": "Auto save interval (seconds, empty to disable)",
-    "auto_fetch_interval": "Auto fetch interval (seconds, empty to disable)",
-    "failed_to_fetch_metadata": "Failed to fetch essential data from server.",
-    "advanced_settings": "More options",
-    "encrypt_content": "Encrypt content",
-    "encrypt_file": "Encrypt file (password must remain same!)",
-    "encrypt_text_content_algo_not_supported": "Encrypt text content is not working!",
-    "failed_to_parse_user_property": "Failed to parse auxiliary information, encryption may not work properly.",
-    "report": {
-      "report_clip": "Report clip",
-      "report_clip_confirm": "Are you sure to report this clip?",
-      "clip_will_be_banned": "Clip will be banned or deleted immediately.",
-      "reported": "Reported!",
-      "clip_has_been_reported": "Clip has been reported.",
-      "clip_has_been_banned": "Clip has been temporarily banned."
+    "clip": {
+        "a11y": {
+            "input_box": "Main text input area",
+            "file": {
+                "file_list": "List of files in this clip",
+                "download_file": "Download file {0}",
+                "preview_file": "Preview file {0}",
+                "delete_file": "Delete file {0}"
+            },
+            "appbar": {
+                "home": "Back to homepage",
+                "github": "Open Clip's GitHub repository",
+                "conflict_drop_remote": "Drop remote changes, save local changes",
+                "conflict_drop_local": "Drop local changes, fetch remote changes",
+                "delete": "Delete clip",
+                "password": "Set password for clip",
+                "save": "Save clip",
+                "copy": "Copy clip content",
+                "download": "Download clip content as text file"
+            },
+            "disable_readonly_url": "Disable readonly link",
+            "enable_readonly_url": "Enable readonly link",
+            "toggle_more_options": "Toggle show or hide more options"
+        },
+        "current_url_click_to_copy": "Current link (click to copy)",
+        "readonly_url_click_to_copy": "Readonly link (click to copy)",
+        "readonly_url_is_disabled": "Readonly link is disabled",
+        "drag_or_click_to_upload_file": "Drag or Click to upload file(s)",
+        "file_limits": "max {0} per file, current uploaded: {1} / {2}, storage quota left: {3} / {4}",
+        "invalid_clip_name": "Invalid clip name!",
+        "expiration": "Expiration",
+        "invalid_timeout": "Invalid timeout!",
+        "password_question": "Password?",
+        "new_password_question": "New password?",
+        "password_changed": "Password changed!",
+        "ok": "OK",
+        "cancel": "Cancel",
+        "error": "Error",
+        "file": {
+            "failed_to_upload_file": "Failed to upload file.",
+            "deleted": "Deleted!",
+            "your_file_has_been_deleted": "Your file has been deleted.",
+            "uploaded": "Uploaded!",
+            "your_file_has_been_uploaded": "Your file has been uploaded.",
+            "failed_to_delete_file": "Failed to delete file.",
+            "expiration_date_is": "EXP: {0}",
+            "error": {
+                "TOTAL_FILES_COUNT_LIMIT_HIT": "Total files count limit hit!",
+                "SINGLE_FILE_SIZE_LIMIT_HIT": "Single file size limit hit!",
+                "TOTAL_FILES_SIZE_LIMIT_HIT": "Total files size limit hit!"
+            }
+        },
+        "delete": {
+            "are_you_sure": "Are you sure?",
+            "you_wont_be_able_to_revert_this": "You won't be able to revert this!",
+            "yes_delete_it": "Yes, delete it!",
+            "deleted": "Deleted!",
+            "your_clip_has_been_deleted": "Your clip has been deleted."
+        },
+        "outdated": "Remote clip is changed. Refresh to pull remote changes.",
+        "auto_fetch_remote_content": "Automatically fetch updates from remote clip",
+        "auto_save_interval": "Auto save interval (seconds, empty to disable)",
+        "auto_fetch_interval": "Auto fetch interval (seconds, empty to disable)",
+        "failed_to_fetch_metadata": "Failed to fetch essential data from server.",
+        "advanced_settings": "More options",
+        "encrypt_content": "Encrypt content",
+        "encrypt_file": "Encrypt file (password must remain same!)",
+        "encrypt_text_content_algo_not_supported": "Encrypt text content is not working!",
+        "failed_to_parse_user_property": "Failed to parse auxiliary information, encryption may not work properly.",
+        "report": {
+            "report_clip": "Report clip",
+            "report_clip_confirm": "Are you sure to report this clip?",
+            "clip_will_be_banned": "Clip will be banned or deleted immediately.",
+            "reported": "Reported!",
+            "clip_has_been_reported": "Clip has been reported.",
+            "clip_has_been_banned": "Clip has been temporarily banned."
+        },
+        "prepend_message": "Prepend message to begin of clip. Useful for IM.",
+        "mail": {
+            "send_to_mail": "Send to mail",
+            "sent": "Sent!",
+            "MAIL_NOT_ALLOWED": "Mail is disable on this instance.",
+            "MAIL_NOT_VERIFIED": "This mail address is not verified. Please check your inbox and verify it.",
+            "INVALID_ADDRESS": "The mail address is not correct. Check again.",
+            "INVALID_CONTENT": "This clip cannot be sent.",
+            "SEND_EMAIL_FAILED": "Failed to send mail for unknown reason.",
+            "NO_CONTENT": "No content to send."
+        },
+        "websocket": {
+            "instant_sync": "Instant sync (collaborative editing)",
+            "apply_patch_failed_stopped": "Instant sync stopped due to error. Please refresh page."
+        }
     },
-    "prepend_message": "Prepend message to begin of clip. Useful for IM.",
-    "mail": {
-      "send_to_mail": "Send to mail",
-      "sent": "Sent!",
-      "MAIL_NOT_ALLOWED": "Mail is disable on this instance.",
-      "MAIL_NOT_VERIFIED": "This mail address is not verified. Please check your inbox and verify it.",
-      "INVALID_ADDRESS": "The mail address is not correct. Check again.",
-      "INVALID_CONTENT": "This clip cannot be sent.",
-      "SEND_EMAIL_FAILED": "Failed to send mail for unknown reason.",
-      "NO_CONTENT": "No content to send."
+    "about": {
+        "author": "Author",
+        "metadata": "Debug info",
+        "short_description": "Minimal editable online clipboard, access your text and files anywhere quickly.",
+        "long_description": "Pick a name, create a clip, upload files, set password, share it with others or keep it yourself.",
+        "api_endpoint": "API endpoint"
     },
-    "websocket": {
-      "instant_sync": "Instant sync (collaborative editing)"
+    "loading...": "loading...",
+    "failed.": "failed",
+    "setting": {
+        "mail": {
+            "status": "Current mail sending preference: {0}",
+            "your_mail": "Mail address",
+            "deny": "deny mail sending",
+            "accept": "accept mail sending",
+            "pending": "confirm mail sent, waiting for verification",
+            "no_requested": "no mail sending requested",
+            "unknown": "unknown status",
+            "resend_request_title": "Resend mail verification request",
+            "do_request": "send mail verification request",
+            "not_received_hint": "If you haven't received the mail, please check your spam folder or contact support at {0}.",
+            "deny_button": "Deny",
+            "accept_button": "Accept",
+            "reset_button": "Reset",
+            "update_success": "Mail preference updated!",
+            "update_failed": "Failed to update mail preference.",
+            "resend_request_success": "Mail verification request sent!"
+        }
+    },
+    "error": {
+        "rate_limit": "You've hit the rate limit. Please wait a moment before trying again.",
+        "decrypt_error": " [DECRYPT ERROR]"
     }
-  },
-  "about": {
-    "author": "Author",
-    "metadata": "Debug info",
-    "short_description": "Minimal editable online clipboard, access your text and files anywhere quickly.",
-    "long_description": "Pick a name, create a clip, upload files, set password, share it with others or keep it yourself.",
-    "api_endpoint": "API endpoint"
-  },
-  "loading...": "loading...",
-  "failed.": "failed",
-  "setting": {
-    "mail": {
-      "status": "Current mail sending preference: {0}",
-      "your_mail": "Mail address",
-      "deny": "deny mail sending",
-      "accept": "accept mail sending",
-      "pending": "confirm mail sent, waiting for verification",
-      "no_requested": "no mail sending requested",
-      "unknown": "unknown status",
-      "resend_request_title": "Resend mail verification request",
-      "do_request": "send mail verification request",
-      "not_received_hint": "If you haven't received the mail, please check your spam folder or contact support at {0}.",
-      "deny_button": "Deny",
-      "accept_button": "Accept",
-      "reset_button": "Reset",
-      "update_success": "Mail preference updated!",
-      "update_failed": "Failed to update mail preference.",
-      "resend_request_success": "Mail verification request sent!"
-    }
-  },
-  "error": {
-    "rate_limit": "You've hit the rate limit. Please wait a moment before trying again.",
-    "decrypt_error": " [DECRYPT ERROR]"
-  }
 }

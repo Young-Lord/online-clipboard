@@ -76,6 +76,11 @@
 
         <v-main>
             <v-container>
+                <v-snackbar-queue
+                    v-model="snackbar"
+                    location="top end"
+                    closable
+                />
                 <v-row rows="12">
                     <v-col cols="12" md="8">
                         <!-- Larger Text Input Box -->
@@ -548,6 +553,7 @@ async function requestPassword(): Promise<SweetAlertResult<any>> {
         input: "password",
     })
 }
+const snackbar = ref<object[]>([])
 
 // Base
 const editor = ref<any | null>(null)
@@ -1159,7 +1165,14 @@ function calculateCursorPositionAfterMergeDiff(
     })
     return new_cursor_position
 }
-function instantSyncFailed() {}
+function onInstantSyncPatchFailed() {
+    instant_sync.value = false
+    onInstantSyncChange()
+    snackbar.value.push({
+        text: $t("clip.websocket.apply_patch_failed_stopped"),
+        timeout: -1,
+    })
+}
 function handleInstantSyncPatches(patches: patch_obj[]) {
     const [result, successes] = diff_match_patch.patch_apply(
         patches,
@@ -1187,7 +1200,7 @@ function handleInstantSyncPatches(patches: patch_obj[]) {
         if (autosave_while_instant_sync.value) {
             pushContent()
         }
-    }
+    } else onInstantSyncPatchFailed()
 }
 function doInstantSync() {
     assert(instant_sync_socket.value !== null)

@@ -108,7 +108,8 @@
             "NO_CONTENT": "没有内容可发送。"
         },
         "websocket": {
-            "instant_sync": "即时同步（多人同时编辑）"
+            "instant_sync": "即时同步（多人同时编辑）",
+            "apply_patch_failed_stopped": "由于同步失败，即时同步已关闭。请刷新页面。"
         }
     },
     "about": {
