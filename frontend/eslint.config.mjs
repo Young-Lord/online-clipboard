@@ -5,7 +5,7 @@ import pluginVue from "eslint-plugin-vue"
 
 export default [
     {
-        ignores: ["src/tools/diff_match_patch.js", "src/vite-env.d.ts"],
+        ignores: ["src/vite-env.d.ts"],
     },
     { files: ["**/*.{js,mjs,cjs,ts,vue}"] },
     { languageOptions: { globals: globals.browser } },

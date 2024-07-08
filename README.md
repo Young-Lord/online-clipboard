@@ -97,16 +97,24 @@ Example rule:
         <rewrite>
             <rules>
                 <clear />
-                <rule name="clip" stopProcessing="true">
-                    <match url="^clip-basepath((/(.+)?)|)$" />
+                <rule name="clip-server" stopProcessing="true">
+                    <match url="^clip-basepath(/(api|raw|socket\.io).+)$" />
                     <conditions logicalGrouping="MatchAll" trackAllCaptures="false">
                         <add input="{CACHE_URL}" pattern="^(.+)?://.+$" />
                     </conditions>
-                    <action type="Rewrite" url="{C:1}://127.0.0.1:5000{R:1}" />
                     <serverVariables>
                         <set name="HTTP_SEC_WEBSOCKET_EXTENSIONS" value="" />
                         <set name="HTTP_X_FORWARDED_PREFIX" value="/clip-basepath/" />
                     </serverVariables>
+                    <action type="Rewrite" url="{C:1}://127.0.0.1:5000{R:1}" />
+                </rule>
+                <rule name="clip-frontend" stopProcessing="true">
+                    <match url="^clip-basepath(/.*)?$" />
+                    <conditions logicalGrouping="MatchAll" trackAllCaptures="false">
+                        <add input="{REQUEST_FILENAME}" matchType="IsFile" negate="true" />
+                        <add input="{REQUEST_FILENAME}" matchType="IsDirectory" negate="true" />
+                    </conditions>
+                    <action type="Rewrite" url="/clip-basepath/index.html" />
                 </rule>
             </rules>
         </rewrite>
@@ -123,13 +131,8 @@ Example rule:
 
 - Download and install [URL Rewrite](https://www.iis.net/downloads/microsoft/url-rewrite)
 - View Server Variables: add `HTTP_SEC_WEBSOCKET_EXTENSIONS` and `HTTP_X_FORWARDED_PREFIX` to allowlist
-- Regex pattern: `^clip-basepath((/(.+)?)|)$`
-- Conditions -> Condition Input: `{CACHE_URL}`
-- Conditions -> Pattern: `^(.+)?://.+$`
-- Server variable -> name: `HTTP_SEC_WEBSOCKET_EXTENSIONS`; value: (set to empty by editing `web.config`);
-- Server variable -> name: `HTTP_X_FORWARDED_PREFIX`; value: `/clip-basepath/`
-- Rewrite URL: `{C:1}://127.0.0.1:5000{R:1}`
-- Append query string: `true`
+- URL Rewrite Rules: see `web.config` below
+- Virtual directory: point from `clip-basepath` to `server/app/templates`
 
 #### Upload size limit
 

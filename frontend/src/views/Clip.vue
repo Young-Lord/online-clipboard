@@ -321,7 +321,7 @@
                                         >{{ mayDecryptFilename(file.filename) }}
                                     </v-list-item-title>
                                     <v-list-item-subtitle
-                                        >{{ humanFileSize(file.size) }}
+                                        >{{ humanFileSize(file.size) }};
                                         {{
                                             $t("clip.file.expiration_date_is", [
                                                 $d(
@@ -622,7 +622,7 @@ async function createIfNotExist() {
 }
 async function processFetchedContent(
     axios_response: AxiosResponse<Response<ClipData>>,
-    options: { include_slots?: ("content" | "file")[] } = {}
+    options: { include_slots?: ("content" | "file" | "version")[] } = {}
 ) {
     const response_data = axios_response.data
     if (axios_response.status === 204) {
@@ -667,13 +667,22 @@ async function processFetchedContent(
     }
     remote_version.value = response_data.data.clip_version ?? 1
     if (
-        (options.include_slots === undefined ||
-            options.include_slots.includes("content")) &&
-        (remote_version.value > clip_version.value ||
-            first_fetched.value === false)
+        remote_version.value > clip_version.value ||
+        first_fetched.value === false
     ) {
-        local_content.value = content
-        clip_version.value = remote_version.value
+        if (
+            options.include_slots === undefined ||
+            options.include_slots.includes("content") ||
+            options.include_slots.includes("version")
+        ) {
+            clip_version.value = remote_version.value
+        }
+        if (
+            options.include_slots === undefined ||
+            options.include_slots.includes("content")
+        ) {
+            local_content.value = content
+        }
     }
     if (
         options.include_slots === undefined ||
@@ -828,7 +837,7 @@ async function pushContent(force = false) {
                 clip_version: clip_version.value,
             })
             .then((resp) => {
-                processFetchedContent(resp, { include_slots: ["content"] })
+                processFetchedContent(resp, { include_slots: ["version"] })
             })
         setSaveStatus(SaveStatus.saved)
     } catch (e: any) {
@@ -1056,7 +1065,9 @@ function canPreviewFile(file: FileData): boolean {
 // Instant Sync
 import { onBeforeRouteLeave } from "vue-router"
 import { io } from "socket.io-client"
-import diff_match_patch, { patch_obj } from "@/tools/diff_match_patch"
+import { diff_match_patch as diff_match_patch_class } from "@dmsnell/diff-match-patch"
+const diff_match_patch = new diff_match_patch_class()
+type patch_obj = diff_match_patch_class.patch_obj
 const allow_instant_sync = computed(() => {
     return metadata.websocket_endpoint !== ""
 })
@@ -1148,6 +1159,7 @@ function calculateCursorPositionAfterMergeDiff(
     })
     return new_cursor_position
 }
+function instantSyncFailed() {}
 function handleInstantSyncPatches(patches: patch_obj[]) {
     const [result, successes] = diff_match_patch.patch_apply(
         patches,

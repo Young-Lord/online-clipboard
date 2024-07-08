@@ -7,6 +7,11 @@
   resolved "https://registry.npmmirror.com/@babel/parser/-/parser-7.24.6.tgz#5e030f440c3c6c78d195528c3b688b101a365328"
   integrity sha512-eNZXdfU35nJC2h24RznROuOpO94h6x8sg9ju0tT9biNtLZ2vuP8SduLqqV+/8+cebSLV9SJEAN5Z3zQbJG/M+Q==
 
+"@dmsnell/diff-match-patch@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.npmmirror.com/@dmsnell/diff-match-patch/-/diff-match-patch-1.0.0.tgz#5133db080b5afabf239eefa74b416b88f0e91a85"
+  integrity sha512-RyT47QUcZI0a8m5+58jA4oQ6WwSDzaUf+liS9EpoLQysNgCMzxh/dGy8oAAqdVlvk209H9FZHp1TinfOdfgCpA==
+
 "@esbuild/aix-ppc64@0.20.2":
   version "0.20.2"
   resolved "https://registry.npmmirror.com/@esbuild/aix-ppc64/-/aix-ppc64-0.20.2.tgz#a70f4ac11c6a1dfc18b8bbb13284155d933b9537"

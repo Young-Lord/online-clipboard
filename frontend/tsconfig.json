@@ -22,7 +22,6 @@
         "src/**/*.d.ts",
         "src/**/*.tsx",
         "src/**/*.vue",
-        "src/tools/diff_match_patch.js",
         "src/utils.ts"
     ],
     "references": [{ "path": "./tsconfig.node.json" }],
