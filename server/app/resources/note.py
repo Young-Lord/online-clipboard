@@ -4,6 +4,7 @@ import datetime
 import json
 from pathlib import Path
 import re
+from threading import Thread
 import traceback
 from urllib.parse import quote
 from flask_mailman import EmailMessage
@@ -11,6 +12,7 @@ from flask_restx import Resource, marshal
 import functools
 from typing import Any, ClassVar, Literal, Optional
 from flask import (
+    Flask,
     Response,
     current_app,
     make_response,
@@ -305,6 +307,19 @@ note_limiter = limiter.limit(Metadata.limiter_note)
 file_limiter = limiter.limit(Metadata.limiter_file)
 
 
+def on_user_access_note_with_new_thread(name: str):
+    app: Flask = current_app._get_current_object()  # type: ignore
+
+    def on_user_access_note_thread_function():
+        with app.app_context():
+            note = datastore.get_note(name)
+            if note is not None:
+                datastore.on_user_access_note(note)
+
+    thread = Thread(target=on_user_access_note_thread_function)
+    thread.start()
+
+
 @api.route("/note/<string:name>")
 class NoteRest(BaseRest):
     decorators = [note_limiter] + base_decorators
@@ -318,7 +333,10 @@ class NoteRest(BaseRest):
         if g.is_readonly:
             return mashal_readonly_note(g.note)
         else:
-            datastore.on_user_access_note(g.note)
+            if request.args.get("first_fetch", "") == "true":
+                # Any change will update this property automatically, so only need to manually update for GET method.
+                # Use a new thread to aviod blocking response
+                on_user_access_note_with_new_thread(name)
             return marshal_note(g.note)
 
     def post(self, name: str):

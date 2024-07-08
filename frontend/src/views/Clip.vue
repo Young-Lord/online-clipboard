@@ -715,7 +715,16 @@ async function fetchContent(
     try {
         let response
         try {
-            response = await axios.get<Response<ClipData>>(`/note/${name}`)
+            let params: { [dict_key: string]: any } = {}
+            if (!first_fetched.value) {
+                params = {
+                    ...params,
+                    first_fetch: "true",
+                }
+            }
+            response = await axios.get<Response<ClipData>>(`/note/${name}`, {
+                params: params,
+            })
         } catch (e: any) {
             if (isAxiosError(e)) {
                 if (e.response?.status === 400) {
@@ -1282,7 +1291,8 @@ async function changePassword() {
     if (new_password === undefined) return
     try {
         await axios.put(`/note/${name}`, {
-            new_password: new_password === "" ? "" : SHA512(new_password).toString(),
+            new_password:
+                new_password === "" ? "" : SHA512(new_password).toString(),
         })
         password.value = new_password
         await updateEncryptText()
