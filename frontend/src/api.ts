@@ -98,6 +98,7 @@ export const axios = original_axios.create({
     baseURL: API_URL,
 })
 axios.defaults.headers.common["Content-Type"] = "application/json"
+axios.defaults.headers.common["X-Clip-CSRF-Source"] = "web"
 
 axios.interceptors.request.use(function (config) {
     if (config.url === "/mailto" || config.url?.startsWith("/mailto/")) {

@@ -1,7 +1,8 @@
 import logging
 import sys
 from logging.handlers import RotatingFileHandler
-from flask import Flask, Response, request
+from typing import Final
+from flask import Flask, Response, make_response, request
 
 from .schedule_task import RemoveExpiredThings
 from .note_const import Metadata
@@ -52,10 +53,12 @@ class Factory:
         migrate.init_app(self.flask, db)
 
     def set_cors(self) -> None:
+
+        CSRF_HEADER_NAME: Final[str] = "X-Clip-CSRF-Source"
         CORS(
             self.flask,
             origins=self.flask.config["CORS_ORIGINS"],
-            allow_headers=["Content-Type", "Authorization"],
+            allow_headers=["Content-Type", "Authorization", CSRF_HEADER_NAME],
             supports_credentials=True,
             automatic_options=True,
         )
@@ -64,9 +67,18 @@ class Factory:
         def bypass_cors_requests():
             # fuck away non-200 CORS requests
             # many thanks to https://github.com/corydolphin/flask-cors/issues/292#issuecomment-883929183
-            if request.method == "options" or request.method == "OPTIONS":
+            if request.method == "OPTIONS":
                 return Response()
             # To create a slow-speed server: time.sleep(6)
+
+        @self.flask.before_request
+        def validate_csrf_source():
+            if request.method == "POST":
+                # Currently, GET has no side effect, so no need to protect.
+                if CSRF_HEADER_NAME not in request.headers:
+                    return make_response(
+                        f"CSRF Error! {CSRF_HEADER_NAME} header must be set."
+                    )
 
     def set_jwt(self) -> None:
         from .resources.base import file_jwt
