@@ -8,6 +8,11 @@ const userLanguage = window.navigator.language
 let selectedLanguage = userLanguage
 
 assert(messages !== undefined)
+
+import { en, zhHans } from "vuetify/locale"
+messages["en"].$vuetify = en
+messages["zh-CN"].$vuetify = zhHans
+
 if (!(userLanguage in messages)) {
     console.warn(
         `Language ${userLanguage} not found, falling back to ${fallbackLanguage}`
@@ -43,7 +48,7 @@ function addHtmlMeta(name: string, content: string): void {
     metaElement.setAttribute("content", content)
     headElement.appendChild(metaElement)
 }
-addHtmlMeta("description", $t('about.short_description'))
+addHtmlMeta("description", $t("about.short_description"))
 
 export const timeDeltaToString = (seconds: number): string => {
     return dayjs.duration(seconds, "s").humanize()
