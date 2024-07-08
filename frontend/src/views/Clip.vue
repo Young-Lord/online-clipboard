@@ -269,6 +269,7 @@
                                         v-if="
                                             !is_readonly && allow_instant_sync
                                         "
+                                        :disabled="!instant_sync_code_ready"
                                     ></v-checkbox>
                                 </v-list-group>
                             </v-list>
@@ -448,7 +449,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue"
+import { ref, onMounted, computed, watch } from "vue"
 
 import { useAppStore } from "@/store/app"
 const appStore = useAppStore()
@@ -696,7 +697,9 @@ async function processFetchedContent(
     ) {
         remote_files.value = response_data.data.files
     }
-    if (options.include_slots !== undefined) first_fetched.value = true
+    if (first_fetched.value === false) {
+        first_fetched.value = true
+    }
     current_timeout.value = response_data.data.timeout_seconds
     selected_timeout.value = timeDeltaToString(current_timeout.value)
     remote_content.value = content
@@ -1070,16 +1073,27 @@ function canPreviewFile(file: FileData): boolean {
 
 // Instant Sync
 import { onBeforeRouteLeave } from "vue-router"
-import { io } from "socket.io-client"
-import { diff_match_patch as diff_match_patch_class } from "@dmsnell/diff-match-patch"
-const diff_match_patch = new diff_match_patch_class()
-type patch_obj = diff_match_patch_class.patch_obj
+import type { io as ioType } from "socket.io-client"
+var io: null | typeof ioType = null
+import type { diff_match_patch as DiffMatchPatchType } from "@dmsnell/diff-match-patch"
+type patch_obj = DiffMatchPatchType.patch_obj
+var diff_match_patch: null | DiffMatchPatchType = null
+const instant_sync_code_ready = ref(false)
+watch(first_fetched, async (new_first_fetched, old_first_fetched) => {
+    if (new_first_fetched && !old_first_fetched) {
+        const DiffMatchPatch = (await import("@dmsnell/diff-match-patch"))
+            .diff_match_patch
+        diff_match_patch = new DiffMatchPatch()
+        io = (await import("socket.io-client")).io
+        instant_sync_code_ready.value = true
+    }
+})
 const allow_instant_sync = computed(() => {
     return metadata.websocket_endpoint !== ""
 })
 const instant_sync = ref(false)
 const autosave_while_instant_sync = ref(false)
-const instant_sync_socket = ref<ReturnType<typeof io> | null>(null)
+const instant_sync_socket = ref<ReturnType<typeof ioType> | null>(null)
 const is_ime_composing = ref(false)
 const instant_sync_patches_queue = ref<patch_obj[][]>([])
 
@@ -1097,6 +1111,7 @@ const websocket_base_data = computed(() => {
 
 function connectWebSocket() {
     autosave_while_instant_sync.value = true
+    assert(io !== null)
     instant_sync_socket.value = io(
         appStore.metadata.websocket_endpoint + "/instant_sync",
         { path: appStore.metadata.websocket_path }
@@ -1174,6 +1189,7 @@ function onInstantSyncPatchFailed() {
     })
 }
 function handleInstantSyncPatches(patches: patch_obj[]) {
+    assert(diff_match_patch !== null)
     const [result, successes] = diff_match_patch.patch_apply(
         patches,
         local_content.value
@@ -1203,6 +1219,7 @@ function handleInstantSyncPatches(patches: patch_obj[]) {
     } else onInstantSyncPatchFailed()
 }
 function doInstantSync() {
+    assert(diff_match_patch !== null)
     assert(instant_sync_socket.value !== null)
     instant_sync_socket.value.emit("diff", {
         ...websocket_base_data.value,
