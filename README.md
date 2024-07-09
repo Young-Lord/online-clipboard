@@ -105,6 +105,7 @@ Example rule:
                     <serverVariables>
                         <set name="HTTP_SEC_WEBSOCKET_EXTENSIONS" value="" />
                         <set name="HTTP_X_FORWARDED_PREFIX" value="/clip-basepath/" />
+                        <set name="HTTP_X_FORWARDED_HOST" value="example.com" />
                     </serverVariables>
                     <action type="Rewrite" url="{C:1}://127.0.0.1:5000{R:1}" />
                 </rule>
@@ -130,7 +131,7 @@ Example rule:
 #### URL Rewrite
 
 - Download and install [URL Rewrite](https://www.iis.net/downloads/microsoft/url-rewrite)
-- View Server Variables: add `HTTP_SEC_WEBSOCKET_EXTENSIONS` and `HTTP_X_FORWARDED_PREFIX` to allowlist
+- View Server Variables: add `HTTP_SEC_WEBSOCKET_EXTENSIONS`, `HTTP_X_FORWARDED_PREFIX`, `HTTP_X_FORWARDED_HOST` to allowlist
 - URL Rewrite Rules: see `web.config` below
 - Virtual directory: point from `clip-basepath` to `server/app/templates`
 

@@ -26,6 +26,7 @@ def parse_custom_args() -> None:
 
     if any((export_metadata, export_openapi)):
         no_run_server = True
+        environ["FLASK_ENV"] = "production"
         from json import dump
 
     if export_metadata:
