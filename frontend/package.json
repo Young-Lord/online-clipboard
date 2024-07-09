@@ -3,9 +3,9 @@
   "version": "0.0.35",
   "private": true,
   "scripts": {
-    "gen-metadata": "cd .. && cd server && poetry run python wsgi.py --export-metadata ../frontend/src/metadata.json",
+    "gen-metadata": "cd .. && cd server && poetry run python wsgi.py --export-metadata ../frontend/src/metadata.json && cd .. && cd frontend",
     "dev": "yarn run gen-metadata && vite",
-    "build": "yarn run gen-metadata && cd .. && cd frontend && vite build --emptyOutDir",
+    "build": "yarn run gen-metadata && vite build --emptyOutDir",
     "preview": "vite preview",
     "lint": "eslint . --fix"
   },

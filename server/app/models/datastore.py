@@ -1,5 +1,6 @@
 from abc import ABC
 import datetime
+from enum import IntEnum
 import os
 import time
 from typing import Any, Callable, NamedTuple, Optional
@@ -108,7 +109,7 @@ class File(db.Model, DatabaseColumnBase):
         return f"<File {self.filename}> in {self.note.name} ({self.note.id})>"
 
 
-class MailAcceptStatus:
+class MailAcceptStatus(IntEnum):
     ACCEPT = 1
     DENY = 2
     PENDING = 3

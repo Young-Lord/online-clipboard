@@ -8,9 +8,9 @@ from threading import Thread
 import traceback
 from urllib.parse import quote
 from flask_mailman import EmailMessage
-from flask_restx import Resource, marshal
+from flask_restx import Model, Resource, marshal
 import functools
-from typing import Any, ClassVar, Literal, Optional
+from typing import Any, ClassVar, Final, Literal, Optional
 from flask import (
     Flask,
     Response,
@@ -203,7 +203,7 @@ base_decorators = [  # this is fking from bottom to top!
 
 
 def note_to_jwt_id(note: Note) -> str:
-    return "note_"+sha256(
+    return "note_" + sha256(
         combine_name_and_password_and_readonly(
             note.name, note.password, note.readonly_name_if_has
         )
@@ -229,61 +229,96 @@ def create_file_link(file: File, suffix: Literal["download", "preview"]) -> str:
     )
 
 
-file_model = api.model(
+file_model: Model = api.model(
     "File",
     {
-        "filename": fields.String(attribute="filename"),
-        "id": fields.Integer,
-        "created_at": fields.DateTime,
-        "timeout_seconds": fields.Integer,
+        "filename": fields.String(attribute="filename", required=True),
+        "id": fields.Integer(required=True),
+        "created_at": fields.DateTime(required=True),
+        "timeout_seconds": fields.Integer(required=True),
         "expire_at": fields.DateTime(
             attribute=lambda file: file.created_at
-            + datetime.timedelta(seconds=file.timeout_seconds)
+            + datetime.timedelta(seconds=file.timeout_seconds),
+            required=True,
         ),
         "download_url": fields.String(
-            attribute=functools.partial(create_file_link, suffix="download")
+            attribute=functools.partial(create_file_link, suffix="download"),
+            required=True,
         ),
         "preview_url": fields.String(
-            attribute=functools.partial(create_file_link, suffix="preview")
+            attribute=functools.partial(create_file_link, suffix="preview"),
+            required=True,
         ),
-        "size": fields.Integer(attribute="file_size"),
-        "user_property": fields.String,
+        "size": fields.Integer(attribute="file_size", required=True),
+        "user_property": fields.String(required=True),
     },
 )
 
-note_model = api.model(
+note_model: Model = api.model(
     "Note",
     {
-        "name": fields.String,
-        "content": fields.String,
-        "clip_version": fields.Integer,
+        "name": fields.String(required=True),
+        "content": fields.String(required=True),
+        "clip_version": fields.Integer(required=True),
         "readonly_name": fields.String(
-            attribute=lambda note: note.readonly_name_if_has
+            attribute=lambda note: note.readonly_name_if_has, required=True
         ),
-        "timeout_seconds": fields.Integer,
-        "is_readonly": fields.Boolean(default=False),
-        "files": fields.List(fields.Nested(file_model)),
-        "file_count": fields.Integer(attribute=lambda note: len(note.files)),
-        "all_file_size": fields.Integer,
-        "user_property": fields.String,
+        "timeout_seconds": fields.Integer(required=True),
+        "is_readonly": fields.Boolean(default=False, required=True),
+        "files": fields.Nested(file_model, as_list=True, required=True),
+        "file_count": fields.Integer(
+            attribute=lambda note: len(note.files), required=True
+        ),
+        "all_file_size": fields.Integer(required=True),
+        "user_property": fields.String(required=True),
     },
 )
 
 
-def marshal_note(note: Note, status_code: int = 200, message: Optional[str] = None):
+def resp_model(data_model: Optional[Model] = None) -> Model:
+    if data_model is None:
+        name = "ResponseForEmpty"
+    else:
+        name = "ResponseFor" + data_model.name
+    return api.model(
+        name,
+        {
+            "status": fields.Integer(
+                required=True, example=200, description="Status code of the response"
+            ),
+            "message": fields.String(
+                required=True,
+                example="Wrong Password",
+                description="Message of the response",
+            ),
+            "data": (
+                fields.Raw(default=None, description="Always is `null`", example=None)
+                if data_model is None
+                else fields.Nested(data_model, description="Return data", required=True)
+            ),
+            "error_id": fields.String(
+                required=True, example="WRONG_PASSWORD", description="Error ID (if any)"
+            ),
+        },
+    )
+
+
+def marshal_note(
+    note: Note, status_code: int = 200, message: Optional[str] = None
+) -> Response:
     return return_json(
         marshal(note, note_model), status_code=status_code, message=message
     )
 
 
-ALLOW_PROPS: list[str] = [
+ALLOW_PROPS: Final[list[str]] = [
     "content",
     "readonly_name",
     "files",
     "all_file_size",
     "user_property",
 ]
-PROP_DEFAULT_VALUES: dict[str, Any] = {}
+PROP_DEFAULT_VALUES: Final[dict[str, Any]] = {}
 
 
 def mashal_readonly_note(note: Note, status_code: int = 200):
@@ -308,7 +343,7 @@ note_limiter = limiter.limit(Metadata.limiter_note)
 file_limiter = limiter.limit(Metadata.limiter_file)
 
 
-def on_user_access_note_with_new_thread(name: str):
+def on_user_access_note_with_new_thread(name: str) -> None:
     app: Flask = current_app._get_current_object()  # type: ignore
 
     def on_user_access_note_thread_function():
@@ -321,10 +356,14 @@ def on_user_access_note_with_new_thread(name: str):
     thread.start()
 
 
+@api.doc(
+    security="headers",
+)
 @api.route("/note/<string:name>")
 class NoteRest(BaseRest):
     decorators = [note_limiter] + base_decorators
 
+    @api.response(200, "Success", resp_model(note_model))
     def get(self, name: str):
         if g.note is None:
             if g.is_readonly:
@@ -340,6 +379,7 @@ class NoteRest(BaseRest):
                 on_user_access_note_with_new_thread(name)
             return marshal_note(g.note)
 
+    @api.response(200, "Success", resp_model(note_model))
     def post(self, name: str):
         # create a new note
         if g.note is not None:
@@ -349,6 +389,18 @@ class NoteRest(BaseRest):
         note = datastore.update_note(name=name)
         return marshal_note(note)
 
+    @api.response(200, "Success", resp_model(note_model))
+    @api.expect(
+        {
+            "new_password": fields.String,
+            "combine_mode": fields.String,
+            "content": fields.String,
+            "clip_version": fields.Integer,
+            "timeout_seconds": fields.Integer,
+            "user_property": fields.String,
+            "enable_readonly": fields.Boolean,
+        }
+    )
     def put(self, name: str):
         note = g.note
         if note is None:
@@ -406,6 +458,7 @@ class NoteRest(BaseRest):
             return marshal_note(note, status_code=status_code, message=str(e))
         return marshal_note(note)
 
+    @api.response(204, "Success", resp_model())
     def delete(self, name: str):
         if g.note is None or g.is_readonly:
             return return_json(status_code=404, message="No note found")
@@ -429,10 +482,14 @@ class RawNoteRest(BaseRest):
         )
 
 
+@api.doc(
+    security="headers",
+)
 @api.route("/note/<string:name>/file/<int:id>")
 class FileRest(BaseRest):
     decorators = [file_limiter] + base_decorators
 
+    @api.response(200, "Success", resp_model(file_model))
     def get(self, name: str, id: int):
         if g.note is None or g.is_readonly:
             return return_json(status_code=404, message="No note found")
@@ -444,6 +501,7 @@ class FileRest(BaseRest):
             status_code=200,
         )
 
+    @api.response(200, "Success", resp_model(file_model))
     def post(self, name: str, id: int):
         if g.note is None or g.is_readonly:
             return return_json(status_code=404, message="No note found")
@@ -460,13 +518,13 @@ class FileRest(BaseRest):
         if file.filename is None:
             return return_json(status_code=400, message="Filename is empty")
         user_property: str = request.form.get("user_property", "{}")
-        if (
-            len(user_property) > Metadata.max_user_property_length
-        ):
+        if len(user_property) > Metadata.max_user_property_length:
             return return_json(status_code=400, message="Content too long")
 
         # add file to database
-        file_instance = datastore.add_file(note, file.filename, file.save, user_property)
+        file_instance = datastore.add_file(
+            note, file.filename, file.save, user_property
+        )
         file_size = file_instance.file_size
 
         # check limits
@@ -499,6 +557,7 @@ class FileRest(BaseRest):
             )
         return marshal_note(g.note)
 
+    @api.response(200, "Success", resp_model(note_model))
     def delete(self, name: str, id: int):
         if g.note is None or g.is_readonly:
             return return_json(status_code=404, message="No note found")
@@ -534,17 +593,20 @@ def get_file(id: int, as_attachment: bool):
         return return_json(status_code=500, message="File not exist at server!")
 
 
+@api.doc(
+    security="query_string",
+)
 @api.route("/file/<int:id>/download")
 class DownloadFileContentRest(BaseRest):
     decorators = (
         [file_limiter]
-        + [jwt_required(locations=["query_string"])]
         + [
             i
             for i in base_decorators
             if i not in {password_protected_note, verify_name_decorator}
         ]
         + [verify_file_id_decorator]
+        + [jwt_required(locations=["query_string"])]
     )
     as_attachment: ClassVar[bool] = True
 
@@ -557,53 +619,98 @@ class PreviewFileContentRest(DownloadFileContentRest):
     as_attachment = False
 
 
-@api_bp.route("/mail/<string:address>/settings", methods=["GET"])
-@limiter.limit("20/minute")
-@jwt_required(locations=["headers"])
-def api_get_mail_setting(address: str):
-    # validate JWT token
-    if get_jwt_identity() != mail_address_to_jwt_id(address):
-        return return_json(status_code=403, message="Permission denied")
+mail_setting_input_model = api.model(
+    "MailSettingsInput",
+    {
+        "subscribe": fields.String(
+            description="Subscribe setting",
+            enum=["true", "false", "reset", "delete"],
+            required=True,
+        )
+    },
+)
 
-    setting = datastore.get_mail_subscribe_setting(address)
-    return return_json(status_code=200, message="OK", data={"subscribe": setting})
+mail_setting_output_model = api.model(
+    "MailSettingsOutput",
+    {
+        "subscribe": fields.Integer(
+            description="Subscribe setting",
+            # enum=[e.value for e in MailAcceptStatus], # useless
+            required=True,
+        ),
+    },
+)
 
 
-@api_bp.route("/mail/<string:address>/settings", methods=["POST"])
-@limiter.limit("20/minute")
-@jwt_required(locations=["headers"])
-def api_mail_setting(address: str):
-    # validate JWT token
-    if get_jwt_identity() != mail_address_to_jwt_id(address):
-        return return_json(status_code=403, message="Permission denied")
+@api.response(200, "Success", mail_setting_output_model)
+@api.doc(
+    security="headers",
+    params={"address": "Mail address to operate"},
+    responses={
+        200: "Success",
+        401: "Wrong JWT provided",
+        403: "Wrong JWT provided",
+    },
+)
+@api.route("/mail/<string:address>/settings")
+class MailSettingsRest(Resource):
+    """
+    Query or change mail subscribe setting
+    """
 
-    # get mail subscribe setting from querystring
-    data = request.get_json()
-    if "subscribe" not in data:
-        return return_json(status_code=400, message="No subscribe setting provided")
-    arg_subscribe_str = data["subscribe"].lower()
+    @limiter.limit("20/minute")
+    @jwt_required(locations=["headers"])
+    def get(self, address: str):
+        # validate JWT token
+        if get_jwt_identity() != mail_address_to_jwt_id(address):
+            return return_json(status_code=403, message="Permission denied")
 
-    new_status: int
-    match arg_subscribe_str:
-        case "true":
-            new_status = MailAcceptStatus.ACCEPT
-        case "false":
-            new_status = MailAcceptStatus.DENY
-        case "reset":
-            new_status = MailAcceptStatus.NO_REQUESTED
-        case "delete":
-            new_status = MailAcceptStatus.NO_REQUESTED
-            datastore.delete_mail_address(address)
-        case _:  # should not happen
-            return return_json(status_code=400, message="Invalid subscribe setting")
+        setting = datastore.get_mail_subscribe_setting(address)
+        return return_json(status_code=200, message="OK", data={"subscribe": setting})
 
-    if arg_subscribe_str != "delete":
-        datastore.set_mail_subscribe_setting(address, new_status)
-    return return_json(status_code=200, message="OK", data={"subscribe": new_status})
+    @api.expect(mail_setting_input_model)
+    @api.doc(
+        responses={
+            400: "Invalid subscribe setting",
+        }
+    )
+    @limiter.limit("20/minute")
+    @jwt_required(locations=["headers"])
+    def post(self, address: str):
+        # validate JWT token
+        if get_jwt_identity() != mail_address_to_jwt_id(address):
+            return return_json(status_code=403, message="Permission denied")
+
+        # get mail subscribe setting from querystring
+        data = request.get_json()
+        if "subscribe" not in data:
+            return return_json(status_code=400, message="No subscribe setting provided")
+        arg_subscribe_str = data["subscribe"].lower()
+
+        new_status: int
+        match arg_subscribe_str:
+            case "true":
+                new_status = MailAcceptStatus.ACCEPT
+            case "false":
+                new_status = MailAcceptStatus.DENY
+            case "reset":
+                new_status = MailAcceptStatus.NO_REQUESTED
+            case "delete":
+                new_status = MailAcceptStatus.NO_REQUESTED
+                datastore.delete_mail_address(address)
+            case _:  # should not happen
+                return return_json(status_code=400, message="Invalid subscribe setting")
+
+        if arg_subscribe_str != "delete":
+            datastore.set_mail_subscribe_setting(address, new_status)
+        return return_json(
+            status_code=200, message="OK", data={"subscribe": new_status}
+        )
 
 
 def mail_address_to_jwt_id(address: str) -> str:
     return "mail_" + sha256(address)
+
 
 def create_subscribe_post_link(
     address: str, subscribe: bool, frontend: bool = True, email_header: bool = False

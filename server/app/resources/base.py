@@ -8,14 +8,19 @@ from flask_restx import Api, apidoc
 
 from app.note_const import Metadata
 
+
 SWAGGER_OPTIONS: dict[str, Any] = dict(doc=False, add_specs=False)
 if current_app.config["DEBUG"] is True:
     SWAGGER_OPTIONS.pop("doc", None)
     SWAGGER_OPTIONS.pop("add_specs", None)
 
+jwt_authorizations = {
+    "headers": {"type": "apiKey", "in": "header", "name": "Authorization"},
+    "query_string": {"type": "apiKey", "in": "query", "name": "jwt"},
+}
 # this is the blueprint for normal API, usually at `/api` endpoint
 api_bp = Blueprint("api", "api")
-api_restx = Api(**SWAGGER_OPTIONS)
+api_restx = Api(**SWAGGER_OPTIONS, authorizations=jwt_authorizations)
 api_restx.init_app(api_bp)
 
 

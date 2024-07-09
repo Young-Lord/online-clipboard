@@ -23,6 +23,7 @@ class Factory:
     def set_flask(self, **kwargs) -> Flask:
         self.flask = Flask(__name__, **kwargs, static_folder=None, template_folder=None)
         self.flask.config.from_object(config)
+        self.flask.config.from_prefixed_env()
 
         return self.flask
 
@@ -78,9 +79,9 @@ class Factory:
                     return make_response(
                         f"CSRF Error! {CSRF_HEADER_NAME} header must be set."
                     )
+
         if self.flask.config["DEBUG"] is not True:
             self.flask.before_request(validate_csrf_source)
-
 
     def set_jwt(self) -> None:
         from .resources.base import file_jwt
