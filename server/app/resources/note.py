@@ -138,9 +138,11 @@ def password_protected_note(f):
             except (binascii.Error, UnicodeDecodeError):
                 return return_json(status_code=400, message="Invalid password provided")
         else:
-            # then, try get password from query string (first try "password", then try "pwd")
-            plain_password = request.args.get("pwd", "")
-            if plain_password != "":
+            plain_password = ""
+            # then, try get password from url query (like "/raw/name?password")
+            if len(request.args) == 1:
+                plain_password = list(request.args.keys())[0]
+            if plain_password:
                 password = sha512(plain_password)
 
         note = g.note

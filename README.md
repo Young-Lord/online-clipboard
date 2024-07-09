@@ -55,7 +55,7 @@ FLASK_ENV=production poetry run python wsgi.py
 
 ```shell
 # Get clip named my_clip
-curl http://example.com/raw/my_clip?pwd=my_password
+curl http://example.com/raw/my_clip?my_password
 ```
 
 ### Debug
@@ -66,7 +66,7 @@ cd frontend
 yarn dev
 # backend
 cd server
-poetry run python wsgi.py --debug
+poetry run python wsgi.py
 ```
 
 ### Backend database initailization
