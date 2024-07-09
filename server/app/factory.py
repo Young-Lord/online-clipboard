@@ -71,7 +71,6 @@ class Factory:
                 return Response()
             # To create a slow-speed server: time.sleep(6)
 
-        @self.flask.before_request
         def validate_csrf_source():
             if request.method == "POST":
                 # Currently, GET has no side effect, so no need to protect.
@@ -79,6 +78,9 @@ class Factory:
                     return make_response(
                         f"CSRF Error! {CSRF_HEADER_NAME} header must be set."
                     )
+        if self.flask.config["DEBUG"] is not True:
+            self.flask.before_request(validate_csrf_source)
+
 
     def set_jwt(self) -> None:
         from .resources.base import file_jwt
