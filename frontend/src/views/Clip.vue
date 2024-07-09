@@ -626,7 +626,9 @@ async function createIfNotExist() {
     try {
         await axios
             .post<Response<ClipData>>(`/note/${name}`, {})
-            .then(processFetchedContent)
+            .then((resp) => {
+                processFetchedContent(resp, { include_slots: ["version"] })
+            })
         is_new.value = false
     } catch (e: any) {
         console.log(e)
@@ -1449,7 +1451,9 @@ async function toggleReadonlyUrl() {
             .put<Response<ClipData>>(`/note/${name}`, {
                 enable_readonly: !hasReadonlyName.value,
             })
-            .then(processFetchedContent)
+            .then((resp) => {
+                processFetchedContent(resp, { include_slots: [] })
+            })
     } catch (e: any) {
         console.log(e)
     }
