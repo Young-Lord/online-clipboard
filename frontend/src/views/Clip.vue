@@ -247,6 +247,7 @@
                                         @keydown.enter.exact="sendToMail()"
                                         :append-inner-icon="mdiEmailFast"
                                         @click:append-inner="sendToMail()"
+                                        type="email"
                                         v-if="allow_mail"
                                     >
                                     </v-text-field>
