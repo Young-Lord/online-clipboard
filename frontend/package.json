@@ -1,6 +1,6 @@
 {
   "name": "online-clipboard",
-  "version": "0.0.38",
+  "version": "0.0.39",
   "private": true,
   "scripts": {
     "gen-metadata": "cd .. && cd server && poetry run python wsgi.py --export-metadata ../frontend/src/metadata.json && cd .. && cd frontend",
