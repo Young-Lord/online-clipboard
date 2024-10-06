@@ -115,6 +115,7 @@
                                 v-model="selected_timeout"
                                 :prepend-inner-icon="mdiClock"
                                 v-if="!is_new && !is_readonly"
+                                hide-details="auto"
                             >
                             </v-select>
                             <!-- current url, click to copy-->
@@ -126,6 +127,7 @@
                                 @click="copyString(current_url)"
                                 class="cursor-pointer"
                                 v-if="!is_readonly"
+                                hide-details="auto"
                             >
                             </v-text-field>
                             <!-- readonly url, click to copy-->
@@ -151,6 +153,7 @@
                                         : mdiPlusCircleOutline
                                 "
                                 @click:append-inner.stop="toggleReadonlyUrl()"
+                                hide-details="auto"
                             >
                             </v-text-field>
                             <v-list
@@ -179,6 +182,7 @@
                                             "
                                         ></v-list-item>
                                     </template>
+                                    <SideBarDelimLine></SideBarDelimLine>
                                     <!--prepend single line message-->
                                     <v-text-field
                                         v-model="combine_content"
@@ -199,6 +203,7 @@
                                             combinePushContent()
                                         "
                                         v-if="!is_readonly"
+                                        hide-details="auto"
                                     >
                                     </v-text-field>
                                     <!-- save interval -->
@@ -210,6 +215,7 @@
                                         type="number"
                                         @keyup="onUpdateSaveInterval()"
                                         v-if="!is_readonly"
+                                        hide-details="auto"
                                     >
                                     </v-text-field>
                                     <!-- auto fetch remote content interval -->
@@ -220,6 +226,7 @@
                                         dense
                                         type="number"
                                         @keyup="onUpdateFetchInterval()"
+                                        hide-details="auto"
                                     >
                                     </v-text-field>
                                     <!-- checkbox for encrypt text content / file -->
@@ -228,16 +235,20 @@
                                         :label="$t('clip.encrypt_content')"
                                         v-if="!is_readonly"
                                         @change="updateEncryptText()"
+                                        hide-details="auto"
                                     >
                                     </v-checkbox>
+                                    <SideBarDelimLine></SideBarDelimLine>
                                     <v-checkbox
                                         v-model="encrypt_file"
                                         :label="$t('clip.encrypt_file')"
                                         v-if="!is_readonly && allow_file"
                                         :disabled="uploading"
                                         @change="updateEncryptFile()"
+                                        hide-details="auto"
                                     >
                                     </v-checkbox>
+                                    <SideBarDelimLine></SideBarDelimLine>
                                     <!--send by mail-->
                                     <v-text-field
                                         v-model="mail_address"
@@ -249,17 +260,9 @@
                                         @click:append-inner="sendToMail()"
                                         type="email"
                                         v-if="allow_mail"
+                                        hide-details="auto"
                                     >
                                     </v-text-field>
-                                    <!--report clip-->
-                                    <v-list-item
-                                        :prepend-icon="mdiAlertOctagon"
-                                        @click="reportClip()"
-                                    >
-                                        <v-list-item-title>{{
-                                            $t("clip.report.report_clip")
-                                        }}</v-list-item-title>
-                                    </v-list-item>
                                     <!--Instant sync (WebSocket)-->
                                     <v-checkbox
                                         v-model="instant_sync"
@@ -271,7 +274,18 @@
                                             !is_readonly && allow_instant_sync
                                         "
                                         :disabled="!instant_sync_code_ready"
+                                        hide-details="auto"
                                     ></v-checkbox>
+                                    <SideBarDelimLine></SideBarDelimLine>
+                                    <!--report clip-->
+                                    <v-list-item
+                                        :prepend-icon="mdiAlertOctagon"
+                                        @click="reportClip()"
+                                    >
+                                        <v-list-item-title>{{
+                                            $t("clip.report.report_clip")
+                                        }}</v-list-item-title>
+                                    </v-list-item>
                                 </v-list-group>
                             </v-list>
                         </v-card>
@@ -506,6 +520,7 @@ import {
     mdiEye,
 } from "@mdi/js"
 import AppBarHomeButton from "@/components/AppBarHomeButton.vue"
+import SideBarDelimLine from "@/components/SidebarDelimLine.vue"
 import { useDisplay } from "vuetify"
 const { smAndUp } = useDisplay()
 const should_wrap_appbar_to_slot = computed(() => {
@@ -640,7 +655,6 @@ function processFetchedFiles(files: FileDataRaw[]) {
         file.user_property = JSON.parse(file.user_property)
         file.filename = mayDecryptFilename(file as FileData)
     })
-    console.log(files)
     remote_files.value = files as FileData[]
 }
 async function processFetchedContent(
@@ -937,9 +951,9 @@ function getTotalSize(...file_arrays: (File[] | FileData[])[]): number {
 }
 function arrayBufferToWordArray(ab: ArrayBuffer): WordArray {
     // https://stackoverflow.com/questions/33914764/how-to-read-a-binary-file-with-filereader-in-order-to-hash-it-with-sha-256-in-cr
-    var i8a = new Uint8Array(ab)
-    var a = []
-    for (var i = 0; i < i8a.length; i += 4) {
+    let i8a = new Uint8Array(ab)
+    let a = []
+    for (let i = 0; i < i8a.length; i += 4) {
         a.push(
             (i8a[i] << 24) | (i8a[i + 1] << 16) | (i8a[i + 2] << 8) | i8a[i + 3]
         )
@@ -1108,10 +1122,10 @@ function canPreviewFile(file: FileData): boolean {
 // Instant Sync
 import { onBeforeRouteLeave } from "vue-router"
 import type { io as ioType } from "socket.io-client"
-var io: null | typeof ioType = null
+let io: null | typeof ioType = null
 import type { diff_match_patch as DiffMatchPatchType } from "@dmsnell/diff-match-patch"
 type patch_obj = DiffMatchPatchType.patch_obj
-var diff_match_patch: null | DiffMatchPatchType = null
+let diff_match_patch: null | DiffMatchPatchType = null
 const instant_sync_code_ready = ref(false)
 watch(first_fetched, async (new_first_fetched, old_first_fetched) => {
     if (new_first_fetched && !old_first_fetched) {
@@ -1531,20 +1545,36 @@ async function reportClip() {
 }
 
 /* remove useless padding in sidebar */
-#sidebar .v-input__details {
+/* #sidebar .v-input__details {
     display: none;
-}
+} */
 
-#sidebar .v-list {
+/* #sidebar .v-list {
     padding: 0;
+} */
+
+.v-select__selection-text {
+    /* make Expiration text pure black*/
+    color: #000000;
 }
 
 #sidebar .v-list-group__items .v-list-item {
+    /* fix indent for Report Clip */
     padding-inline-start: 16px !important;
 }
 
-/* add better padding in file card */
+#sidebar .v-input.v-checkbox {
+    /* make checkbox look better */
+    background-color: #f6f6f6;
+}
+
+/* Disable the tranisition animation when changing files. */
+/* .v-messages__message {
+    transition: none !important;
+} */
+
 #file-card div.v-input__prepend {
+    /* add better padding in file card */
     margin-inline-start: 16px !important;
     margin-inline-end: 16px !important;
 }

@@ -35,7 +35,6 @@ class Config:
     )
 
     # endpoint
-    # check if a WSGI server is required. If not, remove unused imports & monkey patches
     API_SUFFIX = "/api"
     HOMEPAGE_URL: str = environ["VITE_HOMEPAGE_URL"]
     API_URL: str = environ["VITE_API_URL"]
