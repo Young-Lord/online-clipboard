@@ -547,7 +547,8 @@ class FileRest(BaseRest):
             message = "Too large file"
             error_id = "SINGLE_FILE_SIZE_LIMIT_HIT"
             ok = False
-        if len(note.files) >= Metadata.max_file_count:
+        file_count_limit_hit = len(note.files) > Metadata.max_file_count
+        if file_count_limit_hit:
             status_code = 400
             message = "Too many files"
             error_id = "TOTAL_FILES_COUNT_LIMIT_HIT"

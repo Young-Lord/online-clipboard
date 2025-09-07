@@ -205,8 +205,8 @@ class NoteDatastore(Datastore):
             enable_readonly = True
             note.timeout_seconds = Metadata.default_note_timeout
         if clip_version is not None:
-            # only allow increasing or equal clip_version
-            if clip_version < note.clip_version:
+            # only allow increasing or equal clip_version (unless it is -1)
+            if clip_version < note.clip_version and clip_version != -1:
                 raise ValueError("clip_version too low")
             note.clip_version = clip_version + 1
         if content is not None:
