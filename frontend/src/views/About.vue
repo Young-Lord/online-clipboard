@@ -37,6 +37,7 @@
 </template>
 
 <script setup lang="ts">
+defineOptions({ name: "PageAbout" })
 import { mdiGithub, mdiCheck } from "@mdi/js"
 import AppBarHomeButton from "@/components/AppBarHomeButton.vue"
 import { axios } from "@/api"

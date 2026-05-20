@@ -467,6 +467,7 @@
 </template>
 
 <script setup lang="ts">
+defineOptions({ name: "PageClip" })
 import { ref, onMounted, computed, watch } from "vue"
 
 import { useAppStore } from "@/store/app"
@@ -569,7 +570,7 @@ async function setEditingStatusOnEdit() {
     if (is_readonly.value) return
     setSaveStatus(SaveStatus.editing)
 }
-async function requestPassword(): Promise<SweetAlertResult<any>> {
+async function requestPassword(): Promise<SweetAlertResult> {
     return cancelableInput({
         title: $t("clip.password_question"),
         input: "password",
@@ -578,7 +579,7 @@ async function requestPassword(): Promise<SweetAlertResult<any>> {
 const snackbar = ref<object[]>([])
 
 // Base
-const editor = ref<any | null>(null)
+const editor = ref<{ $el: HTMLElement } | null>(null)
 const metadata = appStore.metadata
 const current_url = window.location.href
 const name = route.params.name as string
@@ -646,7 +647,7 @@ async function createIfNotExist() {
                 processFetchedContent(resp, { include_slots: ["version"] })
             })
         is_new.value = false
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.log(e)
     }
 }
@@ -745,7 +746,7 @@ async function fetchContent(
     try {
         let response
         try {
-            let params: { [dict_key: string]: any } = {}
+            let params: Record<string, string> = {}
             if (!first_fetched.value) {
                 params = {
                     ...params,
@@ -755,7 +756,7 @@ async function fetchContent(
             response = await axios.get<Response<ClipData>>(`/note/${name}`, {
                 params: params,
             })
-        } catch (e: any) {
+        } catch (e: unknown) {
             if (isAxiosError(e)) {
                 if (e.response?.status === 400) {
                     showDetailWarning({
@@ -784,7 +785,7 @@ async function fetchContent(
             throw e
         }
         processFetchedContent(response)
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.log(e)
     }
 }
@@ -888,7 +889,7 @@ async function pushContent(force = false) {
                 processFetchedContent(resp, { include_slots: ["version"] })
             })
         setSaveStatus(SaveStatus.saved)
-    } catch (e: any) {
+    } catch (e: unknown) {
         if (isAxiosError(e)) {
             if (e.response?.status === 409) {
                 remote_version.value = e.response.data.data.clip_version
@@ -916,7 +917,7 @@ async function deleteContent() {
                 timer: undefined,
             }).then(goToHome)
             return
-        } catch (e: any) {
+        } catch (e: unknown) {
             console.log(e)
         }
     }
@@ -1055,7 +1056,7 @@ async function uploadFile() {
     }
     try {
         await Promise.all(file_to_upload.value.map(uploadSingleFile))
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.log(e)
         error_string = $t("clip.file.failed_to_upload_file")
         if (isAxiosError(e)) {
@@ -1104,7 +1105,7 @@ async function deleteFile(file: FileData) {
                     title: $t('clip.file.deleted'),
                     text: $t('clip.file.your_file_has_been_deleted'),
                 }) */
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.log(e)
         showDetailWarning({
             title: $t("clip.error"),
@@ -1304,7 +1305,7 @@ async function sendToMail() {
                 title: $t("clip.mail.sent"),
             })
         }
-    } catch (e: any) {
+    } catch (e: unknown) {
         if (isAxiosError(e)) {
             showDetailWarning({
                 title: $t("clip.error"),
@@ -1347,7 +1348,7 @@ async function changePassword() {
         showAutoCloseSuccess({
             title: $t("clip.password_changed"),
         })
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.log(e)
     }
 }
@@ -1440,7 +1441,7 @@ async function copyString(content: string) {
     }
     try {
         await navigator.clipboard.writeText(content)
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.log(e)
     }
 }
@@ -1477,7 +1478,7 @@ async function toggleReadonlyUrl() {
             .then((resp) => {
                 processFetchedContent(resp, { include_slots: [] })
             })
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.log(e)
     }
 }
@@ -1510,7 +1511,7 @@ async function setNoteTimeout(selected_timeout: string) {
                 timeout_seconds: new_timeout,
             })
             current_timeout.value = new_timeout
-        } catch (e: any) {
+        } catch (e: unknown) {
             if (isAxiosError(e)) {
                 if (e.response?.status === 400) {
                     invalid_timeout_toast()
@@ -1519,7 +1520,7 @@ async function setNoteTimeout(selected_timeout: string) {
             }
             console.log(e)
         }
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.log(e)
     }
 }
@@ -1540,7 +1541,7 @@ async function reportClip() {
                 return
             }
         })
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.log(e)
     }
 }

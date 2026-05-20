@@ -39,6 +39,7 @@
 </template>
 
 <script setup lang="ts">
+defineOptions({ name: "PageHome" })
 import { ref } from "vue"
 import { useRouter } from "vue-router"
 const router = useRouter()

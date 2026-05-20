@@ -18,8 +18,8 @@ export default [
     ...pluginVue.configs["flat/essential"],
     {
         rules: {
-            "@typescript-eslint/no-explicit-any": "off",
-            "vue/multi-word-component-names": "off",
+            "@typescript-eslint/no-explicit-any": "warn",
+            "vue/multi-word-component-names": "warn",
             "@typescript-eslint/no-unused-vars": "off",
         },
     }
