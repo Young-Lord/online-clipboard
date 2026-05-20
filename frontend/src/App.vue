@@ -6,7 +6,20 @@
     </v-app>
 </template>
 
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { useTheme } from "vuetify"
+import { onMounted } from "vue"
+
+const theme = useTheme()
+
+onMounted(() => {
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)")
+    theme.global.name.value = prefersDark.matches ? "dark" : "light"
+    prefersDark.addEventListener("change", (e) => {
+        theme.global.name.value = e.matches ? "dark" : "light"
+    })
+})
+</script>
 
 <script lang="ts">
 import { useAppStore } from "@/store/app"

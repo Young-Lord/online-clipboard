@@ -1563,8 +1563,8 @@ async function reportClip() {
 } */
 
 .v-select__selection-text {
-    /* make Expiration text pure black*/
-    color: #000000;
+    /* use theme-aware text color instead of hardcoded black */
+    color: rgb(var(--v-theme-on-surface));
 }
 
 #sidebar .v-list-group__items .v-list-item {
@@ -1573,8 +1573,8 @@ async function reportClip() {
 }
 
 #sidebar .v-input.v-checkbox {
-    /* make checkbox look better */
-    background-color: #f6f6f6;
+    /* use theme-aware background instead of hardcoded light gray */
+    background-color: rgba(var(--v-theme-on-surface), var(--v-hover-opacity));
 }
 
 /* Disable the tranisition animation when changing files. */
