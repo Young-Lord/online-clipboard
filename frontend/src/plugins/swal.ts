@@ -3,6 +3,7 @@ import { SweetAlertResult, SweetAlertOptions } from "sweetalert2"
 import { $t } from "@/plugins/i18n"
 
 const baseOptions = {
+    theme: "auto",
     showClass: { popup: "animate__animated animate__fadeIn animate__faster" },
     confirmButtonText: $t("clip.ok"),
     cancelButtonText: $t("clip.cancel"),
