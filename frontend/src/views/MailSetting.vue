@@ -77,7 +77,7 @@
                             {{ $t("setting.mail.resend_request_title") }}
                         </v-card-title>
                         <v-card-text>
-                            <v-form @submit.native.prevent>
+                            <v-form @submit.prevent>
                                 <v-text-field
                                     v-model="input_mail_address"
                                     :label="$t('setting.mail.your_mail')"

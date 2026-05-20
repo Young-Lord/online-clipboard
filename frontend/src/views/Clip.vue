@@ -971,7 +971,7 @@ function wordArrayToArrayBuffer(wordArray: WordArray): ArrayBuffer {
 }
 function onAttachFile(event: ClipboardEvent | DragEvent) {
     if (is_readonly.value || uploading.value || !allow_file.value) return
-    let items: FileList | undefined = undefined
+    let items: FileList | undefined
     if (event instanceof DragEvent) {
         // file drag & drop
         items = event.dataTransfer?.files
@@ -1377,7 +1377,7 @@ function mayDecryptFilename(file: FileData): string {
     const filename = file.filename
     if (!file.user_property.encrypt_file_name) return filename
     switch (file.user_property.encrypt_file_name_algo) {
-        case "aes":
+        case "aes": {
             const decrypt = AES.decrypt(
                 filename,
                 encryptPassword.value
@@ -1385,6 +1385,7 @@ function mayDecryptFilename(file: FileData): string {
             if (filename !== "" && decrypt === "")
                 return markDecryptError(filename)
             return decrypt
+        }
         default:
             return markDecryptError(filename)
     }
@@ -1403,13 +1404,13 @@ async function downloadEncryptedFile(file: FileData) {
     const enc = new TextDecoder("utf-8")
     const str = enc.decode(response.data)
     switch (file.user_property.encrypt_file_content_algo) {
-        case "aes":
+        case "aes": {
             const decrypted_file_data = wordArrayToArrayBuffer(
                 AES.decrypt(str, encryptPassword.value)
             )
-            // save as blob
             const blob = new Blob([decrypted_file_data])
             saveBlob(blob, file.filename)
+        }
     }
 }
 
@@ -1429,7 +1430,11 @@ async function copyString(content: string) {
         textArea.focus()
         textArea.select()
         return new Promise((res, rej) => {
-            document.execCommand("copy") ? res(null) : rej()
+            if (document.execCommand("copy")) {
+                res(null)
+            } else {
+                rej()
+            }
             textArea.remove()
         })
     }

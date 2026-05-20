@@ -18,13 +18,9 @@ export default [
     ...pluginVue.configs["flat/essential"],
     {
         rules: {
-            "@typescript-eslint/no-unused-vars": "off",
             "@typescript-eslint/no-explicit-any": "off",
-            "@typescript-eslint/no-unused-expressions": "off",
-            "no-useless-assignment": "off",
-            "no-case-declarations": "off",
             "vue/multi-word-component-names": "off",
-            "vue/no-deprecated-v-on-native-modifier": "off",
+            "@typescript-eslint/no-unused-vars": "off",
         },
     }
 ]
