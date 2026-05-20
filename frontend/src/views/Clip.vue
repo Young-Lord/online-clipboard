@@ -655,7 +655,7 @@ function processFetchedFiles(files: FileDataRaw[]) {
         file.user_property = JSON.parse(file.user_property)
         file.filename = mayDecryptFilename(file as FileData)
     })
-    remote_files.value = files as FileData[]
+    remote_files.value = (files as FileData[]).reverse()
 }
 async function processFetchedContent(
     axios_response: AxiosResponse<Response<ClipData>>,
@@ -1109,6 +1109,9 @@ async function deleteFile(file: FileData) {
         showDetailWarning({
             title: $t("clip.error"),
             text: $t("clip.file.failed_to_delete_file"),
+        })
+        fetchContent({
+            include_slots: ["file"],
         })
     } finally {
         uploading.value = false

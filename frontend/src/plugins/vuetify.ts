@@ -20,7 +20,7 @@ import i18n from "@/plugins/i18n"
 import { useI18n } from "vue-i18n"
 
 // Labs
-import { VSnackbarQueue } from "vuetify/labs/VSnackbarQueue"
+import { VSnackbarQueue } from "vuetify/components/VSnackbarQueue"
 
 // https://vuetifyjs.com/en/introduction/why-vuetify/#feature-guides
 export default createVuetify({
