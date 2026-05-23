@@ -12,6 +12,13 @@ export interface Response<T> {
     status: number
 }
 
+export interface EffectiveLimits {
+    max_file_size: number
+    max_file_count: number
+    max_all_file_size: number
+    max_timeout: number
+}
+
 export interface ClipData {
     all_file_size: number
     clip_version: number
@@ -23,6 +30,37 @@ export interface ClipData {
     readonly_name: string
     timeout_seconds: number
     user_property: string
+    effective_limits: EffectiveLimits
+}
+
+export interface BenefitsData {
+    effective_limits: EffectiveLimits
+    active_records: RedeemRecordData[]
+    history: RedeemRecordData[]
+    just_redeemed?: RedeemRecordData
+}
+
+export interface RedeemRecordData {
+    id: number
+    code: string
+    note: string
+    benefits: Partial<EffectiveLimits>
+    activated_at: string | null
+    expires_at: string | null
+}
+
+export interface RedeemCodeData {
+    id: number
+    code: string
+    note: string
+    benefits: Partial<EffectiveLimits>
+    max_uses: number
+    used_count: number
+    valid_until: string | null
+    effect_duration_seconds: number
+    is_active: boolean
+    created_at: string | null
+    updated_at: string | null
 }
 
 export interface FileUserProperty {

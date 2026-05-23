@@ -1,7 +1,10 @@
 from abc import ABC
 import datetime
 from enum import IntEnum
+import json
 import os
+import secrets
+import string
 import time
 from typing import Any, Callable, NamedTuple, Optional
 from sqlalchemy import Boolean, DateTime, Integer, String, ForeignKey, func, sql
@@ -11,6 +14,7 @@ from passlib.context import CryptContext
 from app.note_const import (
     ALLOW_CHAR_IN_NAMES,
     DISABLE_WORDS_IN_NAMES,
+    BENEFIT_KEYS,
     Metadata,
 )
 from app.utils import ensure_dir
@@ -123,6 +127,169 @@ class MailAddress(db.Model, DatabaseColumnBase):
     status: Mapped[int] = mapped_column(Integer, default=MailAcceptStatus.PENDING)
 
 
+REDEEM_CODE_ALPHABET: str = string.ascii_uppercase + string.digits
+REDEEM_CODE_LENGTH: int = 12
+
+
+def make_redeem_code() -> str:
+    return "".join(secrets.choice(REDEEM_CODE_ALPHABET) for _ in range(REDEEM_CODE_LENGTH))
+
+
+def verify_redeem_code(code: str) -> bool:
+    if not 4 <= len(code) <= 64:
+        return False
+    allowed = set(REDEEM_CODE_ALPHABET + "-_")
+    return all(c in allowed for c in code)
+
+
+class RedeemCode(db.Model, DatabaseColumnBase):
+    """
+    Admin-generated code that grants benefits when redeemed on a Note.
+    `max_uses == -1` means unlimited; `valid_until is None` means no redeem deadline;
+    `effect_duration_seconds == -1` means the granted effect lasts forever.
+    """
+
+    __tablename__ = "redeem_codes"
+
+    code: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    note: Mapped[str] = mapped_column(
+        String, nullable=False, default="", server_default=""
+    )  # admin memo
+    benefits: Mapped[str] = mapped_column(
+        String, nullable=False, default="{}", server_default="{}"
+    )  # JSON dict of benefits (keys subset of BENEFIT_KEYS)
+    max_uses: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=-1, server_default=sql.expression.literal(-1)
+    )
+    used_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default=sql.expression.literal(0)
+    )
+    valid_until: Mapped[Optional[datetime.datetime]] = mapped_column(
+        DateTime, nullable=True, default=None
+    )  # null = never expires for redeeming
+    effect_duration_seconds: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=-1, server_default=sql.expression.literal(-1)
+    )  # -1 means once redeemed, the effect lasts forever
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default=sql.expression.true()
+    )
+    records: Mapped[list["RedeemRecord"]] = relationship(
+        "RedeemRecord", back_populates="redeem_code"
+    )
+
+    @property
+    def is_expired_for_redeem(self) -> bool:
+        return (
+            self.valid_until is not None and self.valid_until < datetime.datetime.now()
+        )
+
+    @property
+    def is_used_up(self) -> bool:
+        return self.max_uses != -1 and self.used_count >= self.max_uses
+
+    @property
+    def is_redeemable(self) -> bool:
+        return (
+            self.is_active and not self.is_expired_for_redeem and not self.is_used_up
+        )
+
+    @property
+    def benefits_dict(self) -> dict[str, int]:
+        try:
+            parsed = json.loads(self.benefits or "{}")
+        except (TypeError, ValueError):
+            return {}
+        if not isinstance(parsed, dict):
+            return {}
+        return {k: int(v) for k, v in parsed.items() if k in BENEFIT_KEYS}
+
+    def __repr__(self):
+        return f"<RedeemCode {self.code}>"
+
+
+class RedeemRecord(db.Model, DatabaseColumnBase):
+    """A record of a redeem code being used by a particular note."""
+
+    __tablename__ = "redeem_records"
+
+    note_id: Mapped[int] = mapped_column(Integer, ForeignKey("notes.id"), nullable=False)
+    redeem_code_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("redeem_codes.id"), nullable=False
+    )
+    benefits_snapshot: Mapped[str] = mapped_column(
+        String, nullable=False, default="{}", server_default="{}"
+    )
+    activated_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, nullable=False, default=func.now(), server_default=func.now()
+    )
+    expires_at: Mapped[Optional[datetime.datetime]] = mapped_column(
+        DateTime, nullable=True, default=None
+    )  # null means never expires
+
+    note: Mapped["Note"] = relationship("Note")
+    redeem_code: Mapped["RedeemCode"] = relationship(
+        "RedeemCode", back_populates="records"
+    )
+
+    @property
+    def is_active(self) -> bool:
+        return self.expires_at is None or self.expires_at > datetime.datetime.now()
+
+    @property
+    def benefits_dict(self) -> dict[str, int]:
+        try:
+            parsed = json.loads(self.benefits_snapshot or "{}")
+        except (TypeError, ValueError):
+            return {}
+        if not isinstance(parsed, dict):
+            return {}
+        return {k: int(v) for k, v in parsed.items() if k in BENEFIT_KEYS}
+
+
+def sanitize_benefits(raw: Any) -> dict[str, int]:
+    """Filter benefit dict to known keys with non-negative integer values."""
+    if not isinstance(raw, dict):
+        return {}
+    out: dict[str, int] = {}
+    for key in BENEFIT_KEYS:
+        if key not in raw:
+            continue
+        try:
+            val = int(raw[key])
+        except (TypeError, ValueError):
+            continue
+        if val < 0:
+            continue
+        out[key] = val
+    return out
+
+
+def merged_benefits_for_note(records: list["RedeemRecord"]) -> dict[str, int]:
+    """Max-merge all active redeem records into a single benefits dict."""
+    merged: dict[str, int] = {}
+    for record in records:
+        if not record.is_active:
+            continue
+        for k, v in record.benefits_dict.items():
+            if k not in merged or v > merged[k]:
+                merged[k] = v
+    return merged
+
+
+def effective_limits(note_records: list["RedeemRecord"]) -> dict[str, int]:
+    """Default Metadata limits raised by any active redeem records."""
+    base = {
+        "max_file_size": Metadata.max_file_size,
+        "max_file_count": Metadata.max_file_count,
+        "max_all_file_size": Metadata.max_all_file_size,
+        "max_timeout": Metadata.max_timeout,
+    }
+    for k, v in merged_benefits_for_note(note_records).items():
+        if v > base.get(k, 0):
+            base[k] = v
+    return base
+
+
 def verify_name(name: str) -> bool:
     if name in DISABLE_WORDS_IN_NAMES:
         return False
@@ -149,8 +316,9 @@ def combine_name_and_password_and_readonly(
     )
 
 
-def verify_timeout_seconds(timeout_seconds: int) -> bool:
-    return 1 <= timeout_seconds <= Metadata.max_timeout
+def verify_timeout_seconds(timeout_seconds: int, max_allowed: Optional[int] = None) -> bool:
+    upper = Metadata.max_timeout if max_allowed is None else max(Metadata.max_timeout, max_allowed)
+    return 1 <= timeout_seconds <= upper
 
 
 class Datastore(ABC):
@@ -192,6 +360,7 @@ class NoteDatastore(Datastore):
         timeout_seconds: Optional[int] = None,
         user_property: Optional[str] = None,
         enable_readonly: Optional[bool] = None,
+        max_timeout_override: Optional[int] = None,
     ) -> Note:
         note: Optional[Note] = self.get_note(name)
         if note is None:
@@ -219,7 +388,7 @@ class NoteDatastore(Datastore):
                     combine_name_and_password(name, password)
                 )
         if timeout_seconds is not None:
-            if not verify_timeout_seconds(timeout_seconds):
+            if not verify_timeout_seconds(timeout_seconds, max_allowed=max_timeout_override):
                 raise ValueError("Invalid timeout_seconds")
             note.timeout_seconds = timeout_seconds
         if user_property is not None:
@@ -244,6 +413,10 @@ class NoteDatastore(Datastore):
         """
         for file in note.files:
             self.delete_file(file)
+        # remove redeem records tied to this note
+        self.session.query(RedeemRecord).filter_by(note_id=note.id).delete(
+            synchronize_session=False
+        )
         self.session.delete(note)
         self.session.commit()
 
@@ -257,15 +430,19 @@ class NoteDatastore(Datastore):
         filename: str,
         file_saver: Callable[[str], Any],
         user_property: str,
+        timeout_seconds: Optional[int] = None,
     ) -> File:
         file_data = self.add_file_at_disk(note, filename, file_saver)
-        file = File(
+        kwargs: dict[str, Any] = dict(
             filename=filename,
             file_path=file_data.file_path,
             note=note,
             file_size=file_data.file_size,
             user_property=user_property,
         )
+        if timeout_seconds is not None and timeout_seconds > 0:
+            kwargs["timeout_seconds"] = timeout_seconds
+        file = File(**kwargs)
         self.session.add(file)
         note.all_file_size += file_data.file_size
         self.session.add(note)
@@ -383,6 +560,160 @@ class NoteDatastore(Datastore):
 
     def get_mail_address(self, mail_address: str) -> Optional[MailAddress]:
         return self.session.query(MailAddress).filter_by(address=mail_address).first()
+
+    # ---------- Redeem code ----------
+
+    def get_redeem_code(self, code_id: int) -> Optional[RedeemCode]:
+        return self.session.query(RedeemCode).filter_by(id=code_id).first()
+
+    def get_redeem_code_by_code(self, code: str) -> Optional[RedeemCode]:
+        return self.session.query(RedeemCode).filter_by(code=code).first()
+
+    def list_redeem_codes(
+        self,
+        query: str = "",
+        limit: int = 100,
+        offset: int = 0,
+    ) -> tuple[list[RedeemCode], int]:
+        q = self.session.query(RedeemCode)
+        if query:
+            like = f"%{query}%"
+            q = q.filter(
+                (RedeemCode.code.ilike(like)) | (RedeemCode.note.ilike(like))
+            )
+        total = q.count()
+        rows = q.order_by(RedeemCode.id.desc()).limit(limit).offset(offset).all()
+        return rows, total
+
+    def create_redeem_code(
+        self,
+        *,
+        code: Optional[str] = None,
+        note: str = "",
+        benefits: Optional[dict[str, int]] = None,
+        max_uses: int = -1,
+        valid_until: Optional[datetime.datetime] = None,
+        effect_duration_seconds: int = -1,
+    ) -> RedeemCode:
+        if code is None or code == "":
+            # generate a unique random code
+            for _ in range(20):
+                candidate = make_redeem_code()
+                if self.get_redeem_code_by_code(candidate) is None:
+                    code = candidate
+                    break
+            else:
+                raise ValueError("Failed to generate a unique redeem code")
+        else:
+            if not verify_redeem_code(code):
+                raise ValueError("Invalid code format")
+            if self.get_redeem_code_by_code(code) is not None:
+                raise ValueError("Code already exists")
+        benefits_clean = sanitize_benefits(benefits or {})
+        rc = RedeemCode(
+            code=code,
+            note=note or "",
+            benefits=json.dumps(benefits_clean, sort_keys=True),
+            max_uses=max_uses,
+            used_count=0,
+            valid_until=valid_until,
+            effect_duration_seconds=effect_duration_seconds,
+            is_active=True,
+        )
+        self.session.add(rc)
+        self.session.commit()
+        return rc
+
+    def update_redeem_code(
+        self,
+        rc: RedeemCode,
+        *,
+        note: Optional[str] = None,
+        benefits: Optional[dict[str, int]] = None,
+        max_uses: Optional[int] = None,
+        valid_until: Optional[Optional[datetime.datetime]] = None,
+        effect_duration_seconds: Optional[int] = None,
+        is_active: Optional[bool] = None,
+        _set_valid_until: bool = False,
+    ) -> RedeemCode:
+        if note is not None:
+            rc.note = note
+        if benefits is not None:
+            rc.benefits = json.dumps(sanitize_benefits(benefits), sort_keys=True)
+        if max_uses is not None:
+            rc.max_uses = max_uses
+        if _set_valid_until:
+            rc.valid_until = valid_until
+        if effect_duration_seconds is not None:
+            rc.effect_duration_seconds = effect_duration_seconds
+        if is_active is not None:
+            rc.is_active = is_active
+        self.session.add(rc)
+        self.session.commit()
+        return rc
+
+    def delete_redeem_code(self, rc: RedeemCode) -> None:
+        # do NOT cascade-delete RedeemRecord; we keep history so a clip still
+        # sees the benefits granted by codes that admins remove.
+        # Set FK to NULL is not allowed (NOT NULL), so we delete records too,
+        # but their benefits_snapshot has already been applied to the note via
+        # active checks. The user's effect ends when their record is gone.
+        self.session.query(RedeemRecord).filter_by(redeem_code_id=rc.id).delete(
+            synchronize_session=False
+        )
+        self.session.delete(rc)
+        self.session.commit()
+
+    def get_active_records_for_note(self, note: Note) -> list[RedeemRecord]:
+        rows = (
+            self.session.query(RedeemRecord).filter_by(note_id=note.id).all()
+        )
+        return [r for r in rows if r.is_active]
+
+    def get_records_for_note(self, note: Note) -> list[RedeemRecord]:
+        return (
+            self.session.query(RedeemRecord)
+            .filter_by(note_id=note.id)
+            .order_by(RedeemRecord.id.desc())
+            .all()
+        )
+
+    def redeem_code_for_note(self, note: Note, code: str) -> RedeemRecord:
+        """
+        Apply a redeem code to a note, creating a RedeemRecord.
+        Raises ValueError on common failures so callers can map to HTTP codes.
+        """
+        rc = self.get_redeem_code_by_code(code)
+        if rc is None:
+            raise ValueError("CODE_NOT_FOUND")
+        if not rc.is_active:
+            raise ValueError("CODE_INACTIVE")
+        if rc.is_expired_for_redeem:
+            raise ValueError("CODE_EXPIRED")
+        if rc.is_used_up:
+            raise ValueError("CODE_USED_UP")
+        benefits = rc.benefits_dict
+        if not benefits:
+            raise ValueError("CODE_NO_BENEFITS")
+        activated_at = datetime.datetime.now()
+        if rc.effect_duration_seconds and rc.effect_duration_seconds > 0:
+            expires_at: Optional[datetime.datetime] = (
+                activated_at + datetime.timedelta(seconds=rc.effect_duration_seconds)
+            )
+        else:
+            expires_at = None
+        record = RedeemRecord(
+            note_id=note.id,
+            redeem_code_id=rc.id,
+            benefits_snapshot=json.dumps(benefits, sort_keys=True),
+            activated_at=activated_at,
+            expires_at=expires_at,
+        )
+        rc.used_count += 1
+        self.session.add(record)
+        self.session.add(rc)
+        self.session.commit()
+        return record
 
 
 datastore = NoteDatastore(db)

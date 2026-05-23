@@ -43,6 +43,19 @@ def make_readonly_name() -> str:
 PASSWORD_SCHEMES: list[str] = ["pbkdf2_sha256", "bcrypt", "argon2", "sha512_crypt"]
 
 
+# The benefit dimensions a redeem code can grant.
+# Each key represents an upper-bound the code raises when active (merged via max()).
+BENEFIT_KEYS: Final[tuple[str, ...]] = (
+    "max_file_size",
+    "max_file_count",
+    "max_all_file_size",
+    "max_timeout",
+)
+
+
+ADMIN_TOKEN: Final[str] = os.environ.get("ADMIN_TOKEN", "")
+
+
 @dataclass
 class BaseMetadata:
     name: str = "Clip"

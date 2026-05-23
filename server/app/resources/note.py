@@ -30,6 +30,7 @@ from app.models.datastore import (
     combine_name_and_password_and_readonly,
     verify_name,
     passlib_context,
+    effective_limits,
 )
 from app.logic.content_filter import (
     ClipTextContentFilter,
@@ -273,6 +274,12 @@ note_model: Model = api.model(
         ),
         "all_file_size": fields.Integer(required=True),
         "user_property": fields.String(required=True),
+        "effective_limits": fields.Raw(
+            attribute=lambda note: effective_limits(
+                datastore.get_active_records_for_note(note)
+            ),
+            required=True,
+        ),
     },
 )
 
@@ -319,6 +326,7 @@ ALLOW_PROPS: Final[list[str]] = [
     "files",
     "all_file_size",
     "user_property",
+    "effective_limits",
 ]
 PROP_DEFAULT_VALUES: Final[dict[str, Any]] = {}
 
@@ -452,7 +460,10 @@ class NoteRest(BaseRest):
         if not ClipTextContentFilter(content=params.get("content", "")).is_valid():
             return return_json(status_code=451, message="Illegal content")
         try:
-            datastore.update_note(name=name, **params)
+            limits = effective_limits(datastore.get_active_records_for_note(note))
+            datastore.update_note(
+                name=name, max_timeout_override=limits["max_timeout"], **params
+            )
         except ValueError as e:
             status_code = 400
             if str(e) == "clip_version too low":
@@ -508,7 +519,8 @@ class FileRest(BaseRest):
         if g.note is None or g.is_readonly:
             return return_json(status_code=404, message="No note found")
         note = g.note
-        if len(note.files) >= Metadata.max_file_count:
+        limits = effective_limits(datastore.get_active_records_for_note(note))
+        if len(note.files) >= limits["max_file_count"]:
             return return_json(
                 status_code=400,
                 message="Too many files",
@@ -523,9 +535,16 @@ class FileRest(BaseRest):
         if len(user_property) > Metadata.max_user_property_length:
             return return_json(status_code=400, message="Content too long")
 
+        # File timeout follows effective max_timeout (capped at default file timeout
+        # unless redeem benefits raise the ceiling).
+        file_timeout = max(Metadata.default_file_timeout, limits["max_timeout"])
         # add file to database
         file_instance = datastore.add_file(
-            note, file.filename, file.save, user_property
+            note,
+            file.filename,
+            file.save,
+            user_property,
+            timeout_seconds=file_timeout,
         )
         file_size = file_instance.file_size
 
@@ -535,19 +554,19 @@ class FileRest(BaseRest):
         message: str = ""
         error_id: str = ""
 
-        all_file_size_limit_hit = note.all_file_size > Metadata.max_all_file_size
+        all_file_size_limit_hit = note.all_file_size > limits["max_all_file_size"]
         if all_file_size_limit_hit:
             status_code = 400
             message = "Too large all file size"
             error_id = "ALL_FILE_SIZE_LIMIT_HIT"
             ok = False
-        single_file_size_limit_hit = file_size > Metadata.max_file_size
+        single_file_size_limit_hit = file_size > limits["max_file_size"]
         if single_file_size_limit_hit:
             status_code = 400
             message = "Too large file"
             error_id = "SINGLE_FILE_SIZE_LIMIT_HIT"
             ok = False
-        file_count_limit_hit = len(note.files) > Metadata.max_file_count
+        file_count_limit_hit = len(note.files) > limits["max_file_count"]
         if file_count_limit_hit:
             status_code = 400
             message = "Too many files"

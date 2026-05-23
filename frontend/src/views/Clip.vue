@@ -28,6 +28,24 @@
             <!-- @vue-ignore -->
             <template v-slot:[should_wrap_appbar_to_slot]>
                 <v-spacer></v-spacer>
+                <!--redeem code button-->
+                <v-btn
+                    icon
+                    @click="openRedeemDialog()"
+                    v-if="!is_new && !is_readonly"
+                    :aria-label="$t('clip.a11y.appbar.redeem')"
+                >
+                    <v-icon :icon="mdiTicketConfirmation" />
+                </v-btn>
+                <!--view benefits button-->
+                <v-btn
+                    icon
+                    @click="openBenefitsDialog()"
+                    v-if="!is_new && has_active_benefits"
+                    :aria-label="$t('clip.a11y.appbar.benefits')"
+                >
+                    <v-icon :icon="mdiGiftOutline" />
+                </v-btn>
                 <!--delete button-->
                 <v-btn
                     icon
@@ -303,14 +321,14 @@
                                 :label="$t('clip.drag_or_click_to_upload_file')"
                                 :messages="
                                     $t('clip.file_limits', [
-                                        humanFileSize(metadata.max_file_size),
+                                        humanFileSize(effective_limits.max_file_size),
                                         remote_files.length,
-                                        metadata.max_file_count,
+                                        effective_limits.max_file_count,
                                         humanFileSize(
                                             getTotalSize(remote_files)
                                         ),
                                         humanFileSize(
-                                            metadata.max_all_file_size
+                                            effective_limits.max_all_file_size
                                         ),
                                     ])
                                 "
@@ -319,9 +337,9 @@
                                 v-if="!is_readonly && allow_file"
                                 :disabled="
                                     uploading ||
-                                    metadata.max_file_count <=
+                                    effective_limits.max_file_count <=
                                         remote_files.length ||
-                                    metadata.max_all_file_size <=
+                                    effective_limits.max_all_file_size <=
                                         getTotalSize(remote_files)
                                 "
                                 v-model="file_to_upload"
@@ -463,6 +481,54 @@
                 </v-row>
             </v-container>
         </v-main>
+
+        <!-- Active benefits dialog -->
+        <v-dialog v-model="benefits_dialog_open" max-width="540">
+            <v-card>
+                <v-card-title>
+                    {{ $t("clip.redeem.benefits_dialog_title") }}
+                </v-card-title>
+                <v-card-text v-if="active_benefits.length === 0">
+                    {{ $t("clip.redeem.no_benefits") }}
+                </v-card-text>
+                <v-list v-else lines="three" density="comfortable">
+                    <v-list-item
+                        v-for="record in active_benefits"
+                        :key="record.id"
+                    >
+                        <v-list-item-title>
+                            <code>{{ record.code }}</code>
+                            <span
+                                v-if="record.note"
+                                class="text-medium-emphasis ml-2"
+                            >
+                                {{ record.note }}
+                            </span>
+                        </v-list-item-title>
+                        <v-list-item-subtitle>
+                            <div
+                                v-for="line in formatBenefitLines(
+                                    record.benefits
+                                )"
+                                :key="line"
+                            >
+                                {{ line }}
+                            </div>
+                            <div class="text-caption text-medium-emphasis mt-1">
+                                {{ $t("clip.redeem.expires_at") }}:
+                                {{ formatExpires(record) }}
+                            </div>
+                        </v-list-item-subtitle>
+                    </v-list-item>
+                </v-list>
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn @click="benefits_dialog_open = false">
+                        {{ $t("clip.ok") }}
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
     </v-app>
 </template>
 
@@ -491,6 +557,9 @@ import {
     WebSocketBaseData,
     FileUserProperty,
     FileDataRaw,
+    BenefitsData,
+    EffectiveLimits,
+    RedeemRecordData,
 } from "@/api"
 import { AxiosResponse, isAxiosError } from "axios"
 
@@ -519,6 +588,8 @@ import {
     mdiAlertOctagon,
     mdiFileUpload,
     mdiEye,
+    mdiTicketConfirmation,
+    mdiGiftOutline,
 } from "@mdi/js"
 import AppBarHomeButton from "@/components/AppBarHomeButton.vue"
 import SideBarDelimLine from "@/components/SidebarDelimLine.vue"
@@ -603,6 +674,28 @@ const fetch_timer = ref<ReturnType<typeof setTimeout> | null>(null)
 const last_edit_time = ref(Date.now())
 const user_property = ref<UserProperty>({})
 const combine_content = ref("")
+
+// Redeem code / benefits
+const effective_limits = ref<EffectiveLimits>({
+    max_file_size: 0,
+    max_file_count: 0,
+    max_all_file_size: 0,
+    max_timeout: 0,
+})
+const active_benefits = ref<RedeemRecordData[]>([])
+const has_active_benefits = computed(() => active_benefits.value.length > 0)
+const benefits_dialog_open = ref(false)
+
+function fallbackEffectiveLimits(): EffectiveLimits {
+    return {
+        max_file_size: metadata.max_file_size,
+        max_file_count: metadata.max_file_count,
+        max_all_file_size: metadata.max_all_file_size,
+        max_timeout: metadata.max_timeout,
+    }
+}
+effective_limits.value = fallbackEffectiveLimits()
+
 
 // Init
 onMounted(() => {
@@ -736,6 +829,16 @@ async function processFetchedContent(
     remote_content.value = content
     readonly_name.value = response_data.data.readonly_name
     is_readonly.value = response_data.data.is_readonly
+    if (response_data.data.effective_limits) {
+        effective_limits.value = response_data.data.effective_limits
+        // pull benefit records lazily on first fetch so toolbar can show the badge
+        if (
+            JSON.stringify(effective_limits.value) !==
+            JSON.stringify(fallbackEffectiveLimits())
+        ) {
+            refreshBenefits()
+        }
+    }
     if (save_status.value === SaveStatus.local_outdated) {
         setSaveStatus(SaveStatus.conflict_resolved)
     }
@@ -1545,6 +1648,140 @@ async function reportClip() {
         console.log(e)
     }
 }
+
+// Redeem code / benefits actions
+async function refreshBenefits() {
+    try {
+        const resp = await axios.get<Response<BenefitsData>>(
+            `/note/${name}/redeem`
+        )
+        if (resp.data?.data) {
+            effective_limits.value = resp.data.data.effective_limits
+            active_benefits.value = resp.data.data.active_records
+        }
+    } catch (e: unknown) {
+        console.log(e)
+    }
+}
+
+function formatBenefits(b: Partial<EffectiveLimits>): string {
+    const parts: string[] = []
+    if (b.max_file_size !== undefined) {
+        parts.push(
+            $t("clip.redeem.benefit_max_file_size", [
+                humanFileSize(b.max_file_size),
+            ])
+        )
+    }
+    if (b.max_file_count !== undefined) {
+        parts.push(
+            $t("clip.redeem.benefit_max_file_count", [b.max_file_count])
+        )
+    }
+    if (b.max_all_file_size !== undefined) {
+        parts.push(
+            $t("clip.redeem.benefit_max_all_file_size", [
+                humanFileSize(b.max_all_file_size),
+            ])
+        )
+    }
+    if (b.max_timeout !== undefined) {
+        parts.push(
+            $t("clip.redeem.benefit_max_timeout", [
+                timeDeltaToString(b.max_timeout),
+            ])
+        )
+    }
+    return parts.join("\n")
+}
+
+async function openRedeemDialog() {
+    const result = await cancelableInput({
+        title: $t("clip.redeem.dialog_title"),
+        text: $t("clip.redeem.dialog_hint"),
+        input: "text",
+        inputAttributes: {
+            maxlength: "64",
+            autocapitalize: "characters",
+            autocorrect: "off",
+            spellcheck: "false",
+        },
+    })
+    if (!result.isConfirmed) return
+    const code = (result.value as string | undefined)?.trim().toUpperCase()
+    if (!code) return
+    await createIfNotExist()
+    try {
+        const resp = await axios.post<Response<BenefitsData>>(
+            `/note/${name}/redeem`,
+            { code }
+        )
+        const data = resp.data?.data
+        if (data) {
+            effective_limits.value = data.effective_limits
+            active_benefits.value = data.active_records
+            const granted = data.just_redeemed
+            const granted_text = granted
+                ? formatBenefits(granted.benefits)
+                : ""
+            showAutoCloseSuccess({
+                title: $t("clip.redeem.redeemed"),
+                text: granted_text,
+                timer: 2200,
+            })
+            fetchContent({ include_slots: ["file"] })
+        }
+    } catch (e: unknown) {
+        let key = "REDEEM_FAILED"
+        if (isAxiosError(e)) {
+            const err_id = e.response?.data?.error_id
+            if (err_id) key = err_id
+        }
+        showDetailWarning({
+            title: $t("clip.error"),
+            text: $t("clip.redeem.error." + key),
+        })
+    }
+}
+
+async function openBenefitsDialog() {
+    await refreshBenefits()
+    benefits_dialog_open.value = true
+}
+
+function formatBenefitLines(b: Partial<EffectiveLimits>): string[] {
+    const lines: string[] = []
+    if (b.max_file_size !== undefined)
+        lines.push(
+            $t("clip.redeem.benefit_max_file_size", [
+                humanFileSize(b.max_file_size),
+            ])
+        )
+    if (b.max_file_count !== undefined)
+        lines.push(
+            $t("clip.redeem.benefit_max_file_count", [b.max_file_count])
+        )
+    if (b.max_all_file_size !== undefined)
+        lines.push(
+            $t("clip.redeem.benefit_max_all_file_size", [
+                humanFileSize(b.max_all_file_size),
+            ])
+        )
+    if (b.max_timeout !== undefined)
+        lines.push(
+            $t("clip.redeem.benefit_max_timeout", [
+                timeDeltaToString(b.max_timeout),
+            ])
+        )
+    return lines
+}
+
+function formatExpires(r: RedeemRecordData): string {
+    return r.expires_at
+        ? new Date(r.expires_at).toLocaleString()
+        : $t("clip.redeem.never_expires")
+}
+
 </script>
 
 <style>

@@ -1,9 +1,10 @@
+import datetime
 import threading
 import time
 # these are patched by gevent, do not import only `sleep` or `Thread`.
 from flask import Flask
 import schedule
-from app.models.datastore import Note, datastore
+from app.models.datastore import Note, RedeemRecord, datastore
 
 
 class RemoveExpiredThings:
@@ -30,3 +31,10 @@ class RemoveExpiredThings:
                 for file in note.files:
                     if file.is_expired:
                         datastore.delete_file(file)
+            # purge expired redeem records (those with a past expires_at)
+            now = datetime.datetime.now()
+            datastore.session.query(RedeemRecord).filter(
+                RedeemRecord.expires_at.isnot(None),
+                RedeemRecord.expires_at < now,
+            ).delete(synchronize_session=False)
+            datastore.session.commit()

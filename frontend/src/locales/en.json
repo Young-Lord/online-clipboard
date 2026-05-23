@@ -37,7 +37,9 @@
                 "password": "Set password for clip",
                 "save": "Save clip",
                 "copy": "Copy clip content",
-                "download": "Download clip content as text file"
+                "download": "Download clip content as text file",
+                "redeem": "Redeem a code to unlock more benefits",
+                "benefits": "View active benefits for this clip"
             },
             "disable_readonly_url": "Disable readonly link",
             "enable_readonly_url": "Enable readonly link",
@@ -110,6 +112,28 @@
         "websocket": {
             "instant_sync": "Instant sync (collaborative editing)",
             "apply_patch_failed_stopped": "Instant sync stopped due to error. Please refresh page."
+        },
+        "redeem": {
+            "dialog_title": "Enter redeem code",
+            "dialog_hint": "Enter a code to extend this clip's quotas.",
+            "redeemed": "Code redeemed!",
+            "benefits_dialog_title": "Active benefits",
+            "no_benefits": "This clip has no active redeemed benefits.",
+            "expires_at": "Expires",
+            "never_expires": "Never expires",
+            "benefit_max_file_size": "Per-file size raised to {0}",
+            "benefit_max_file_count": "File count raised to {0}",
+            "benefit_max_all_file_size": "Total file size raised to {0}",
+            "benefit_max_timeout": "Max expiration raised to {0}",
+            "error": {
+                "REDEEM_FAILED": "Failed to redeem code.",
+                "CODE_NOT_FOUND": "Code not found.",
+                "CODE_INACTIVE": "This code is currently disabled.",
+                "CODE_EXPIRED": "This code is past its valid date.",
+                "CODE_USED_UP": "This code has reached its use limit.",
+                "CODE_NO_BENEFITS": "This code has no benefits attached.",
+                "INVALID_CODE_FORMAT": "Code format is not valid."
+            }
         }
     },
     "about": {
@@ -139,6 +163,60 @@
             "update_success": "Mail preference updated!",
             "update_failed": "Failed to update mail preference.",
             "resend_request_success": "Mail verification request sent!"
+        }
+    },
+    "admin": {
+        "title": "Redeem code admin",
+        "signin_title": "Admin sign-in",
+        "admin_token": "Admin token",
+        "signin": "Sign in",
+        "remember_token": "Remember token on this device",
+        "forget_token": "Forget admin token",
+        "invalid_token": "Invalid admin token, or admin is disabled on this server.",
+        "create_title": "Generate redeem codes",
+        "code_optional_custom": "Custom code (leave blank to auto-generate)",
+        "code_hint": "Required when count = 1; ignored when generating in bulk.",
+        "code_note": "Memo (optional)",
+        "count": "How many",
+        "max_uses_label": "Max uses",
+        "unlimited_hint": "-1 = unlimited",
+        "effect_duration_days_label": "Effect duration (days, -1 = unlimited)",
+        "unlimited_negative_hint": "-1 for unlimited",
+        "valid_until_label": "Valid until (ISO date, blank = never)",
+        "iso_hint": "e.g. 2027-01-01 or 2027-01-01T12:00:00",
+        "benefits_section": "Benefits (at least one)",
+        "benefit_max_file_size_mib": "Per-file size (MiB)",
+        "benefit_max_file_count": "File count",
+        "benefit_max_all_file_size_mib": "Total file size (MiB)",
+        "benefit_max_timeout_days": "Max expiration (days)",
+        "create_btn": "Generate",
+        "list_title": "Existing codes",
+        "search_placeholder": "Search code or note",
+        "reload": "Reload",
+        "delete_btn": "Delete",
+        "delete_confirm_title": "Delete this code?",
+        "delete_confirm_text": "Code {0} will be permanently removed, along with its redemption history.",
+        "click_to_copy": "Click to copy",
+        "created": "Generated",
+        "create_failed": "Failed to create code.",
+        "update_failed": "Failed to update.",
+        "delete_failed": "Failed to delete.",
+        "copied": "Copied",
+        "need_benefits": "Provide at least one benefit value.",
+        "invalid_date": "Invalid date.",
+        "unlimited": "Unlimited",
+        "never_expires": "Never",
+        "empty": "(no codes)",
+        "prev": "Prev",
+        "next": "Next",
+        "col": {
+            "code": "Code",
+            "note": "Note",
+            "benefits": "Benefits",
+            "usage": "Used",
+            "effect_duration": "Effect duration",
+            "valid_until": "Valid until",
+            "active": "Active"
         }
     },
     "error": {
