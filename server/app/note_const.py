@@ -83,6 +83,7 @@ class BaseMetadata:
             60 * 60 * 24 * 7,  # 7 days
             60 * 60 * 24 * 14,  # 14 days
             60 * 60 * 24 * 30,  # 30 days
+            60 * 60 * 24 * 90,  # 90 days (3 months)
             60 * 60 * 24 * 365,  # 1 year
             60 * 60 * 24 * 365 * 3,  # 3 years
         ]
