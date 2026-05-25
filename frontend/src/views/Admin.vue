@@ -204,7 +204,7 @@
                                 <v-icon :icon="mdiRefresh" />
                             </v-btn>
                         </v-card-title>
-                        <v-card-text class="px-0">
+                        <v-card-text>
                             <v-table density="compact">
                                 <thead>
                                     <tr>
@@ -226,12 +226,24 @@
                                         :key="row.id"
                                     >
                                         <td>
-                                            <code
-                                                style="cursor: pointer"
-                                                @click="copyText(row.code)"
-                                                :title="$t('admin.click_to_copy')"
-                                                >{{ row.code }}</code
-                                            >
+                                            <div class="d-flex align-center">
+                                                <code>{{ row.code }}</code>
+                                                <v-btn
+                                                    icon
+                                                    size="x-small"
+                                                    variant="text"
+                                                    class="ml-1"
+                                                    @click="copyText(row.code)"
+                                                    :aria-label="
+                                                        $t('admin.click_to_copy')
+                                                    "
+                                                >
+                                                    <v-icon
+                                                        :icon="mdiContentCopy"
+                                                        size="small"
+                                                    />
+                                                </v-btn>
+                                            </div>
                                         </td>
                                         <td>{{ row.note }}</td>
                                         <td style="white-space: pre-line">{{
@@ -338,6 +350,7 @@ import {
     mdiLogout,
     mdiMagnify,
     mdiRefresh,
+    mdiContentCopy,
 } from "@mdi/js"
 import AppBarHomeButton from "@/components/AppBarHomeButton.vue"
 import { axios, EffectiveLimits, RedeemCodeData, Response } from "@/api"

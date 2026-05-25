@@ -67,6 +67,8 @@
             "your_file_has_been_uploaded": "Your file has been uploaded.",
             "failed_to_delete_file": "Failed to delete file.",
             "expiration_date_is": "EXP: {0}",
+            "encryption_password_required": "Password for this encrypted file?",
+            "wrong_encryption_password": "Wrong password for this file!",
             "error": {
                 "TOTAL_FILES_COUNT_LIMIT_HIT": "Total files count limit hit!",
                 "SINGLE_FILE_SIZE_LIMIT_HIT": "Single file size limit hit!",
@@ -114,9 +116,11 @@
             "apply_patch_failed_stopped": "Instant sync stopped due to error. Please refresh page."
         },
         "redeem": {
+            "manage_benefits": "Manage benefits",
             "dialog_title": "Enter redeem code",
             "dialog_hint": "Enter a code to extend this clip's quotas.",
             "redeemed": "Code redeemed!",
+            "redeem_btn": "Redeem",
             "benefits_dialog_title": "Active benefits",
             "no_benefits": "This clip has no active redeemed benefits.",
             "expires_at": "Expires",

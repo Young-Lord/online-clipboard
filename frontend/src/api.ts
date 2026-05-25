@@ -68,6 +68,10 @@ export interface FileUserProperty {
     encrypt_file_name_algo?: string
     encrypt_file_content?: boolean
     encrypt_file_content_algo?: string
+    encrypt_file_content_salt?: string
+    encrypt_file_content_iv?: string
+    encrypt_use_password?: boolean
+    encrypt_password_hash?: string
 }
 
 export interface FileData {

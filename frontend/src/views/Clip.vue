@@ -28,24 +28,6 @@
             <!-- @vue-ignore -->
             <template v-slot:[should_wrap_appbar_to_slot]>
                 <v-spacer></v-spacer>
-                <!--redeem code button-->
-                <v-btn
-                    icon
-                    @click="openRedeemDialog()"
-                    v-if="!is_new && !is_readonly"
-                    :aria-label="$t('clip.a11y.appbar.redeem')"
-                >
-                    <v-icon :icon="mdiTicketConfirmation" />
-                </v-btn>
-                <!--view benefits button-->
-                <v-btn
-                    icon
-                    @click="openBenefitsDialog()"
-                    v-if="!is_new && has_active_benefits"
-                    :aria-label="$t('clip.a11y.appbar.benefits')"
-                >
-                    <v-icon :icon="mdiGiftOutline" />
-                </v-btn>
                 <!--delete button-->
                 <v-btn
                     icon
@@ -304,6 +286,17 @@
                                             $t("clip.report.report_clip")
                                         }}</v-list-item-title>
                                     </v-list-item>
+                                    <SideBarDelimLine></SideBarDelimLine>
+                                    <!--manage benefits (redeem + view)-->
+                                    <v-list-item
+                                        :prepend-icon="mdiTicketConfirmation"
+                                        @click="openManageBenefitsDialog()"
+                                        v-if="!is_new"
+                                    >
+                                        <v-list-item-title>{{
+                                            $t("clip.redeem.manage_benefits")
+                                        }}</v-list-item-title>
+                                    </v-list-item>
                                 </v-list-group>
                             </v-list>
                         </v-card>
@@ -482,48 +475,74 @@
             </v-container>
         </v-main>
 
-        <!-- Active benefits dialog -->
-        <v-dialog v-model="benefits_dialog_open" max-width="540">
+        <!-- Manage benefits dialog (redeem + view) -->
+        <v-dialog v-model="manage_benefits_dialog_open" max-width="540">
             <v-card>
                 <v-card-title>
-                    {{ $t("clip.redeem.benefits_dialog_title") }}
+                    {{ $t("clip.redeem.manage_benefits") }}
                 </v-card-title>
-                <v-card-text v-if="active_benefits.length === 0">
-                    {{ $t("clip.redeem.no_benefits") }}
+                <v-card-text>
+                    <div class="text-subtitle-2 mb-2">
+                        {{ $t("clip.redeem.benefits_dialog_title") }}
+                    </div>
+                    <div v-if="active_benefits.length === 0" class="text-medium-emphasis mb-3">
+                        {{ $t("clip.redeem.no_benefits") }}
+                    </div>
+                    <v-list v-else lines="three" density="comfortable" class="pa-0">
+                        <v-list-item
+                            v-for="record in active_benefits"
+                            :key="record.id"
+                        >
+                            <v-list-item-title>
+                                <code>{{ record.code }}</code>
+                                <span
+                                    v-if="record.note"
+                                    class="text-medium-emphasis ml-2"
+                                >
+                                    {{ record.note }}
+                                </span>
+                            </v-list-item-title>
+                            <v-list-item-subtitle>
+                                <div
+                                    v-for="line in formatBenefitLines(
+                                        record.benefits
+                                    )"
+                                    :key="line"
+                                >
+                                    {{ line }}
+                                </div>
+                                <div class="text-caption text-medium-emphasis mt-1">
+                                    {{ $t("clip.redeem.expires_at") }}:
+                                    {{ formatExpires(record) }}
+                                </div>
+                            </v-list-item-subtitle>
+                        </v-list-item>
+                    </v-list>
+                    <v-divider class="my-3"></v-divider>
+                    <div class="text-subtitle-2 mb-2">
+                        {{ $t("clip.redeem.dialog_title") }}
+                    </div>
+                    <v-text-field
+                        v-model="redeem_input"
+                        :label="$t('clip.redeem.dialog_hint')"
+                        :disabled="is_readonly"
+                        hide-details="auto"
+                        variant="outlined"
+                        density="compact"
+                        @keydown.enter="submitRedeemInDialog()"
+                    ></v-text-field>
                 </v-card-text>
-                <v-list v-else lines="three" density="comfortable">
-                    <v-list-item
-                        v-for="record in active_benefits"
-                        :key="record.id"
-                    >
-                        <v-list-item-title>
-                            <code>{{ record.code }}</code>
-                            <span
-                                v-if="record.note"
-                                class="text-medium-emphasis ml-2"
-                            >
-                                {{ record.note }}
-                            </span>
-                        </v-list-item-title>
-                        <v-list-item-subtitle>
-                            <div
-                                v-for="line in formatBenefitLines(
-                                    record.benefits
-                                )"
-                                :key="line"
-                            >
-                                {{ line }}
-                            </div>
-                            <div class="text-caption text-medium-emphasis mt-1">
-                                {{ $t("clip.redeem.expires_at") }}:
-                                {{ formatExpires(record) }}
-                            </div>
-                        </v-list-item-subtitle>
-                    </v-list-item>
-                </v-list>
                 <v-card-actions>
                     <v-spacer></v-spacer>
-                    <v-btn @click="benefits_dialog_open = false">
+                    <v-btn
+                        color="primary"
+                        :disabled="is_readonly || !redeem_input"
+                        :loading="redeeming"
+                        @click="submitRedeemInDialog()"
+                    >
+                        {{ $t("clip.redeem.redeem_btn") }}
+                    </v-btn>
+                    <v-btn @click="manage_benefits_dialog_open = false">
                         {{ $t("clip.ok") }}
                     </v-btn>
                 </v-card-actions>
@@ -589,7 +608,6 @@ import {
     mdiFileUpload,
     mdiEye,
     mdiTicketConfirmation,
-    mdiGiftOutline,
 } from "@mdi/js"
 import AppBarHomeButton from "@/components/AppBarHomeButton.vue"
 import SideBarDelimLine from "@/components/SidebarDelimLine.vue"
@@ -683,8 +701,9 @@ const effective_limits = ref<EffectiveLimits>({
     max_timeout: 0,
 })
 const active_benefits = ref<RedeemRecordData[]>([])
-const has_active_benefits = computed(() => active_benefits.value.length > 0)
-const benefits_dialog_open = ref(false)
+const manage_benefits_dialog_open = ref(false)
+const redeem_input = ref("")
+const redeeming = ref(false)
 
 function fallbackEffectiveLimits(): EffectiveLimits {
     return {
@@ -736,20 +755,26 @@ async function createIfNotExist() {
     try {
         await axios
             .post<Response<ClipData>>(`/note/${name}`, {})
-            .then((resp) => {
-                processFetchedContent(resp, { include_slots: ["version"] })
+            .then(async (resp) => {
+                await processFetchedContent(resp, { include_slots: ["version"] })
             })
         is_new.value = false
     } catch (e: unknown) {
         console.log(e)
     }
 }
-function processFetchedFiles(files: FileDataRaw[]) {
-    files.forEach((file) => {
+async function processFetchedFiles(files: FileDataRaw[]) {
+    for (const file of files) {
         file.user_property = JSON.parse(file.user_property)
-        file.filename = mayDecryptFilename(file as FileData)
-    })
-    remote_files.value = (files as FileData[]).reverse()
+    }
+    const file_data_list = files as FileData[]
+    for (const file of file_data_list) {
+        if (file.user_property.encrypt_file_name) {
+            const pw = await ensureEncryptionPassword(file.user_property.encrypt_password_hash)
+            if (pw) file.filename = mayDecryptFilename(file, pw)
+        }
+    }
+    remote_files.value = file_data_list.reverse()
 }
 async function processFetchedContent(
     axios_response: AxiosResponse<Response<ClipData>>,
@@ -779,15 +804,13 @@ async function processFetchedContent(
     encrypt_file.value = user_property.value.encrypt_file ?? false
     let content = response_data.data.content
     if (user_property.value.encrypt_text_content) {
-        if (user_property.value.encrypt_text_content_algo === "aes") {
-            const decrypt = AES.decrypt(
-                content,
-                encryptPassword.value
-            ).toString(utf8)
-            if (content !== "" && decrypt === "") {
-                content = markDecryptError(content)
-            } else {
-                content = decrypt
+        if (user_property.value.encrypt_text_content_algo === "aes-256-gcm") {
+            if (content !== "") {
+                try {
+                    content = await gcmDecrypt(JSON.parse(content), password.value)
+                } catch {
+                    content = markDecryptError(content)
+                }
             }
         } else {
             showDetailWarning({
@@ -819,7 +842,7 @@ async function processFetchedContent(
         options.include_slots === undefined ||
         options.include_slots.includes("file")
     ) {
-        processFetchedFiles(response_data.data.files)
+        await processFetchedFiles(response_data.data.files)
     }
     if (first_fetched.value === false) {
         first_fetched.value = true
@@ -887,7 +910,7 @@ async function fetchContent(
             }
             throw e
         }
-        processFetchedContent(response)
+        await processFetchedContent(response)
     } catch (e: unknown) {
         console.log(e)
     }
@@ -970,9 +993,11 @@ async function pushContent(force = false) {
     await createIfNotExist()
     let content = local_content.value
     if (encrypt_text_content.value) {
-        if (user_property.value.encrypt_text_content_algo === "aes") {
-            if (content !== "")
-                content = AES.encrypt(content, encryptPassword.value).toString()
+        if (user_property.value.encrypt_text_content_algo === "aes-256-gcm") {
+            if (content !== "") {
+                const encResult = await gcmEncrypt(content, password.value)
+                content = JSON.stringify(encResult)
+            }
         } else {
             showDetailWarning({
                 title: $t("clip.error"),
@@ -988,8 +1013,8 @@ async function pushContent(force = false) {
                 content: content,
                 clip_version: clip_version.value,
             })
-            .then((resp) => {
-                processFetchedContent(resp, { include_slots: ["version"] })
+            .then(async (resp) => {
+                await processFetchedContent(resp, { include_slots: ["version"] })
             })
         setSaveStatus(SaveStatus.saved)
     } catch (e: unknown) {
@@ -1028,11 +1053,16 @@ async function deleteContent() {
 
 // File
 import { Buffer } from "buffer"
-import AES from "crypto-js/aes"
-import SHA256 from "crypto-js/sha256"
 import SHA512 from "crypto-js/sha512"
-import utf8 from "crypto-js/enc-utf8"
-import WordArray from "crypto-js/lib-typedarrays"
+import {
+    encrypt as gcmEncrypt,
+    decrypt as gcmDecrypt,
+    encryptFileData as gcmEncryptFileData,
+    decryptFileData as gcmDecryptFileData,
+    encryptFilename as gcmEncryptFilename,
+    decryptFilename as gcmDecryptFilename,
+    passwordHash as gcmPasswordHash,
+} from "@/crypto"
 const uploading = ref(false)
 const file_to_upload = ref<File[]>([])
 const remote_files = ref<FileData[]>([])
@@ -1053,26 +1083,6 @@ function getTotalSize(...file_arrays: (File[] | FileData[])[]): number {
     })
     return total_size
 }
-function arrayBufferToWordArray(ab: ArrayBuffer): WordArray {
-    // https://stackoverflow.com/questions/33914764/how-to-read-a-binary-file-with-filereader-in-order-to-hash-it-with-sha-256-in-cr
-    let i8a = new Uint8Array(ab)
-    let a = []
-    for (let i = 0; i < i8a.length; i += 4) {
-        a.push(
-            (i8a[i] << 24) | (i8a[i + 1] << 16) | (i8a[i + 2] << 8) | i8a[i + 3]
-        )
-    }
-    return WordArray.create(a, i8a.length)
-}
-function wordArrayToArrayBuffer(wordArray: WordArray): ArrayBuffer {
-    const { words } = wordArray
-    const { sigBytes } = wordArray
-    const u8 = new Uint8Array(sigBytes)
-    for (let i = 0; i < sigBytes; i += 1) {
-        u8[i] = (words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff
-    }
-    return u8
-}
 function onAttachFile(event: ClipboardEvent | DragEvent) {
     if (is_readonly.value || uploading.value || !allow_file.value) return
     let items: FileList | undefined
@@ -1092,7 +1102,6 @@ async function uploadSingleFile(file: File) {
     let formData = new FormData()
     let user_property: FileUserProperty = {}
     if (encrypt_file.value) {
-        // encrypt file
         let reader = new FileReader()
         let file_data = await new Promise<ArrayBuffer>((resolve, reject) => {
             reader.onload = () => {
@@ -1103,22 +1112,24 @@ async function uploadSingleFile(file: File) {
             }
             reader.readAsArrayBuffer(file)
         })
-        let encrypted_file_data = AES.encrypt(
-            arrayBufferToWordArray(file_data),
-            encryptPassword.value
-        ).toString()
+        const encResult = await gcmEncryptFileData(file_data, password.value)
+        const encryptedFilename = await gcmEncryptFilename(file.name, password.value)
         let encrypted_file = new File(
-            [encrypted_file_data],
-            encryptFilename(file.name),
+            [encResult.ciphertext],
+            encryptedFilename,
             { type: file.type }
         )
         file = encrypted_file
         user_property = {
             ...user_property,
             encrypt_file_content: true,
-            encrypt_file_content_algo: "aes",
+            encrypt_file_content_algo: "aes-256-gcm",
+            encrypt_file_content_salt: encResult.salt,
+            encrypt_file_content_iv: encResult.iv,
             encrypt_file_name: true,
-            encrypt_file_name_algo: "aes",
+            encrypt_file_name_algo: "aes-256-gcm",
+            encrypt_use_password: true,
+            encrypt_password_hash: await gcmPasswordHash(password.value, name),
         }
     }
     formData.append("file", file)
@@ -1199,11 +1210,11 @@ async function deleteFile(file: FileData) {
     try {
         await axios
             .delete<Response<ClipData>>(`/note/${name}/file/${file.id}`)
-            .then((resp) =>
-                processFetchedContent(resp, {
+            .then(async (resp) => {
+                await processFetchedContent(resp, {
                     include_slots: ["file"],
                 })
-            )
+            })
         /* showAutoCloseSuccess({
                     title: $t('clip.file.deleted'),
                     text: $t('clip.file.your_file_has_been_deleted'),
@@ -1441,11 +1452,11 @@ async function changePassword() {
                 new_password:
                     new_password === "" ? "" : SHA512(new_password).toString(),
             })
-            .then((resp) =>
-                processFetchedContent(resp, {
+            .then(async (resp) => {
+                await processFetchedContent(resp, {
                     include_slots: ["file"],
                 })
-            )
+            })
         password.value = new_password
         await updateEncryptText()
         showAutoCloseSuccess({
@@ -1456,9 +1467,37 @@ async function changePassword() {
     }
 }
 
-const encryptPassword = computed(() => {
-    return SHA256(password.value).toString()
-})
+const encryptionPasswordCache = new Map<string, string>()
+function getEncryptionPassword(storedHash?: string): string {
+    if (!storedHash) return password.value
+    if (encryptionPasswordCache.has(storedHash)) return encryptionPasswordCache.get(storedHash)!
+    return password.value
+}
+async function ensureEncryptionPassword(storedHash: string | undefined): Promise<string | null> {
+    if (!storedHash) return password.value
+    const currentHash = await gcmPasswordHash(password.value, name)
+    if (currentHash === storedHash) {
+        encryptionPasswordCache.set(storedHash, password.value)
+        return password.value
+    }
+    const cached = encryptionPasswordCache.get(storedHash)
+    if (cached) return cached
+    const result = await cancelableInput({
+        title: $t("clip.file.encryption_password_required"),
+        input: "password",
+    })
+    if (!result.isConfirmed) return null
+    const enteredHash = await gcmPasswordHash(result.value as string, name)
+    if (enteredHash !== storedHash) {
+        showDetailWarning({
+            title: $t("clip.error"),
+            text: $t("clip.file.wrong_encryption_password"),
+        })
+        return null
+    }
+    encryptionPasswordCache.set(storedHash, result.value as string)
+    return result.value as string
+}
 function markDecryptError(s: string): string {
     return s + $t("error.decrypt_error")
 }
@@ -1466,7 +1505,7 @@ const encrypt_text_content = ref(false)
 async function updateEncryptText() {
     if (encrypt_text_content.value) {
         user_property.value.encrypt_text_content = true
-        user_property.value.encrypt_text_content_algo = "aes"
+        user_property.value.encrypt_text_content_algo = "aes-256-gcm"
     } else {
         user_property.value.encrypt_text_content = false
         user_property.value.encrypt_text_content_algo = ""
@@ -1477,43 +1516,50 @@ async function updateEncryptFile() {
     user_property.value.encrypt_file = encrypt_file.value
     pushContent()
 }
-function mayDecryptFilename(file: FileData): string {
+async function mayDecryptFilename(file: FileData, pw?: string): Promise<string> {
     const filename = file.filename
     if (!file.user_property.encrypt_file_name) return filename
+    const password = pw || getEncryptionPassword(file.user_property.encrypt_password_hash)
     switch (file.user_property.encrypt_file_name_algo) {
-        case "aes": {
-            const decrypt = AES.decrypt(
-                filename,
-                encryptPassword.value
-            ).toString(utf8)
-            if (filename !== "" && decrypt === "")
+        case "aes-256-gcm": {
+            try {
+                return await gcmDecryptFilename(filename, password)
+            } catch {
                 return markDecryptError(filename)
-            return decrypt
+            }
         }
         default:
             return markDecryptError(filename)
     }
 }
-function encryptFilename(filename: string): string {
-    if (filename !== "")
-        return AES.encrypt(filename, encryptPassword.value).toString()
-    else return ""
+async function encryptFilename(filename: string, pw: string): Promise<string> {
+    if (filename === "") return ""
+    return gcmEncryptFilename(filename, pw)
 }
 async function downloadEncryptedFile(file: FileData) {
-    // https://blog.csdn.net/qq_38916811/article/details/127515455
-    // fetch file from remote url and decrypt
+    const pw = await ensureEncryptionPassword(file.user_property.encrypt_password_hash)
+    if (!pw) return
     const response = await axios.get(file.download_url, {
         responseType: "arraybuffer",
     })
     const enc = new TextDecoder("utf-8")
     const str = enc.decode(response.data)
     switch (file.user_property.encrypt_file_content_algo) {
-        case "aes": {
-            const decrypted_file_data = wordArrayToArrayBuffer(
-                AES.decrypt(str, encryptPassword.value)
-            )
-            const blob = new Blob([decrypted_file_data])
-            saveBlob(blob, file.filename)
+        case "aes-256-gcm": {
+            try {
+                const decrypted_file_data = await gcmDecryptFileData(
+                    {
+                        ciphertext: str,
+                        salt: file.user_property.encrypt_file_content_salt!,
+                        iv: file.user_property.encrypt_file_content_iv!,
+                    },
+                    pw,
+                )
+                const blob = new Blob([decrypted_file_data])
+                saveBlob(blob, file.filename)
+            } catch {
+                // decryption failed
+            }
         }
     }
 }
@@ -1578,8 +1624,8 @@ async function toggleReadonlyUrl() {
             .put<Response<ClipData>>(`/note/${name}`, {
                 enable_readonly: !hasReadonlyName.value,
             })
-            .then((resp) => {
-                processFetchedContent(resp, { include_slots: [] })
+            .then(async (resp) => {
+                await processFetchedContent(resp, { include_slots: [] })
             })
     } catch (e: unknown) {
         console.log(e)
@@ -1695,21 +1741,16 @@ function formatBenefits(b: Partial<EffectiveLimits>): string {
     return parts.join("\n")
 }
 
-async function openRedeemDialog() {
-    const result = await cancelableInput({
-        title: $t("clip.redeem.dialog_title"),
-        text: $t("clip.redeem.dialog_hint"),
-        input: "text",
-        inputAttributes: {
-            maxlength: "64",
-            autocapitalize: "characters",
-            autocorrect: "off",
-            spellcheck: "false",
-        },
-    })
-    if (!result.isConfirmed) return
-    const code = (result.value as string | undefined)?.trim().toUpperCase()
+async function openManageBenefitsDialog() {
+    await refreshBenefits()
+    redeem_input.value = ""
+    manage_benefits_dialog_open.value = true
+}
+
+async function submitRedeemInDialog() {
+    const code = redeem_input.value.trim().toUpperCase()
     if (!code) return
+    redeeming.value = true
     await createIfNotExist()
     try {
         const resp = await axios.post<Response<BenefitsData>>(
@@ -1741,12 +1782,9 @@ async function openRedeemDialog() {
             title: $t("clip.error"),
             text: $t("clip.redeem.error." + key),
         })
+    } finally {
+        redeeming.value = false
     }
-}
-
-async function openBenefitsDialog() {
-    await refreshBenefits()
-    benefits_dialog_open.value = true
 }
 
 function formatBenefitLines(b: Partial<EffectiveLimits>): string[] {
