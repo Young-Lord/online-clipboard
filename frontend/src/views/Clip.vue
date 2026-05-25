@@ -1569,7 +1569,7 @@ async function encryptFilename(filename: string, pw: string): Promise<string> {
 }
 async function decryptFileName(file: FileData) {
     const pw = await ensureEncryptionPassword(file.user_property.encrypt_password_hash)
-    if (!pw) return
+    if (pw === null) return
     const original = encrypted_filenames.get(file.id)
     if (!original) return
     file.filename = await mayDecryptFilename(file, pw, original)
@@ -1581,7 +1581,7 @@ async function downloadEncryptedFile(file: FileData) {
     } catch {
         return
     }
-    if (!pw) return
+    if (pw === null) return
     if (file.user_property.encrypt_file_name) {
         const original = encrypted_filenames.get(file.id) ?? file.filename
         file.filename = await mayDecryptFilename(file, pw, original)
