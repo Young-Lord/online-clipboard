@@ -788,7 +788,7 @@ async function processFetchedFiles(files: FileDataRaw[]) {
         if (file.user_property.encrypt_file_name) {
             encrypted_filenames.set(file.id, file.filename)
             const pw = await tryGetEncryptionPasswordSilent(file.user_property.encrypt_password_hash)
-            if (pw) {
+            if (pw !== null) {
                 file.filename = await mayDecryptFilename(file, pw, file.filename)
             } else {
                 file.filename = $t("clip.file.encrypted_filename_placeholder")
@@ -1512,7 +1512,7 @@ async function ensureEncryptionPassword(storedHash: string | undefined): Promise
         return password.value
     }
     const cached = encryptionPasswordCache.get(storedHash)
-    if (cached) return cached
+    if (cached !== undefined) return cached
     const result = await cancelableInput({
         title: $t("clip.file.encryption_password_required"),
         input: "password",
