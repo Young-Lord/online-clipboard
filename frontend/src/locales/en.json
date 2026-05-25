@@ -69,6 +69,7 @@
             "expiration_date_is": "EXP: {0}",
             "encryption_password_required": "Password for this encrypted file?",
             "wrong_encryption_password": "Wrong password for this file!",
+            "encrypted_filename_placeholder": "Filename encrypted, click to decrypt",
             "error": {
                 "TOTAL_FILES_COUNT_LIMIT_HIT": "Total files count limit hit!",
                 "SINGLE_FILE_SIZE_LIMIT_HIT": "Single file size limit hit!",

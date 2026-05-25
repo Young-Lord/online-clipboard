@@ -350,7 +350,26 @@
                                     role="listitem"
                                 >
                                     <v-list-item-title
-                                        >{{ file.filename }}
+                                        ><span
+                                            @click="
+                                                file.user_property
+                                                    .encrypt_file_name
+                                                    ? decryptFileName(file)
+                                                    : undefined
+                                            "
+                                            :style="{
+                                                cursor: file.user_property
+                                                    .encrypt_file_name
+                                                    ? 'pointer'
+                                                    : 'default',
+                                            }"
+                                            :class="{
+                                                'text-medium-emphasis font-italic':
+                                                    file.user_property
+                                                        .encrypt_file_name,
+                                            }"
+                                            >{{ file.filename }}</span
+                                        >
                                     </v-list-item-title>
                                     <v-list-item-subtitle
                                         >{{ humanFileSize(file.size) }};
@@ -766,15 +785,12 @@ async function createIfNotExist() {
 async function processFetchedFiles(files: FileDataRaw[]) {
     for (const file of files) {
         file.user_property = JSON.parse(file.user_property)
-    }
-    const file_data_list = files as FileData[]
-    for (const file of file_data_list) {
         if (file.user_property.encrypt_file_name) {
-            const pw = await ensureEncryptionPassword(file.user_property.encrypt_password_hash)
-            if (pw) file.filename = mayDecryptFilename(file, pw)
+            encrypted_filenames.set(file.id, file.filename)
+            file.filename = $t("clip.file.encrypted_filename_placeholder")
         }
     }
-    remote_files.value = file_data_list.reverse()
+    remote_files.value = (files as FileData[]).reverse()
 }
 async function processFetchedContent(
     axios_response: AxiosResponse<Response<ClipData>>,
@@ -1066,6 +1082,7 @@ import {
 const uploading = ref(false)
 const file_to_upload = ref<File[]>([])
 const remote_files = ref<FileData[]>([])
+const encrypted_filenames = new Map<number, string>()
 const encrypt_file = ref(false)
 const allow_file = computed(() => {
     return (
@@ -1516,8 +1533,8 @@ async function updateEncryptFile() {
     user_property.value.encrypt_file = encrypt_file.value
     pushContent()
 }
-async function mayDecryptFilename(file: FileData, pw?: string): Promise<string> {
-    const filename = file.filename
+async function mayDecryptFilename(file: FileData, pw?: string, encryptedFilename?: string): Promise<string> {
+    const filename = encryptedFilename ?? file.filename
     if (!file.user_property.encrypt_file_name) return filename
     const password = pw || getEncryptionPassword(file.user_property.encrypt_password_hash)
     switch (file.user_property.encrypt_file_name_algo) {
@@ -1536,9 +1553,20 @@ async function encryptFilename(filename: string, pw: string): Promise<string> {
     if (filename === "") return ""
     return gcmEncryptFilename(filename, pw)
 }
+async function decryptFileName(file: FileData) {
+    const pw = await ensureEncryptionPassword(file.user_property.encrypt_password_hash)
+    if (!pw) return
+    const original = encrypted_filenames.get(file.id)
+    if (!original) return
+    file.filename = await mayDecryptFilename(file, pw, original)
+}
 async function downloadEncryptedFile(file: FileData) {
     const pw = await ensureEncryptionPassword(file.user_property.encrypt_password_hash)
     if (!pw) return
+    if (file.user_property.encrypt_file_name) {
+        const original = encrypted_filenames.get(file.id) ?? file.filename
+        file.filename = await mayDecryptFilename(file, pw, original)
+    }
     const response = await axios.get(file.download_url, {
         responseType: "arraybuffer",
     })
