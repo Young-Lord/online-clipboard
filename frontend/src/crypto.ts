@@ -3,7 +3,12 @@ const SALT_LENGTH = 16
 const IV_LENGTH = 12
 
 function b64encode(buf: Uint8Array): string {
-    return btoa(String.fromCharCode(...buf))
+    let binary = ""
+    const chunk = 0x8000
+    for (let i = 0; i < buf.length; i += chunk) {
+        binary += String.fromCharCode(...buf.subarray(i, i + chunk))
+    }
+    return btoa(binary)
 }
 
 function b64decode(s: string): Uint8Array {

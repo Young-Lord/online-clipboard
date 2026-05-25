@@ -18,6 +18,7 @@ export default defineConfig(({ command, mode }) => {
         build: {
             outDir: path.resolve(__dirname, "../server/app/templates"),
             assetsDir: "static",
+            sourcemap: true,
         },
         plugins: [
             vue({
