@@ -183,26 +183,28 @@
 
                     <!-- List -->
                     <v-card>
-                        <v-card-title class="d-flex align-center">
-                            <span>{{ $t("admin.list_title") }}</span>
-                            <v-spacer></v-spacer>
-                            <v-text-field
-                                v-model="search_query"
-                                :placeholder="$t('admin.search_placeholder')"
-                                density="compact"
-                                hide-details
-                                style="max-width: 220px"
-                                @keydown.enter="reload()"
-                                :prepend-inner-icon="mdiMagnify"
-                            ></v-text-field>
-                            <v-btn
-                                icon
-                                @click="reload()"
-                                :aria-label="$t('admin.reload')"
-                                class="ml-2"
-                            >
-                                <v-icon :icon="mdiRefresh" />
-                            </v-btn>
+                        <v-card-title>
+                            <div class="d-flex align-center w-100">
+                                <span>{{ $t("admin.list_title") }}</span>
+                                <v-spacer></v-spacer>
+                                <v-text-field
+                                    v-model="search_query"
+                                    :placeholder="$t('admin.search_placeholder')"
+                                    density="compact"
+                                    hide-details
+                                    style="max-width: 220px"
+                                    @keydown.enter="reload()"
+                                    :prepend-inner-icon="mdiMagnify"
+                                ></v-text-field>
+                                <v-btn
+                                    icon
+                                    @click="reload()"
+                                    :aria-label="$t('admin.reload')"
+                                    class="ml-2"
+                                >
+                                    <v-icon :icon="mdiRefresh" />
+                                </v-btn>
+                            </div>
                         </v-card-title>
                         <v-card-text>
                             <v-table density="compact">
