@@ -787,7 +787,12 @@ async function processFetchedFiles(files: FileDataRaw[]) {
         file.user_property = JSON.parse(file.user_property)
         if (file.user_property.encrypt_file_name) {
             encrypted_filenames.set(file.id, file.filename)
-            file.filename = $t("clip.file.encrypted_filename_placeholder")
+            const pw = await tryGetEncryptionPasswordSilent(file.user_property.encrypt_password_hash)
+            if (pw) {
+                file.filename = await mayDecryptFilename(file, pw, file.filename)
+            } else {
+                file.filename = $t("clip.file.encrypted_filename_placeholder")
+            }
         }
     }
     remote_files.value = (files as FileData[]).reverse()
@@ -1490,6 +1495,15 @@ function getEncryptionPassword(storedHash?: string): string {
     if (encryptionPasswordCache.has(storedHash)) return encryptionPasswordCache.get(storedHash)!
     return password.value
 }
+async function tryGetEncryptionPasswordSilent(storedHash: string | undefined): Promise<string | null> {
+    if (!storedHash) return password.value
+    const currentHash = await gcmPasswordHash(password.value, name)
+    if (currentHash === storedHash) {
+        encryptionPasswordCache.set(storedHash, password.value)
+        return password.value
+    }
+    return encryptionPasswordCache.get(storedHash) ?? null
+}
 async function ensureEncryptionPassword(storedHash: string | undefined): Promise<string | null> {
     if (!storedHash) return password.value
     const currentHash = await gcmPasswordHash(password.value, name)
@@ -1561,20 +1575,25 @@ async function decryptFileName(file: FileData) {
     file.filename = await mayDecryptFilename(file, pw, original)
 }
 async function downloadEncryptedFile(file: FileData) {
-    const pw = await ensureEncryptionPassword(file.user_property.encrypt_password_hash)
+    let pw: string | null
+    try {
+        pw = await ensureEncryptionPassword(file.user_property.encrypt_password_hash)
+    } catch {
+        return
+    }
     if (!pw) return
     if (file.user_property.encrypt_file_name) {
         const original = encrypted_filenames.get(file.id) ?? file.filename
         file.filename = await mayDecryptFilename(file, pw, original)
     }
-    const response = await axios.get(file.download_url, {
-        responseType: "arraybuffer",
-    })
-    const enc = new TextDecoder("utf-8")
-    const str = enc.decode(response.data)
-    switch (file.user_property.encrypt_file_content_algo) {
-        case "aes-256-gcm": {
-            try {
+    try {
+        const response = await axios.get(file.download_url, {
+            responseType: "arraybuffer",
+        })
+        const enc = new TextDecoder("utf-8")
+        const str = enc.decode(response.data)
+        switch (file.user_property.encrypt_file_content_algo) {
+            case "aes-256-gcm": {
                 const decrypted_file_data = await gcmDecryptFileData(
                     {
                         ciphertext: str,
@@ -1585,10 +1604,20 @@ async function downloadEncryptedFile(file: FileData) {
                 )
                 const blob = new Blob([decrypted_file_data])
                 saveBlob(blob, file.filename)
-            } catch {
-                // decryption failed
+                break
+            }
+            default: {
+                showDetailWarning({
+                    title: $t("clip.error"),
+                    text: $t("clip.file.wrong_encryption_password"),
+                })
             }
         }
+    } catch (e) {
+        showDetailWarning({
+            title: $t("clip.error"),
+            text: $t("clip.file.wrong_encryption_password"),
+        })
     }
 }
 
