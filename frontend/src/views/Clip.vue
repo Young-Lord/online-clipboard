@@ -1255,7 +1255,7 @@ async function deleteFile(file: FileData) {
     }
 }
 function canPreviewFile(file: FileData): boolean {
-    if (encrypt_file.value) return false
+    if (file.user_property?.encrypt_file_content) return false
     return true
 }
 
