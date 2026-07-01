@@ -552,6 +552,9 @@
                     ></v-text-field>
                 </v-card-text>
                 <v-card-actions>
+                    <v-btn @click="manage_benefits_dialog_open = false">
+                        {{ $t("clip.cancel") }}
+                    </v-btn>
                     <v-spacer></v-spacer>
                     <v-btn
                         color="primary"
@@ -560,9 +563,6 @@
                         @click="submitRedeemInDialog()"
                     >
                         {{ $t("clip.redeem.redeem_btn") }}
-                    </v-btn>
-                    <v-btn @click="manage_benefits_dialog_open = false">
-                        {{ $t("clip.ok") }}
                     </v-btn>
                 </v-card-actions>
             </v-card>
