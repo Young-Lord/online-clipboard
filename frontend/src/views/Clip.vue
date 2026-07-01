@@ -734,6 +734,11 @@ function fallbackEffectiveLimits(): EffectiveLimits {
 }
 effective_limits.value = fallbackEffectiveLimits()
 
+const timeout_selections = computed(() => {
+    const max = effective_limits.value.max_timeout
+    return (metadata.timeout_selections || []).filter((t) => t <= max)
+})
+
 
 // Init
 onMounted(() => {
@@ -1090,10 +1095,11 @@ const remote_files = ref<FileData[]>([])
 const encrypted_filenames = new Map<number, string>()
 const encrypt_file = ref(false)
 const allow_file = computed(() => {
+    const limits = effective_limits.value
     return (
-        metadata.max_all_file_size !== 0 &&
-        metadata.max_file_count !== 0 &&
-        metadata.max_file_size !== 0
+        limits.max_all_file_size !== 0 &&
+        limits.max_file_count !== 0 &&
+        limits.max_file_size !== 0
     )
 })
 function getTotalSize(...file_arrays: (File[] | FileData[])[]): number {
@@ -1168,17 +1174,18 @@ async function uploadFile() {
     uploading.value = true
     let error_string = null
     let file_count = file_to_upload.value.length + remote_files.value.length
-    if (metadata.max_file_count && file_count > metadata.max_file_count) {
+    const limits = effective_limits.value
+    if (limits.max_file_count && file_count > limits.max_file_count) {
         error_string = $t("clip.file.error.TOTAL_FILES_COUNT_LIMIT_HIT")
     }
     file_to_upload.value.forEach((file) => {
-        if (metadata.max_file_size && file.size > metadata.max_file_size) {
+        if (limits.max_file_size && file.size > limits.max_file_size) {
             error_string = $t("clip.file.error.SINGLE_FILE_SIZE_LIMIT_HIT")
         }
     })
     let total_size = getTotalSize(file_to_upload.value, remote_files.value)
 
-    if (metadata.max_all_file_size && total_size > metadata.max_all_file_size) {
+    if (limits.max_all_file_size && total_size > limits.max_all_file_size) {
         error_string = $t("clip.file.error.TOTAL_FILES_SIZE_LIMIT_HIT")
     }
     if (error_string !== null) {
@@ -1690,12 +1697,11 @@ async function toggleReadonlyUrl() {
 }
 
 // user actions
-const timeout_selections = metadata.timeout_selections || []
 async function setNoteTimeout(selected_timeout: string) {
     await createIfNotExist()
     try {
         let new_timeout = undefined
-        timeout_selections.forEach((timeout) => {
+        timeout_selections.value.forEach((timeout) => {
             if (timeDeltaToString(timeout) === selected_timeout) {
                 new_timeout = timeout
             }
@@ -1709,6 +1715,10 @@ async function setNoteTimeout(selected_timeout: string) {
         }
 
         if (new_timeout === undefined) {
+            invalid_timeout_toast()
+            return
+        }
+        if (new_timeout > effective_limits.value.max_timeout) {
             invalid_timeout_toast()
             return
         }
